@@ -21,7 +21,10 @@ class AppConfig {
 
   static String? get agentBaseUrl {
     final value = dotenv.env['AGENT_BASE_URL'];
-    if (value == null || value.isEmpty) return null;
+    if (value == null || value.isEmpty) {
+      // 로컬 서버 URL로 테스트
+      return 'http://localhost:8080';
+    }
     return value;
   }
 }
