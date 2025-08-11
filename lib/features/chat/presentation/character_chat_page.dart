@@ -1,0 +1,732 @@
+import 'package:flutter/material.dart';
+import '../../../core/constants/app_strings.dart';
+import '../../../core/constants/app_colors.dart';
+import '../models/character.dart';
+
+class CharacterChatPage extends StatefulWidget {
+  final Character character;
+
+  const CharacterChatPage({
+    super.key,
+    required this.character,
+  });
+
+  @override
+  State<CharacterChatPage> createState() => _CharacterChatPageState();
+}
+
+class _CharacterChatPageState extends State<CharacterChatPage> {
+  final TextEditingController _messageController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  final List<ChatMessage> _messages = [];
+  bool _isTyping = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _addWelcomeMessage();
+  }
+
+  void _addWelcomeMessage() {
+    _messages.add(
+      ChatMessage(
+        text: _getCharacterWelcomeMessage(),
+        isUser: false,
+        timestamp: DateTime.now(),
+        characterName: widget.character.name,
+      ),
+    );
+  }
+
+  String _getCharacterWelcomeMessage() {
+    switch (widget.character.name) {
+      case '해리 포터':
+        return '안녕하세요! 저는 해리 포터예요. 호그와트에서의 모험에 대해 이야기해보고 싶으신가요? 🪄';
+      case '셜록 홈즈':
+        return '좋은 아침입니다. 셜록 홈즈입니다. 혹시 해결하고 싶은 미스터리가 있으신가요? 🔍';
+      case '엘리자베스 베넷':
+        return '안녕하세요! 엘리자베스 베넷입니다. 오늘은 어떤 이야기를 나누고 싶으신가요? 💭';
+      case '아라곤':
+        return '안녕하십니까. 아라곤입니다. 중간계의 모험담을 들려드릴까요? ⚔️';
+      case '김춘삼':
+        return '안녕하세요! 김춘삼이라고 합니다. 새로운 세상에 대한 이야기를 나눠보시죠! 🌟';
+      default:
+        return '안녕하세요! ${widget.character.name}입니다. 반가워요! 😊';
+    }
+  }
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: _getCharacterColor(),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Center(
+                child: Text(
+                  widget.character.name[0],
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.character.name,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    widget.character.bookTitle,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.normal,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppColors.background,
+        elevation: 1,
+        shadowColor: AppColors.dividerColor,
+        actions: [
+          IconButton(
+            onPressed: _showCharacterInfo,
+            icon: const Icon(Icons.info_outline),
+            tooltip: '캐릭터 정보',
+          ),
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              switch (value) {
+                case 'clear':
+                  _clearChat();
+                  break;
+                case 'save':
+                  _saveFavoriteQuote();
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'clear',
+                child: Row(
+                  children: [
+                    Icon(Icons.clear_all, size: 20),
+                    SizedBox(width: 8),
+                    Text('대화 초기화'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'save',
+                child: Row(
+                  children: [
+                    Icon(Icons.favorite_border, size: 20),
+                    SizedBox(width: 8),
+                    Text('명대사 저장'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          // 캐릭터 소개 카드
+          Container(
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: _getCharacterColor().withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: _getCharacterColor().withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.auto_stories,
+                  color: _getCharacterColor(),
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '${widget.character.name}와의 특별한 대화를 즐겨보세요!',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // 채팅 메시지 리스트
+          Expanded(
+            child: ListView.builder(
+              controller: _scrollController,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _messages.length + (_isTyping ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index == _messages.length && _isTyping) {
+                  return _buildTypingIndicator();
+                }
+                return _buildMessageBubble(_messages[index]);
+              },
+            ),
+          ),
+          
+          // 메시지 입력 영역
+          _buildMessageInput(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMessageBubble(ChatMessage message) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        mainAxisAlignment:
+            message.isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (!message.isUser) ...[
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: _getCharacterColor(),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Center(
+                child: Text(
+                  widget.character.name[0],
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: message.isUser
+                    ? AppColors.primary
+                    : AppColors.surface,
+                borderRadius: BorderRadius.circular(20).copyWith(
+                  bottomLeft: message.isUser
+                      ? const Radius.circular(20)
+                      : const Radius.circular(4),
+                  bottomRight: message.isUser
+                      ? const Radius.circular(4)
+                      : const Radius.circular(20),
+                ),
+                border: message.isUser
+                    ? null
+                    : Border.all(
+                        color: _getCharacterColor().withOpacity(0.2),
+                        width: 1,
+                      ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    message.text,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: message.isUser
+                          ? AppColors.onPrimary
+                          : AppColors.textPrimary,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _formatTime(message.timestamp),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: message.isUser
+                          ? AppColors.onPrimary.withOpacity(0.7)
+                          : AppColors.textHint,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (message.isUser) ...[
+            const SizedBox(width: 8),
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: AppColors.secondary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(
+                Icons.person,
+                color: AppColors.secondary,
+                size: 16,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTypingIndicator() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: _getCharacterColor(),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Center(
+              child: Text(
+                widget.character.name[0],
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(20).copyWith(
+                bottomLeft: const Radius.circular(4),
+              ),
+              border: Border.all(
+                color: _getCharacterColor().withOpacity(0.2),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '${widget.character.name}이 입력 중...',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textSecondary,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      _getCharacterColor().withOpacity(0.5),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMessageInput() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(
+          top: BorderSide(
+            color: AppColors.dividerColor,
+            width: 1,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _messageController,
+              decoration: InputDecoration(
+                hintText: '${widget.character.name}에게 메시지를 보내세요...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: const BorderSide(color: AppColors.dividerColor),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: const BorderSide(color: AppColors.dividerColor),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide(color: _getCharacterColor(), width: 2),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                filled: true,
+                fillColor: AppColors.background,
+              ),
+              maxLines: null,
+              textInputAction: TextInputAction.send,
+              onSubmitted: (_) => _sendMessage(),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            decoration: BoxDecoration(
+              color: _getCharacterColor(),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: IconButton(
+              onPressed: _sendMessage,
+              icon: const Icon(
+                Icons.send,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _sendMessage() {
+    final text = _messageController.text.trim();
+    if (text.isEmpty) return;
+
+    setState(() {
+      _messages.add(
+        ChatMessage(
+          text: text,
+          isUser: true,
+          timestamp: DateTime.now(),
+        ),
+      );
+      _messageController.clear();
+      _isTyping = true;
+    });
+
+    _scrollToBottom();
+    _simulateCharacterResponse(text);
+  }
+
+  void _simulateCharacterResponse(String userMessage) async {
+    await Future.delayed(const Duration(seconds: 2));
+
+    String characterResponse = _generateCharacterResponse(userMessage);
+
+    setState(() {
+      _isTyping = false;
+      _messages.add(
+        ChatMessage(
+          text: characterResponse,
+          isUser: false,
+          timestamp: DateTime.now(),
+          characterName: widget.character.name,
+        ),
+      );
+    });
+
+    _scrollToBottom();
+  }
+
+  String _generateCharacterResponse(String userMessage) {
+    switch (widget.character.name) {
+      case '해리 포터':
+        return _getHarryPotterResponse(userMessage);
+      case '셜록 홈즈':
+        return _getSherlockResponse(userMessage);
+      case '엘리자베스 베넷':
+        return _getElizabethResponse(userMessage);
+      case '아라곤':
+        return _getAragornResponse(userMessage);
+      case '김춘삼':
+        return _getKimChunsanResponse(userMessage);
+      default:
+        return '흥미로운 말씀이네요! 더 자세히 이야기해주시겠어요?';
+    }
+  }
+
+  String _getHarryPotterResponse(String message) {
+    if (message.contains('마법') || message.contains('호그와트')) {
+      return '호그와트는 정말 마법 같은 곳이에요! 처음 그곳에 도착했을 때의 경이로움을 아직도 잊을 수 없어요. 어떤 마법에 대해 궁금하신가요? 🪄';
+    } else if (message.contains('친구') || message.contains('론') || message.contains('헤르미온느')) {
+      return '론과 헤르미온느는 제 인생에서 가장 소중한 친구들이에요. 진정한 친구가 있다는 것이 얼마나 큰 힘이 되는지 모르실 거예요!';
+    } else {
+      return '그렇군요! 저도 처음엔 마법 세계에 대해 아무것도 몰랐어요. 궁금한 게 있으시면 언제든 물어보세요!';
+    }
+  }
+
+  String _getSherlockResponse(String message) {
+    if (message.contains('추리') || message.contains('사건')) {
+      return '흥미로운 관찰이군요. 모든 세부사항이 중요합니다. 가장 작은 단서라도 놓치지 않는 것이 추리의 핵심이죠. 🔍';
+    } else if (message.contains('왓슨') || message.contains('친구')) {
+      return '왓슨은 훌륭한 동반자입니다. 그의 의학적 지식과 충성심은 많은 사건 해결에 큰 도움이 되었죠.';
+    } else {
+      return '논리적으로 생각해봅시다. 당신이 말씀하신 내용에서 몇 가지 흥미로운 점을 발견할 수 있네요.';
+    }
+  }
+
+  String _getElizabethResponse(String message) {
+    if (message.contains('사랑') || message.contains('결혼')) {
+      return '진정한 사랑은 단순한 감정 이상의 것이라고 생각해요. 서로를 존중하고 이해하는 것이 중요하죠. 💕';
+    } else if (message.contains('다아시') || message.contains('오만')) {
+      return '처음에는 다아시 씨를 오만하다고 생각했지만, 사람을 겉모습만으로 판단해서는 안 된다는 것을 배웠어요.';
+    } else {
+      return '흥미로운 견해네요! 저는 항상 독립적인 사고를 중요하게 생각해요. 당신의 의견을 더 들어보고 싶어요.';
+    }
+  }
+
+  String _getAragornResponse(String message) {
+    if (message.contains('왕') || message.contains('곤도르')) {
+      return '왕이 되는 것은 큰 책임을 의미합니다. 백성들을 지키고 평화를 유지하는 것이 제 사명이죠. ⚔️';
+    } else if (message.contains('반지') || message.contains('모험')) {
+      return '반지 원정대와 함께한 여정은 험난했지만, 중간계의 평화를 위해서는 반드시 필요한 일이었습니다.';
+    } else {
+      return '용기와 명예는 진정한 전사의 덕목입니다. 어떤 시련이 와도 포기하지 않는 마음이 중요해요.';
+    }
+  }
+
+  String _getKimChunsanResponse(String message) {
+    if (message.contains('모험') || message.contains('새로운')) {
+      return '새로운 세상은 정말 흥미진진해요! 매일매일이 새로운 발견의 연속이죠. 🌟';
+    } else if (message.contains('꿈') || message.contains('희망')) {
+      return '꿈을 가지는 것은 참 중요한 일이에요. 꿈이 있어야 앞으로 나아갈 힘이 생기거든요!';
+    } else {
+      return '그래요? 정말 재미있는 이야기네요! 저도 그런 경험을 해보고 싶어요.';
+    }
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  void _clearChat() {
+    setState(() {
+      _messages.clear();
+      _addWelcomeMessage();
+    });
+  }
+
+  void _saveFavoriteQuote() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('명대사 저장 기능을 준비 중입니다.'),
+        backgroundColor: AppColors.success,
+      ),
+    );
+  }
+
+  void _showCharacterInfo() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: _getCharacterColor(),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Center(
+                child: Text(
+                  widget.character.name[0],
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Text(widget.character.name)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _InfoRow(
+              label: '작품',
+              value: widget.character.bookTitle,
+            ),
+            _InfoRow(
+              label: '저자',
+              value: widget.character.author,
+            ),
+            _InfoRow(
+              label: '장르',
+              value: widget.character.genre,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '성격',
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            Text(
+              widget.character.personality,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '설명',
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            Text(
+              widget.character.description,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('닫기'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getCharacterColor() {
+    switch (widget.character.genre) {
+      case '판타지':
+        return Colors.purple;
+      case '로맨스':
+        return Colors.pink;
+      case '추리':
+        return Colors.indigo;
+      case '역사':
+        return Colors.brown;
+      case '소설':
+        return AppColors.primary;
+      default:
+        return AppColors.secondary;
+    }
+  }
+
+  String _formatTime(DateTime dateTime) {
+    return '${dateTime.hour.toString().padLeft(2, '0')}:'
+           '${dateTime.minute.toString().padLeft(2, '0')}';
+  }
+}
+
+class ChatMessage {
+  final String text;
+  final bool isUser;
+  final DateTime timestamp;
+  final String? characterName;
+
+  ChatMessage({
+    required this.text,
+    required this.isUser,
+    required this.timestamp,
+    this.characterName,
+  });
+}
+
+class _InfoRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _InfoRow({
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 50,
+            child: Text(
+              '$label:',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
