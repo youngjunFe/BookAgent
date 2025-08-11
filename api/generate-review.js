@@ -18,11 +18,15 @@ module.exports = async (req, res) => {
     const title = String(book_title);
 
     console.log('Request received:', { chat, title });
+    console.log('Environment check:', {
+      hasApiKey: !!process.env.OPENAI_API_KEY,
+      keyLength: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.length : 0
+    });
 
     // OpenAI API 키가 없으면 fallback 메시지 반환
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      console.log('No OpenAI API key, returning fallback');
+      console.log('No OpenAI API key found, returning fallback');
       return res.status(200).send(fallback(title));
     }
 
