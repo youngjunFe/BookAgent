@@ -1,0 +1,17 @@
+{
+  "name": "book-agent-vercel",
+  "version": "1.0.0",
+  "description": "Book review AI agent for Vercel deployment",
+  "main": "api/generate-review.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'No build needed'",
+    "start": "echo 'This is a serverless function'"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": ["vercel", "ai", "book", "review"],
+  "author": "jun_fe",
+  "license": "MIT"
+}
