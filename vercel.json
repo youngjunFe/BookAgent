@@ -1,7 +1,10 @@
 {
   "functions": {
     "api/generate-review.js": {
-      "runtime": "nodejs18.x"
+      "runtime": "@vercel/node@3.1.0"
+    },
+    "api/test.js": {
+      "runtime": "@vercel/node@3.1.0"
     }
   },
   "headers": [
