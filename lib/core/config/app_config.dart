@@ -22,8 +22,8 @@ class AppConfig {
   static String? get agentBaseUrl {
     final value = dotenv.env['AGENT_BASE_URL'];
     if (value == null || value.isEmpty) {
-      // 로컬 서버 URL로 테스트
-      return 'http://localhost:8080';
+      // Vercel 배포 URL로 변경
+      return 'https://book-agent.vercel.app';
     }
     return value;
   }

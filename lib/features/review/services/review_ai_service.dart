@@ -18,7 +18,7 @@ class ReviewAiService {
     try {
       // 1) 우선 Railway 등 외부 Agent 서비스가 설정된 경우 우선 사용
       if (AppConfig.agentBaseUrl != null) {
-        final uri = Uri.parse('${AppConfig.agentBaseUrl}/generate-review');
+        final uri = Uri.parse('${AppConfig.agentBaseUrl}/api/generate-review');
         final resp = await http.post(
           uri,
           headers: {'Content-Type': 'application/json'},
