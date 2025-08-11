@@ -22,7 +22,7 @@ class AppConfig {
   static String? get agentBaseUrl {
     final value = dotenv.env['AGENT_BASE_URL'];
     if (value == null || value.isEmpty) {
-      // Vercel 배포 URL로 변경
+      // Vercel 배포 URL로 다시 변경
       return 'https://book-agent.vercel.app';
     }
     return value;

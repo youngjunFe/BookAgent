@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/config/app_config.dart';
 import '../../review/presentation/review_creation_page.dart';
 
 class AiChatPage extends StatefulWidget {
@@ -419,23 +422,71 @@ class _AiChatPageState extends State<AiChatPage> {
   }
 
   void _simulateAiResponse(String userMessage) async {
-    // 실제 AI API 호출 대신 시뮬레이션
-    await Future.delayed(const Duration(seconds: 2));
-
-    String aiResponse = _generateAiResponse(userMessage);
-
-    setState(() {
-      _isTyping = false;
-      _messages.add(
-        ChatMessage(
-          text: aiResponse,
-          isUser: false,
-          timestamp: DateTime.now(),
-        ),
-      );
-    });
+    try {
+      print('🤖 AI API 호출 시작: $userMessage');
+      // 실제 AI API 호출
+      String aiResponse = await _callRealAiApi(userMessage);
+      print('🤖 AI API 성공: ${aiResponse.substring(0, 50)}...');
+      
+      setState(() {
+        _isTyping = false;
+        _messages.add(
+          ChatMessage(
+            text: aiResponse,
+            isUser: false,
+            timestamp: DateTime.now(),
+          ),
+        );
+      });
+    } catch (e) {
+      print('❌ AI API 실패: $e');
+      // API 실패 시 fallback
+      setState(() {
+        _isTyping = false;
+        _messages.add(
+          ChatMessage(
+            text: '죄송합니다. AI 서비스에 일시적인 문제가 있습니다. ${_generateAiResponse(userMessage)}',
+            isUser: false,
+            timestamp: DateTime.now(),
+          ),
+        );
+      });
+    }
 
     _scrollToBottom();
+  }
+
+  Future<String> _callRealAiApi(String userMessage) async {
+    try {
+      // 임시로 하드코딩
+      final baseUrl = 'https://book-agent.vercel.app';
+      print('🔍 Base URL: $baseUrl');
+      
+      // 이전 메시지들을 컨텍스트로 포함
+      final recentMessages = _messages.length > 6 
+          ? _messages.sublist(_messages.length - 6) 
+          : _messages;
+      final context = recentMessages
+          .map((msg) => '${msg.isUser ? '사용자' : 'AI'}: ${msg.text}')
+          .join('\n');
+      
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/chat'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'message': userMessage,
+          'context': context,
+        }),
+      );
+      
+      if (response.statusCode == 200) {
+        return response.body;
+      } else {
+        throw Exception('API Error: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Failed to call AI API: $e');
+    }
   }
 
   String _generateAiResponse(String userMessage) {
