@@ -20,7 +20,7 @@ class _EBookTabState extends State<EBookTab> {
   String _sortBy = '최근 읽은 순';
   bool _isLoading = true;
   String? _error;
-  final _repo = EbookRepository();
+  final _repo = EBookRepository();
   RealtimeChannel? _channel;
 
   @override
@@ -36,7 +36,7 @@ class _EBookTabState extends State<EBookTab> {
       _error = null;
     });
     try {
-      final items = await _repo.fetchEbooks();
+      final items = await _repo.list();
       if (!mounted) return;
       setState(() {
         _ebooks = items;
@@ -344,11 +344,7 @@ class _BookCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: AppColors.dividerColor),
                 ),
-                child: const Icon(
-                  Icons.menu_book,
-                  color: AppColors.primary,
-                  size: 32,
-                ),
+                child: _buildCover(),
               ),
 
               const SizedBox(width: 16),
@@ -447,6 +443,38 @@ class _BookCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildCover() {
+    if (book.coverImageUrl != null && book.coverImageUrl!.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: Image.network(
+          book.coverImageUrl!,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
+          errorBuilder: (context, error, stackTrace) {
+            return _buildDefaultCover();
+          },
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return const Center(
+              child: CircularProgressIndicator(strokeWidth: 2),
+            );
+          },
+        ),
+      );
+    }
+    return _buildDefaultCover();
+  }
+
+  Widget _buildDefaultCover() {
+    return const Icon(
+      Icons.menu_book,
+      color: AppColors.primary,
+      size: 32,
     );
   }
 

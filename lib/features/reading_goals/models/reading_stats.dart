@@ -46,6 +46,42 @@ class ReadingStats {
     return totalReadingTime / totalDays;
   }
 
+  ReadingStats copyWith({
+    int? totalBooksRead,
+    int? totalPagesRead,
+    int? totalReadingTime,
+    int? currentStreak,
+    int? longestStreak,
+    double? averageRating,
+    int? goalAchievements,
+    List<MonthlyStats>? monthlyStats,
+    Map<String, int>? genreStats,
+  }) {
+    return ReadingStats(
+      totalBooksRead: totalBooksRead ?? this.totalBooksRead,
+      totalPagesRead: totalPagesRead ?? this.totalPagesRead,
+      totalReadingTime: totalReadingTime ?? this.totalReadingTime,
+      currentStreak: currentStreak ?? this.currentStreak,
+      longestStreak: longestStreak ?? this.longestStreak,
+      averageRating: averageRating ?? this.averageRating,
+      goalAchievements: goalAchievements ?? this.goalAchievements,
+      monthlyStats: monthlyStats ?? this.monthlyStats,
+      genreStats: genreStats ?? this.genreStats,
+    );
+  }
+
+  static ReadingStats get empty => const ReadingStats(
+    totalBooksRead: 0,
+    totalPagesRead: 0,
+    totalReadingTime: 0,
+    currentStreak: 0,
+    longestStreak: 0,
+    averageRating: 0.0,
+    goalAchievements: 0,
+    monthlyStats: [],
+    genreStats: {},
+  );
+
   static ReadingStats get sample => ReadingStats(
     totalBooksRead: 23,
     totalPagesRead: 6842,

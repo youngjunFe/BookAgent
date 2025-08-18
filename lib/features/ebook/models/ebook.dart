@@ -9,6 +9,7 @@ class EBook {
   final int totalPages;
   final int currentPage;
   final double progress; // 0.0 to 1.0
+  final bool isCompleted; // 완독 여부
   final List<String> chapters;
 
   EBook({
@@ -22,6 +23,7 @@ class EBook {
     required this.totalPages,
     this.currentPage = 0,
     this.progress = 0.0,
+    this.isCompleted = false,
     this.chapters = const [],
   });
 
@@ -50,6 +52,7 @@ class EBook {
     int? totalPages,
     int? currentPage,
     double? progress,
+    bool? isCompleted,
     List<String>? chapters,
   }) {
     return EBook(
@@ -63,6 +66,7 @@ class EBook {
       totalPages: totalPages ?? this.totalPages,
       currentPage: currentPage ?? this.currentPage,
       progress: progress ?? this.progress,
+      isCompleted: isCompleted ?? this.isCompleted,
       chapters: chapters ?? this.chapters,
     );
   }

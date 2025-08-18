@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_strings.dart';
+
 import '../models/ebook.dart';
 import '../data/ebook_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -19,7 +19,7 @@ class _EBookLibraryPageState extends State<EBookLibraryPage> {
   List<EBook> _ebooks = [];
   bool _isLoading = false;
   String? _error;
-  final _repo = EbookRepository();
+  final _repo = EBookRepository();
   String _sortBy = '최근 읽은 순';
   RealtimeChannel? _channel;
 
@@ -42,7 +42,7 @@ class _EBookLibraryPageState extends State<EBookLibraryPage> {
       _error = null;
     });
     try {
-      final items = await _repo.fetchEbooks();
+      final items = await _repo.list();
       setState(() {
         _ebooks = items;
       });
@@ -345,7 +345,7 @@ class _BookCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: AppColors.dividerColor),
                 ),
-                child: _buildDefaultCover(),
+                child: _buildCover(),
               ),
 
               const SizedBox(width: 16),
@@ -445,6 +445,30 @@ class _BookCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildCover() {
+    if (book.coverImageUrl != null && book.coverImageUrl!.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: Image.network(
+          book.coverImageUrl!,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
+          errorBuilder: (context, error, stackTrace) {
+            return _buildDefaultCover();
+          },
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return const Center(
+              child: CircularProgressIndicator(strokeWidth: 2),
+            );
+          },
+        ),
+      );
+    }
+    return _buildDefaultCover();
   }
 
   Widget _buildDefaultCover() {

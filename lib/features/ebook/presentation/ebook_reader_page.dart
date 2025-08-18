@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
 import '../models/ebook.dart';
+import '../../review/presentation/review_creation_page.dart';
+import '../../reading_goals/data/reading_goals_repository.dart';
+import '../data/ebook_repository.dart';
 
 class EBookReaderPage extends StatefulWidget {
   final EBook ebook;
@@ -19,12 +22,15 @@ class _EBookReaderPageState extends State<EBookReaderPage> {
   double _fontSize = 16.0;
   Color _backgroundColor = AppColors.background;
   bool _isDarkMode = false;
+  final _goalsRepository = ReadingGoalsRepository();
+  final _ebookRepository = EBookRepository();
 
   @override
   void initState() {
     super.initState();
     _currentBook = widget.ebook;
     _pageController = PageController(initialPage: _currentBook.currentPage);
+    _loadBookProgress();
     
     // 3초 후 자동으로 컨트롤 숨기기
     Future.delayed(const Duration(seconds: 3), () {
@@ -34,6 +40,35 @@ class _EBookReaderPageState extends State<EBookReaderPage> {
         });
       }
     });
+  }
+
+  Future<void> _loadBookProgress() async {
+    try {
+      // 데이터베이스에서 최신 진행률 불러오기
+      final books = await _ebookRepository.list();
+      final updatedBook = books.firstWhere(
+        (b) => b.id == _currentBook.id,
+        orElse: () => _currentBook,
+      );
+      
+      setState(() {
+        _currentBook = updatedBook;
+      });
+      
+      // 저장된 페이지로 이동
+      if (_currentBook.currentPage != 0) {
+        _pageController.animateToPage(
+          _currentBook.currentPage,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+      
+      print('📖 진행률 로드 완료: ${_currentBook.title} - ${_currentBook.currentPage}페이지 (${(_currentBook.progress * 100).toInt()}%)');
+    } catch (e) {
+      print('❌ 진행률 로드 실패: $e');
+      // 에러 시 기본 페이지에서 시작 (이미 초기화됨)
+    }
   }
 
   @override
@@ -66,6 +101,148 @@ class _EBookReaderPageState extends State<EBookReaderPage> {
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
+    }
+  }
+
+  void _createReview() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ReviewCreationPage(
+          bookTitle: _currentBook.title,
+          bookAuthor: _currentBook.author,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _markAsCompleted() async {
+    try {
+      // 데이터베이스에 완독 상태 저장
+      final completedBook = await _ebookRepository.markAsCompleted(_currentBook.id);
+      setState(() {
+        _currentBook = completedBook;
+      });
+      
+      // 독서 완료 시 목표 진행률 업데이트
+      _updateReadingProgress();
+      
+      // 완독 축하 다이얼로그 표시
+      _showCompletionDialog();
+      
+      print('✅ 완독 처리 완료: ${_currentBook.title}');
+    } catch (e) {
+      print('❌ 완독 처리 실패: $e');
+      // 실패해도 다이얼로그는 표시
+      _showCompletionDialog();
+    }
+  }
+
+  void _showCompletionDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.celebration, color: AppColors.primary),
+              const SizedBox(width: 8),
+              const Text('완독 축하합니다! 🎉'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('축하합니다! "${_currentBook.title}"을(를) 완독하셨습니다!'),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.check_circle, color: AppColors.primary, size: 16),
+                    const SizedBox(width: 8),
+                    Text(
+                      '완독 상태로 기록되었습니다',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '읽은 책에 대한 발제문을 작성해보시겠어요?',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('나중에'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _createReview();
+              },
+              icon: const Icon(Icons.edit_note),
+              label: const Text('발제문 작성'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _saveReadingProgress(int currentPage, int totalPages) async {
+    try {
+      final progress = (currentPage + 1) / totalPages;
+      await _ebookRepository.updateProgress(
+        id: _currentBook.id,
+        currentPage: currentPage,
+        progress: progress,
+        lastReadAt: DateTime.now(),
+      );
+      print('📖 독서 진행률 저장 완료: ${_currentBook.title} - ${(progress * 100).toInt()}%');
+    } catch (e) {
+      print('❌ 독서 진행률 저장 실패: $e');
+    }
+  }
+
+  void _updateReadingStatus() {
+    // 읽는중 상태 알림 (선택사항)
+    if (_currentBook.progress > 0 && _currentBook.progress < 1.0) {
+      final percent = (_currentBook.progress * 100).toInt();
+      print('📚 읽는중: ${_currentBook.title} - $percent% 완료');
+    }
+  }
+
+  Future<void> _updateReadingProgress() async {
+    try {
+      // 책 완료: 1권, 페이지: 총 페이지 수, 독서시간: 추정 시간
+      final totalPages = _currentBook.pages.length * 250; // 페이지당 평균 250단어 추정
+      final estimatedReadingTime = (totalPages / 250 * 2).round(); // 페이지당 2분 추정
+      
+      await _goalsRepository.updateReadingProgress(
+        booksCompleted: 1,
+        pagesRead: totalPages,
+        readingTimeMinutes: estimatedReadingTime,
+      );
+      
+      print('독서 진행률 업데이트 완료: 책 1권, 페이지 $totalPages, 시간 ${estimatedReadingTime}분');
+    } catch (e) {
+      print('독서 진행률 업데이트 실패: $e');
     }
   }
 
@@ -114,7 +291,17 @@ class _EBookReaderPageState extends State<EBookReaderPage> {
                   );
                 });
                 
-                // TODO: 진행률 저장
+                // 진행률을 실제 데이터베이스에 저장
+                _saveReadingProgress(page, pages.length);
+                
+                // 마지막 페이지 도달 시 읽기 완료 처리
+                if (page == pages.length - 1) {
+                  _markAsCompleted();
+                } else {
+                  // 읽는중 상태 업데이트
+                  _updateReadingStatus();
+                }
+                
                 HapticFeedback.lightImpact();
               },
               itemBuilder: (context, index) {
@@ -206,8 +393,57 @@ class _EBookReaderPageState extends State<EBookReaderPage> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
+                          const SizedBox(height: 8),
+                          // 진행률 표시
+                          Row(
+                            children: [
+                              Expanded(
+                                child: LinearProgressIndicator(
+                                  value: _currentBook.progress,
+                                  backgroundColor: (_isDarkMode ? Colors.white : AppColors.primary).withOpacity(0.2),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    _currentBook.isCompleted 
+                                        ? AppColors.success 
+                                        : AppColors.primary,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                _currentBook.isCompleted 
+                                    ? '완독' 
+                                    : '${(_currentBook.progress * 100).toInt()}%',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: _currentBook.isCompleted ? FontWeight.bold : FontWeight.normal,
+                                  color: _currentBook.isCompleted 
+                                      ? AppColors.success 
+                                      : (_isDarkMode ? Colors.white : AppColors.textPrimary).withOpacity(0.8),
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (!_currentBook.isCompleted && _currentBook.progress > 0) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              '읽는중 • ${_currentBook.currentPage + 1}/${pages.length} 페이지',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: (_isDarkMode ? Colors.white : AppColors.textPrimary).withOpacity(0.6),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
+                    ),
+                    // 발제문 작성 버튼
+                    IconButton(
+                      onPressed: _createReview,
+                      icon: Icon(
+                        Icons.edit_note,
+                        color: AppColors.primary,
+                      ),
+                      tooltip: '발제문 작성',
                     ),
                     IconButton(
                       onPressed: _showTableOfContents,

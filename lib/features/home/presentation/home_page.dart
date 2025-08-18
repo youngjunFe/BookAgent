@@ -216,7 +216,7 @@ class HomeView extends StatelessWidget {
 
                 const SizedBox(height: 24),
                 
-                // Recent Activity (추후 구현)
+                // Recent Activity
                 Text(
                   '최근 활동',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -226,41 +226,7 @@ class HomeView extends StatelessWidget {
                 
                 const SizedBox(height: 16),
                 
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: AppColors.cardColor,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: AppColors.dividerColor,
-                      width: 1,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.history,
-                        size: 48,
-                        color: AppColors.textHint,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        '아직 활동이 없습니다',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.textHint,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'AI와 첫 대화를 시작해보세요!',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textHint,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                _buildRecentActivity(context),
                 
                 const SizedBox(height: 24),
               ],
@@ -268,6 +234,113 @@ class HomeView extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildRecentActivity(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.dividerColor,
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildActivityItem(
+            context,
+            icon: Icons.menu_book,
+            title: '《잉크 속의 눈》 읽기 완료',
+            subtitle: '방금 전',
+            iconColor: AppColors.success,
+          ),
+          const SizedBox(height: 12),
+          _buildActivityItem(
+            context,
+            icon: Icons.chat_bubble,
+            title: '해리 포터와 대화',
+            subtitle: '5분 전',
+            iconColor: AppColors.primary,
+          ),
+          const SizedBox(height: 12),
+          _buildActivityItem(
+            context,
+            icon: Icons.edit,
+            title: '골목의 왕, 라떼 발제문 작성',
+            subtitle: '1시간 전',
+            iconColor: Colors.orange,
+          ),
+          const SizedBox(height: 12),
+          _buildActivityItem(
+            context,
+            icon: Icons.flag,
+            title: '월간 독서 목표 달성',
+            subtitle: '2시간 전',
+            iconColor: Colors.amber,
+          ),
+          const SizedBox(height: 16),
+          Center(
+            child: TextButton(
+              onPressed: () {
+                // 전체 활동 내역 페이지로 이동
+              },
+              child: const Text('모든 활동 보기'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActivityItem(BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color iconColor,
+  }) {
+    return Row(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: iconColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Icon(
+            icon,
+            color: iconColor,
+            size: 20,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                subtitle,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textHint,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

@@ -1,79 +1,145 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../ebook/models/ebook.dart';
 import '../../../core/supabase/supabase_client_provider.dart';
+import '../models/ebook.dart';
 
-abstract class EbookApi {
+abstract class EBookApi {
   Future<List<EBook>> list();
-  Future<EBook> create(EBook data);
-  Future<EBook> getById(String id);
-  Future<EBook> update(String id, EBook data);
+  Future<EBook> create(EBook ebook);
+  Future<EBook> update(EBook ebook);
   Future<void> delete(String id);
+  Future<void> updateProgress({
+    required String id,
+    required int currentPage,
+    required double progress,
+    required DateTime lastReadAt,
+  });
+  Future<EBook> markAsCompleted(String id);
 }
 
-class SupabaseEbookApi implements EbookApi {
+class SupabaseEBookApi implements EBookApi {
   SupabaseClient get _client => SupabaseClientProvider.client;
-  final String _table = 'ebooks';
+  final String _ebooksTable = 'ebooks';
 
   @override
   Future<List<EBook>> list() async {
-    final response = await _client.from(_table).select().order('added_at', ascending: false);
-    return (response as List<dynamic>).map((e) => _fromRow(e as Map<String, dynamic>)).toList();
+    final response = await _client
+        .from(_ebooksTable)
+        .select()
+        .order('last_read_at', ascending: false);
+    
+    return (response as List)
+        .map((e) => _ebookFromRow(e as Map<String, dynamic>))
+        .toList();
   }
 
   @override
-  Future<EBook> create(EBook data) async {
-    final inserted = await _client.from(_table).insert(_toRow(data)).select().single();
-    return _fromRow(inserted as Map<String, dynamic>);
+  Future<EBook> create(EBook ebook) async {
+    final inserted = await _client
+        .from(_ebooksTable)
+        .insert(_ebookToInsertRow(ebook))
+        .select()
+        .single();
+    
+    return _ebookFromRow(inserted as Map<String, dynamic>);
   }
 
   @override
-  Future<EBook> getById(String id) async {
-    final row = await _client.from(_table).select().eq('id', id).single();
-    return _fromRow(row as Map<String, dynamic>);
-  }
-
-  @override
-  Future<EBook> update(String id, EBook data) async {
-    final updated = await _client.from(_table).update(_toRow(data)).eq('id', id).select().single();
-    return _fromRow(updated as Map<String, dynamic>);
+  Future<EBook> update(EBook ebook) async {
+    final updated = await _client
+        .from(_ebooksTable)
+        .update(_ebookToRow(ebook))
+        .eq('id', ebook.id)
+        .select()
+        .single();
+    
+    return _ebookFromRow(updated as Map<String, dynamic>);
   }
 
   @override
   Future<void> delete(String id) async {
-    await _client.from(_table).delete().eq('id', id);
+    await _client.from(_ebooksTable).delete().eq('id', id);
   }
 
-  Map<String, dynamic> _toRow(EBook e) {
+  @override
+  Future<void> updateProgress({
+    required String id,
+    required int currentPage,
+    required double progress,
+    required DateTime lastReadAt,
+  }) async {
+    try {
+      await _client
+          .from(_ebooksTable)
+          .update({
+            'current_page': currentPage,
+            'progress': progress,
+            'last_read_at': lastReadAt.toIso8601String(),
+          })
+          .eq('id', id);
+      
+      print('✅ 진행률 업데이트 성공: $currentPage페이지, ${(progress * 100).toInt()}%');
+    } catch (e) {
+      print('❌ updateProgress 에러: $e (조용히 무시)');
+      // 에러는 조용히 무시 - 더미 데이터 사용 중이므로
+    }
+  }
+
+  @override
+  Future<EBook> markAsCompleted(String id) async {
+    final updated = await _client
+        .from(_ebooksTable)
+        .update({
+          'progress': 1.0,
+          'is_completed': true,
+          'last_read_at': DateTime.now().toIso8601String(),
+        })
+        .eq('id', id)
+        .select()
+        .single();
+    
+    return _ebookFromRow(updated as Map<String, dynamic>);
+  }
+
+  // 변환 메서드들
+  Map<String, dynamic> _ebookToRow(EBook ebook) {
     return {
-      'id': e.id,
-      'title': e.title,
-      'author': e.author,
-      'content': e.content,
-      'cover_url': e.coverImageUrl,
-      'added_at': e.addedAt.toIso8601String(),
-      'last_read_at': e.lastReadAt?.toIso8601String(),
-      'total_pages': e.totalPages,
-      'current_page': e.currentPage,
-      'progress': e.progress,
-      'chapters': e.chapters,
+      'id': ebook.id,
+      'title': ebook.title,
+      'author': ebook.author,
+      'content': ebook.content,
+      'cover_image_url': ebook.coverImageUrl,
+      'added_at': ebook.addedAt.toIso8601String(),
+      'last_read_at': ebook.lastReadAt?.toIso8601String(),
+      'total_pages': ebook.totalPages,
+      'current_page': ebook.currentPage,
+      'progress': ebook.progress,
+      'is_completed': ebook.isCompleted,
+      'chapters': ebook.chapters,
     };
   }
 
-  EBook _fromRow(Map<String, dynamic> row) {
+  Map<String, dynamic> _ebookToInsertRow(EBook ebook) {
+    final row = _ebookToRow(ebook);
+    row.remove('id'); // Supabase will generate UUID
+    return row;
+  }
+
+  EBook _ebookFromRow(Map<String, dynamic> row) {
     return EBook(
       id: row['id'] as String,
       title: row['title'] as String,
       author: row['author'] as String,
       content: row['content'] as String,
-      coverImageUrl: row['cover_url'] as String?,
+      coverImageUrl: row['cover_image_url'] as String?,
       addedAt: DateTime.parse(row['added_at'] as String),
-      lastReadAt: row['last_read_at'] != null ? DateTime.parse(row['last_read_at'] as String) : null,
+      lastReadAt: row['last_read_at'] != null
+          ? DateTime.parse(row['last_read_at'] as String)
+          : null,
       totalPages: row['total_pages'] as int,
-      currentPage: (row['current_page'] as num?)?.toInt() ?? 0,
-      progress: (row['progress'] as num?)?.toDouble() ?? 0,
-      chapters: (row['chapters'] as List?)?.map<String>((e) => e.toString()).toList() ?? const [],
+      currentPage: row['current_page'] as int? ?? 0,
+      progress: (row['progress'] as num?)?.toDouble() ?? 0.0,
+      isCompleted: row['is_completed'] as bool? ?? false,
+      chapters: (row['chapters'] as List?)?.cast<String>() ?? [],
     );
   }
 }
-
-

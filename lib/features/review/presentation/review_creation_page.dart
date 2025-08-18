@@ -3,6 +3,7 @@ import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_colors.dart';
 import '../models/review.dart';
 import 'review_editor_page.dart';
+import '../../chat/presentation/ai_chat_page.dart';
 import '../services/review_ai_service.dart';
 
 class ReviewCreationPage extends StatefulWidget {
@@ -379,7 +380,7 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             Expanded(
               child: ElevatedButton.icon(
                 onPressed: _editReview,
@@ -391,6 +392,22 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
               ),
             ),
           ],
+        ),
+        
+        const SizedBox(height: 12),
+        
+        // AI 대화 시작 버튼
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _startAiChat,
+            icon: const Icon(Icons.chat_bubble_outline),
+            label: const Text('이 발제문으로 AI와 대화하기'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              side: BorderSide(color: AppColors.secondary),
+            ),
+          ),
         ),
       ],
     );
@@ -436,6 +453,40 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => ReviewEditorPage(review: review),
+      ),
+    );
+  }
+
+    void _startAiChat() {
+    if (_generatedContent == null) return;
+
+    // 발제문 작성으로 책이 완독되었음을 표시
+    _markBookAsCompleted();
+
+    // AI 채팅 페이지로 이동하면서 발제문 내용을 초기 컨텍스트로 전달
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => AiChatPage(
+          initialContext: '발제문: ${widget.bookTitle ?? ''}\n\n$_generatedContent',
+          bookTitle: widget.bookTitle,
+        ),
+      ),
+    );
+  }
+
+  void _markBookAsCompleted() {
+    // 발제문을 작성했다는 것은 책을 완독했다는 의미
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.white),
+            const SizedBox(width: 8),
+            Text('${widget.bookTitle ?? '책'}이 완독으로 기록되었습니다! 🎉'),
+          ],
+        ),
+        backgroundColor: AppColors.primary,
+        duration: const Duration(seconds: 3),
       ),
     );
   }

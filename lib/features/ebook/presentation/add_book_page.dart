@@ -22,7 +22,7 @@ class _AddBookPageState extends State<AddBookPage> {
   
   bool _isLoading = false;
   String? _coverUrl;
-  final _repo = EbookRepository();
+  final _repo = EBookRepository();
 
   @override
   void dispose() {
@@ -68,7 +68,7 @@ class _AddBookPageState extends State<AddBookPage> {
       );
 
       // Supabase 저장
-      await _repo.addEbook(newBook);
+      await _repo.create(newBook);
 
       if (mounted) {
         Navigator.of(context).pop(newBook);
@@ -316,15 +316,22 @@ class _AddBookPageState extends State<AddBookPage> {
 
       setState(() => _isLoading = true);
 
-      final filename = 'cover_${DateTime.now().millisecondsSinceEpoch}_${file.name}';
-      final storage = Supabase.instance.client.storage.from('covers');
+      // 안전한 파일명 생성 (한글, 특수문자 제거)
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final extension = file.extension?.toLowerCase() ?? 'png';
+      final filename = 'cover_${timestamp}.${extension}';
+      final storage = Supabase.instance.client.storage.from('book-covers');
       final contentType = file.extension != null && file.extension!.isNotEmpty
           ? 'image/${file.extension!.toLowerCase()}'
           : 'image/png';
       await storage.uploadBinary(
         filename,
         bytes,
-        fileOptions: FileOptions(contentType: contentType, upsert: true),
+        fileOptions: FileOptions(
+          contentType: contentType, 
+          upsert: true,
+          cacheControl: '3600'
+        ),
       );
       final publicUrl = storage.getPublicUrl(filename);
 

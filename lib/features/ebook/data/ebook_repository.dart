@@ -1,45 +1,46 @@
 import '../models/ebook.dart';
 import 'ebook_api.dart';
-import '../../../core/supabase/supabase_client_provider.dart';
 
-class EbookRepository {
-  EbookRepository({EbookApi? api}) : _api = api ?? SupabaseEbookApi();
-  final EbookApi _api;
+class EBookRepository {
+  EBookRepository({EBookApi? api}) : _api = api ?? SupabaseEBookApi();
+  final EBookApi _api;
 
-  Future<List<EBook>> fetchEbooks() {
-    if (!SupabaseClientProvider.isReady) {
-      return Future.value(EBook.sampleBooks);
-    }
+  Future<List<EBook>> list() {
     return _api.list();
   }
 
-  Future<EBook> addEbook(EBook ebook) {
-    if (!SupabaseClientProvider.isReady) {
-      return Future.value(ebook);
-    }
+  Future<EBook> create(EBook ebook) {
     return _api.create(ebook);
   }
 
-  Future<EBook> getEbook(String id) {
-    if (!SupabaseClientProvider.isReady) {
-      return Future.error(StateError('Supabase is not initialized'));
-    }
-    return _api.getById(id);
+  Future<EBook> update(EBook ebook) {
+    return _api.update(ebook);
   }
 
-  Future<EBook> updateEbook(EBook ebook) {
-    if (!SupabaseClientProvider.isReady) {
-      return Future.value(ebook);
-    }
-    return _api.update(ebook.id, ebook);
-  }
-
-  Future<void> deleteEbook(String id) {
-    if (!SupabaseClientProvider.isReady) {
-      return Future.value();
-    }
+  Future<void> delete(String id) {
     return _api.delete(id);
   }
+
+  Future<void> updateProgress({
+    required String id,
+    required int currentPage,
+    required double progress,
+    required DateTime lastReadAt,
+  }) async {
+    try {
+      await _api.updateProgress(
+        id: id,
+        currentPage: currentPage,
+        progress: progress,
+        lastReadAt: lastReadAt,
+      );
+    } catch (e) {
+      print('❌ Repository updateProgress 에러: $e');
+      // 에러 발생해도 조용히 넘어감
+    }
+  }
+
+  Future<EBook> markAsCompleted(String id) {
+    return _api.markAsCompleted(id);
+  }
 }
-
-

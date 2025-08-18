@@ -7,7 +7,14 @@ import '../../../core/config/app_config.dart';
 import '../../review/presentation/review_creation_page.dart';
 
 class AiChatPage extends StatefulWidget {
-  const AiChatPage({super.key});
+  final String? initialContext;
+  final String? bookTitle;
+  
+  const AiChatPage({
+    super.key,
+    this.initialContext,
+    this.bookTitle,
+  });
 
   @override
   State<AiChatPage> createState() => _AiChatPageState();
@@ -23,6 +30,11 @@ class _AiChatPageState extends State<AiChatPage> {
   void initState() {
     super.initState();
     _addWelcomeMessage();
+    
+    // 초기 컨텍스트가 있으면 AI가 먼저 발제문에 대해 언급
+    if (widget.initialContext != null) {
+      _addInitialContextMessage();
+    }
   }
 
   void _addWelcomeMessage() {
@@ -31,6 +43,18 @@ class _AiChatPageState extends State<AiChatPage> {
         text: '안녕하세요! 저는 독서 도우미 AI입니다 📚\n\n'
             '어떤 책에 대해 이야기하고 싶으신가요?\n'
             '책의 제목을 알려주시면, 함께 깊이 있는 대화를 나눠보아요!',
+        isUser: false,
+        timestamp: DateTime.now(),
+      ),
+    );
+  }
+
+  void _addInitialContextMessage() {
+    _messages.add(
+      ChatMessage(
+        text: '방금 작성하신 "${widget.bookTitle ?? '책'}"에 대한 발제문을 읽어보았습니다! 📝\n\n'
+            '발제문의 내용을 바탕으로 더 깊이 있는 대화를 나눠보시겠어요?\n\n'
+            '궁금한 점이나 토론하고 싶은 부분이 있으시면 말씀해 주세요!',
         isUser: false,
         timestamp: DateTime.now(),
       ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_colors.dart';
-import '../services/auth_service.dart';
+import '../services/supabase_auth_service.dart';
 import '../../../shared/widgets/main_navigation.dart';
 
 class LoginPage extends StatelessWidget {
@@ -228,7 +228,7 @@ class LoginPage extends StatelessWidget {
       // 로딩 표시
       _showLoadingDialog(context, 'Google 로그인 중...');
       
-      final result = await AuthService().signInWithGoogle();
+      final result = await SupabaseAuthService().signInWithGoogle();
       
       if (context.mounted) {
         Navigator.of(context).pop(); // 로딩 다이얼로그 닫기
@@ -268,7 +268,7 @@ class LoginPage extends StatelessWidget {
       // 로딩 표시
       _showLoadingDialog(context, 'Apple 로그인 중...');
       
-      final result = await AuthService().signInWithApple();
+      final result = await SupabaseAuthService().signInWithApple();
       
       if (context.mounted) {
         Navigator.of(context).pop(); // 로딩 다이얼로그 닫기
@@ -308,7 +308,7 @@ class LoginPage extends StatelessWidget {
       // 로딩 표시
       _showLoadingDialog(context, 'Kakao 로그인 중...');
       
-      final result = await AuthService().signInWithKakao();
+      final result = await SupabaseAuthService().signInWithKakao();
       
       if (context.mounted) {
         Navigator.of(context).pop(); // 로딩 다이얼로그 닫기

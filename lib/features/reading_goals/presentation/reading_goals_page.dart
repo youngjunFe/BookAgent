@@ -3,6 +3,7 @@ import '../../../core/constants/app_colors.dart';
 import '../models/reading_goal.dart';
 import '../models/achievement.dart';
 import '../models/reading_stats.dart';
+import '../data/reading_goals_repository.dart';
 import 'goal_creation_page.dart';
 import 'achievements_page.dart';
 import 'stats_page.dart';
@@ -19,6 +20,7 @@ class _ReadingGoalsPageState extends State<ReadingGoalsPage> {
   List<Achievement> _achievements = [];
   ReadingStats _stats = ReadingStats.sample;
   bool _isLoading = true;
+  final _repository = ReadingGoalsRepository();
 
   @override
   void initState() {
@@ -26,17 +28,38 @@ class _ReadingGoalsPageState extends State<ReadingGoalsPage> {
     _loadData();
   }
 
-  void _loadData() {
-    // TODO: 실제 데이터 로딩
-    Future.delayed(const Duration(milliseconds: 500), () {
+  Future<void> _loadData() async {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      final results = await Future.wait([
+        _repository.list(),
+        _repository.fetchAchievements(),
+        _repository.fetchStats(),
+      ]);
+      
       if (mounted) {
+        final goals = results[0] as List<ReadingGoal>;
+        final achievements = results[1] as List<Achievement>;
+        final stats = results[2] as ReadingStats;
+        
         setState(() {
-          _goals = ReadingGoal.sampleGoals;
-          _achievements = Achievement.sampleAchievements;
+          _goals = goals;
+          _achievements = achievements;
+          _stats = stats;
           _isLoading = false;
         });
       }
-    });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        print('독서목표 데이터 로드 실패: $e');
+      }
+    }
   }
 
   void _addNewGoal() async {
@@ -47,9 +70,18 @@ class _ReadingGoalsPageState extends State<ReadingGoalsPage> {
     );
 
     if (result != null && result is ReadingGoal) {
-      setState(() {
-        _goals.add(result);
-      });
+      try {
+        final createdGoal = await _repository.create(result);
+        setState(() {
+          _goals.add(createdGoal);
+        });
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('목표 생성 실패: $e')),
+          );
+        }
+      }
     }
   }
 

@@ -9,6 +9,8 @@ class Achievement {
   final DateTime? unlockedAt;
   final int requiredValue;
   final int currentValue;
+  final AchievementCategory category;
+  final int requirement;
 
   const Achievement({
     required this.id,
@@ -21,6 +23,8 @@ class Achievement {
     this.unlockedAt,
     required this.requiredValue,
     required this.currentValue,
+    required this.category,
+    required this.requirement,
   });
 
   double get progress => currentValue / requiredValue;
@@ -37,6 +41,8 @@ class Achievement {
     DateTime? unlockedAt,
     int? requiredValue,
     int? currentValue,
+    AchievementCategory? category,
+    int? requirement,
   }) {
     return Achievement(
       id: id ?? this.id,
@@ -49,13 +55,15 @@ class Achievement {
       unlockedAt: unlockedAt ?? this.unlockedAt,
       requiredValue: requiredValue ?? this.requiredValue,
       currentValue: currentValue ?? this.currentValue,
+      category: category ?? this.category,
+      requirement: requirement ?? this.requirement,
     );
   }
 
   // 샘플 배지들
   static List<Achievement> get sampleAchievements => [
     Achievement(
-      id: '1',
+      id: 'first_book',
       title: '첫 번째 책',
       description: '첫 번째 책을 완독했습니다!',
       type: AchievementType.milestone,
@@ -65,6 +73,8 @@ class Achievement {
       unlockedAt: DateTime(2024, 1, 5),
       requiredValue: 1,
       currentValue: 1,
+      category: AchievementCategory.reading,
+      requirement: 1,
     ),
     Achievement(
       id: '2',
@@ -77,6 +87,8 @@ class Achievement {
       unlockedAt: DateTime(2024, 1, 15),
       requiredValue: 5,
       currentValue: 5,
+      category: AchievementCategory.reading,
+      requirement: 5,
     ),
     Achievement(
       id: '3',
@@ -89,6 +101,8 @@ class Achievement {
       unlockedAt: DateTime(2024, 1, 22),
       requiredValue: 7,
       currentValue: 7,
+      category: AchievementCategory.streak,
+      requirement: 7,
     ),
     Achievement(
       id: '4',
@@ -100,6 +114,8 @@ class Achievement {
       isUnlocked: false,
       requiredValue: 10,
       currentValue: 8,
+      category: AchievementCategory.reading,
+      requirement: 10,
     ),
     Achievement(
       id: '5',
@@ -111,6 +127,8 @@ class Achievement {
       isUnlocked: false,
       requiredValue: 100,
       currentValue: 76,
+      category: AchievementCategory.special,
+      requirement: 100,
     ),
     Achievement(
       id: '6',
@@ -122,9 +140,11 @@ class Achievement {
       isUnlocked: false,
       requiredValue: 5,
       currentValue: 3,
+      category: AchievementCategory.reading,
+      requirement: 5,
     ),
     Achievement(
-      id: '7',
+      id: 'first_goal',
       title: '월간 챌린저',
       description: '한 달 목표를 달성했습니다!',
       type: AchievementType.goal,
@@ -133,6 +153,8 @@ class Achievement {
       isUnlocked: false,
       requiredValue: 1,
       currentValue: 0,
+      category: AchievementCategory.goals,
+      requirement: 1,
     ),
   ];
 }
@@ -143,6 +165,13 @@ enum AchievementType {
   goal,
   special,
   collection,
+}
+
+enum AchievementCategory {
+  reading,
+  goals,
+  streak,
+  special,
 }
 
 extension AchievementTypeExtension on AchievementType {

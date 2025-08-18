@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert' show jsonEncode, jsonDecode;
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/config/app_config.dart';
 import '../models/character.dart';
 
 class CharacterChatPage extends StatefulWidget {
@@ -461,23 +464,115 @@ class _CharacterChatPageState extends State<CharacterChatPage> {
   }
 
   void _simulateCharacterResponse(String userMessage) async {
-    await Future.delayed(const Duration(seconds: 2));
-
-    String characterResponse = _generateCharacterResponse(userMessage);
-
-    setState(() {
-      _isTyping = false;
-      _messages.add(
-        ChatMessage(
-          text: characterResponse,
-          isUser: false,
-          timestamp: DateTime.now(),
-          characterName: widget.character.name,
-        ),
-      );
-    });
+    try {
+      print('🎭 Character API 호출 시작: ${widget.character.name} - $userMessage');
+      // 실제 Character API 호출
+      String characterResponse = await _callRealCharacterApi(userMessage);
+      print('🎭 Character API 성공: ${characterResponse.substring(0, 50)}...');
+      
+      setState(() {
+        _isTyping = false;
+        _messages.add(
+          ChatMessage(
+            text: characterResponse,
+            isUser: false,
+            timestamp: DateTime.now(),
+            characterName: widget.character.name,
+          ),
+        );
+      });
+    } catch (e) {
+      print('❌ Character API 실패: $e');
+      // API 실패 시 fallback
+      String characterResponse = _generateCharacterResponse(userMessage);
+      setState(() {
+        _isTyping = false;
+        _messages.add(
+          ChatMessage(
+            text: characterResponse,
+            isUser: false,
+            timestamp: DateTime.now(),
+            characterName: widget.character.name,
+          ),
+        );
+      });
+    }
 
     _scrollToBottom();
+  }
+
+  Future<String> _callRealCharacterApi(String userMessage) async {
+    try {
+      final baseUrl = 'https://book-agent.vercel.app';
+      print('🔍 Character Base URL: $baseUrl');
+      
+      // 이전 메시지들을 컨텍스트로 포함
+      final recentMessages = _messages.length > 6 
+          ? _messages.sublist(_messages.length - 6) 
+          : _messages;
+      final context = recentMessages
+          .map((msg) => '${msg.isUser ? '사용자' : widget.character.name}: ${msg.text}')
+          .join('\n');
+
+      final requestBody = {
+        'message': userMessage,
+        'characterName': widget.character.name,
+        'context': context,
+      };
+
+      print('🎭 Character API 요청: ${jsonEncode(requestBody)}');
+
+      // Character-specific prompt를 메시지에 포함해서 일반 chat API 사용
+      final characterPrompt = _getCharacterPrompt(widget.character.name);
+      final enhancedMessage = '$characterPrompt\n\n사용자 질문: $userMessage';
+      
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/chat'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'message': enhancedMessage,
+        }),
+      ).timeout(const Duration(seconds: 15));
+
+      print('🎭 Character API 응답 코드: ${response.statusCode}');
+      print('🎭 Character API 응답 본문: ${response.body.substring(0, response.body.length > 100 ? 100 : response.body.length)}...');
+
+      if (response.statusCode == 200) {
+        // 일반 chat API는 직접 텍스트 응답을 반환
+        final characterResponse = response.body.trim();
+        if (characterResponse.isNotEmpty) {
+          return characterResponse;
+        } else {
+          print('❌ Character API 빈 응답');
+          throw Exception('Empty response from Character API');
+        }
+      } else {
+        throw Exception('API Error: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      print('❌ Character API 예외: $e');
+      throw Exception('Failed to call Character API: $e');
+    }
+  }
+
+  String _getCharacterPrompt(String characterName) {
+    switch (characterName) {
+      case '해리 포터':
+        return '당신은 해리 포터입니다. 마법 세계에 대한 지식이 풍부하고 용감하며 친구들을 소중히 여깁니다. 호그와트와 마법에 대한 질문에 답하고, 어둠의 마법에 대한 경계를 늦추지 마세요. 해리 포터의 말투와 성격으로 대답해주세요.';
+      case '셜록 홈즈':
+        return '당신은 셜록 홈즈입니다. 뛰어난 관찰력과 추리력을 가진 탐정입니다. 논리적이고 분석적인 태도로 질문에 답하며, 사건 해결에 대한 힌트를 줄 수 있습니다. 감정보다는 사실에 집중하고 셜록 홈즈의 말투로 대답해주세요.';
+      case '엘리자베스 베넷':
+        return '당신은 오만과 편견의 엘리자베스 베넷입니다. 재치 있고 독립적이며 편견에 맞서는 여성입니다. 사회적 관습이나 결혼에 대한 질문에 당신의 견해를 밝히고, 엘리자베스 베넷의 우아하고 재치있는 말투로 대답해주세요.';
+      case '아라곤':
+        return '당신은 반지의 제왕의 아라곤입니다. 곤도르의 왕위 계승자이자 뛰어난 전사입니다. 용감하고 현명하며 백성을 사랑합니다. 중간계의 역사, 전투, 그리고 운명에 대한 질문에 답하고, 아라곤의 고결하고 현명한 말투로 대답해주세요.';
+      case '김춘삼':
+        return '당신은 소설 "난장이가 쏘아올린 작은 공"의 김춘삼입니다. 가난하고 소외된 이들의 삶과 애환을 대변하는 인물입니다. 사회의 부조리함과 인간적인 고뇌에 대해 이야기할 수 있습니다. 김춘삼의 현실적이고 고뇌에 찬 말투로 대답해주세요.';
+      default:
+        return '당신은 친절하고 지식이 풍부한 AI 어시스턴트입니다. 어떤 질문이든 성심성의껏 답변해 드리겠습니다.';
+    }
   }
 
   String _generateCharacterResponse(String userMessage) {
