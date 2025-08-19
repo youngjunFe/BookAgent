@@ -28,12 +28,29 @@ app.post('/api/chat', async (req, res) => {
       return res.status(500).json({ error: 'OpenAI API key not configured' });
     }
 
-    // OpenAI API 호출 (간단한 예시)
-    const response = {
-      reply: `AI 응답: ${userMessage}에 대한 답변입니다. ${chatContext ? '(컨텍스트 포함)' : ''}`
-    };
+    // OpenAI API 호출
+    const OpenAI = require('openai');
+    const openai = new OpenAI({ apiKey });
 
-    res.json(response);
+    const completion = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "system",
+          content: "당신은 도서 리뷰와 독서에 도움을 주는 친근한 AI 어시스턴트입니다. 한국어로 답변해주세요."
+        },
+        {
+          role: "user",
+          content: chatContext ? `컨텍스트: ${chatContext}\n\n질문: ${userMessage}` : userMessage
+        }
+      ],
+      max_tokens: 1000,
+      temperature: 0.7
+    });
+
+    const aiReply = completion.choices[0]?.message?.content || '죄송합니다. 응답을 생성할 수 없습니다.';
+
+    res.json({ reply: aiReply });
   } catch (error) {
     console.error('Chat API error:', error);
     res.status(500).json({ error: 'Internal server error' });
