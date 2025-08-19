@@ -1,0 +1,21 @@
+{
+  "name": "book-review-backend",
+  "version": "1.0.0",
+  "description": "Book Review AI Backend API",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "express": "^4.18.0",
+    "cors": "^2.8.5",
+    "openai": "^4.0.0"
+  },
+  "keywords": ["railway", "ai", "book", "review", "api"],
+  "author": "jun_fe",
+  "license": "MIT"
+}
