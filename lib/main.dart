@@ -10,8 +10,20 @@ import 'shared/widgets/main_navigation.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: 'assets/env/.env');
-  await SupabaseClientProvider.init();
+  
+  try {
+    // 웹에서는 .env 파일 로드를 건너뜀
+    await dotenv.load(fileName: 'assets/env/.env');
+  } catch (e) {
+    print('dotenv load failed (expected in web): $e');
+  }
+  
+  try {
+    await SupabaseClientProvider.init();
+  } catch (e) {
+    print('Supabase init failed: $e');
+  }
+  
   runApp(const BookReviewApp());
 }
 
