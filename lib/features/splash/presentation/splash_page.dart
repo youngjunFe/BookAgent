@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../shared/widgets/main_navigation.dart';
 import '../../auth/services/supabase_auth_service.dart';
-import '../presentation/intro_page.dart';
+import '../../auth/presentation/login_page.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -34,9 +34,9 @@ class _SplashPageState extends State<SplashPage> {
         MaterialPageRoute(builder: (context) => const MainNavigation()),
       );
     } else {
-      // 비로그인 사용자 - 인트로 페이지로 이동
+      // 비로그인 사용자 - 로그인 페이지로 직접 이동
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const IntroPage()),
+        MaterialPageRoute(builder: (context) => const LoginPage()),
       );
     }
   }
