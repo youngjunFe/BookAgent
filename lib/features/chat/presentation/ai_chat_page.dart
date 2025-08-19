@@ -483,7 +483,7 @@ class _AiChatPageState extends State<AiChatPage> {
   Future<String> _callRealAiApi(String userMessage) async {
     try {
       // 임시로 하드코딩
-      final baseUrl = 'https://book-agent.vercel.app';
+      final baseUrl = 'https://bookagent-production.up.railway.app';
       print('🔍 Base URL: $baseUrl');
       
       // 이전 메시지들을 컨텍스트로 포함

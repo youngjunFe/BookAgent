@@ -503,7 +503,7 @@ class _CharacterChatPageState extends State<CharacterChatPage> {
 
   Future<String> _callRealCharacterApi(String userMessage) async {
     try {
-      final baseUrl = 'https://book-agent.vercel.app';
+      final baseUrl = 'https://bookagent-production.up.railway.app';
       print('🔍 Character Base URL: $baseUrl');
       
       // 이전 메시지들을 컨텍스트로 포함
