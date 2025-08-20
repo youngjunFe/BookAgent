@@ -3,6 +3,8 @@ import '../../../core/constants/app_colors.dart';
 import '../../auth/presentation/login_page.dart';
 import '../../guest/presentation/guest_demo_page.dart';
 import '../../../shared/widgets/main_navigation.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class IntroPage extends StatefulWidget {
   const IntroPage({super.key});
@@ -13,7 +15,10 @@ class IntroPage extends StatefulWidget {
 
 class _IntroPageState extends State<IntroPage> {
   final PageController _pageController = PageController();
+  final TextEditingController _searchController = TextEditingController();
   int _currentPage = 0;
+  List<BookSearchResult> _searchResults = [];
+  bool _isSearching = false;
 
   final List<IntroPageData> _pages = [
     IntroPageData(
@@ -92,86 +97,207 @@ class _IntroPageState extends State<IntroPage> {
   Widget _buildSearchDemo() {
     return Column(
       children: [
-        // 검색 입력창 데모
+        // 실제 검색 입력창
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
             border: Border.all(color: AppColors.dividerColor),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  '어떤 책을 읽으셨나요?',
-                  style: TextStyle(
-                    color: AppColors.textHint,
-                    fontSize: 16,
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: '어떤 책을 읽으셨나요?',
+              border: InputBorder.none,
+              suffixIcon: IconButton(
+                icon: _isSearching 
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Icon(Icons.search),
+                onPressed: _searchBooksInOnboarding,
+              ),
+            ),
+            onSubmitted: (_) => _searchBooksInOnboarding(),
+          ),
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // 검색 결과 표시
+        if (_searchResults.isNotEmpty) ...[
+          Container(
+            height: 120,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _searchResults.length,
+              itemBuilder: (context, index) {
+                final book = _searchResults[index];
+                return Container(
+                  width: 200,
+                  margin: const EdgeInsets.only(right: 12),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.dividerColor),
+                  ),
+                  child: InkWell(
+                    onTap: () => _selectBookFromOnboarding(book),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Icon(
+                            Icons.book,
+                            color: AppColors.primary,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                book.title,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                book.author,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ] else ...[
+          // 기본 데모 표시
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.dividerColor),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 60,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Icon(
+                    Icons.book,
+                    color: AppColors.primary,
+                    size: 30,
                   ),
                 ),
-              ),
-              Icon(
-                Icons.search,
-                color: AppColors.textHint,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        // 검색 결과 데모
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.background,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.dividerColor),
-          ),
-          child: Row(
-            children: [
-              // 책 표지 데모
-              Container(
-                width: 60,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Icon(
-                  Icons.book,
-                  color: AppColors.primary,
-                  size: 30,
-                ),
-              ),
-              const SizedBox(width: 12),
-              // 책 정보
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '데미안',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '데미안',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '헤르만 헤세',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textSecondary,
+                      const SizedBox(height: 4),
+                      Text(
+                        '헤르만 헤세',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+        ],
       ],
     );
+  }
+
+  Future<void> _searchBooksInOnboarding() async {
+    if (_searchController.text.trim().isEmpty) return;
+    
+    setState(() {
+      _isSearching = true;
+    });
+
+    try {
+      final response = await http.get(
+        Uri.parse('https://bookagent-production.up.railway.app/api/search-books?query=${_searchController.text}'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final books = (data['books'] as List)
+            .map((book) => BookSearchResult.fromJson(book))
+            .toList();
+        
+        setState(() {
+          _searchResults = books;
+        });
+      }
+    } catch (e) {
+      print('Search error: $e');
+    } finally {
+      setState(() {
+        _isSearching = false;
+      });
+    }
+  }
+
+  void _selectBookFromOnboarding(BookSearchResult book) {
+    // 온보딩에서 책 선택 시 게스트 데모로 이동
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => GuestDemoPage(selectedBook: book),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -395,11 +521,7 @@ class _IntroPageState extends State<IntroPage> {
     );
   }
 
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
+
 }
 
 class IntroPageData {

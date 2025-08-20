@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../auth/presentation/login_page.dart';
+import '../../../shared/widgets/main_navigation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class GuestDemoPage extends StatefulWidget {
-  const GuestDemoPage({super.key});
+  final BookSearchResult? selectedBook;
+  
+  const GuestDemoPage({super.key, this.selectedBook});
 
   @override
   State<GuestDemoPage> createState() => _GuestDemoPageState();
@@ -17,6 +20,15 @@ class _GuestDemoPageState extends State<GuestDemoPage> {
   BookSearchResult? _selectedBook;
   bool _isSearching = false;
   int _currentStep = 0; // 0: 검색, 1: AI 대화, 2: 발제문 생성
+  
+  @override
+  void initState() {
+    super.initState();
+    if (widget.selectedBook != null) {
+      _selectedBook = widget.selectedBook;
+      _currentStep = 1; // 책이 선택된 상태로 시작하면 AI 대화 단계로
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -331,7 +343,7 @@ class _GuestDemoPageState extends State<GuestDemoPage> {
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(builder: (context) => const LoginPage()),
+                      MaterialPageRoute(builder: (context) => const MainNavigation()),
                     );
                   },
                   style: ElevatedButton.styleFrom(
@@ -339,7 +351,7 @@ class _GuestDemoPageState extends State<GuestDemoPage> {
                     minimumSize: const Size(0, 56),
                   ),
                   child: const Text(
-                    '회원가입하기',
+                    '메인으로 이동',
                     style: TextStyle(fontSize: 16, color: Colors.white),
                   ),
                 ),

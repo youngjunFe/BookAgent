@@ -53,13 +53,8 @@ class _SplashPageState extends State<SplashPage> {
   }
   
   Future<bool> _checkOnboardingSeen() async {
-    // SharedPreferences로 온보딩 표시 여부 확인
-    try {
-      // 임시로 false 반환 (항상 온보딩 표시)
-      return false;
-    } catch (e) {
-      return false;
-    }
+    // 비로그인 사용자는 항상 온보딩 표시
+    return false;
   }
 
   @override
