@@ -225,37 +225,16 @@ class LoginPage extends StatelessWidget {
 
   Future<void> _handleGoogleSignIn(BuildContext context) async {
     try {
-      // 로딩 표시
-      _showLoadingDialog(context, 'Google 로그인 중...');
+      // 웹에서는 OAuth 리다이렉트가 발생하므로 로딩 다이얼로그 표시하지 않음
+      await SupabaseAuthService().signInWithGoogle();
       
-      final result = await SupabaseAuthService().signInWithGoogle();
-      
-      if (context.mounted) {
-        Navigator.of(context).pop(); // 로딩 다이얼로그 닫기
-        
-        if (result.isSuccess) {
-          // 로그인 성공 - 메인 페이지로 이동
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const MainNavigation()),
-          );
-        } else if (result.isCancelled) {
-          // 사용자가 취소한 경우는 메시지 표시 안함
-        } else {
-          // 로그인 실패
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(result.error ?? 'Google 로그인에 실패했습니다.'),
-              backgroundColor: AppColors.error,
-            ),
-          );
-        }
-      }
+      // 웹에서는 리다이렉트가 발생하므로 이 코드는 실행되지 않음
+      // 리다이렉트 후 앱이 다시 로드될 때 AuthWrapper에서 로그인 상태 확인
     } catch (e) {
       if (context.mounted) {
-        Navigator.of(context).pop(); // 로딩 다이얼로그 닫기
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('로그인 중 오류가 발생했습니다: $e'),
+            content: Text('Google 로그인 중 오류가 발생했습니다: $e'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -305,35 +284,16 @@ class LoginPage extends StatelessWidget {
 
   Future<void> _handleKakaoSignIn(BuildContext context) async {
     try {
-      // 로딩 표시
-      _showLoadingDialog(context, 'Kakao 로그인 중...');
+      // 웹에서는 OAuth 리다이렉트가 발생하므로 로딩 다이얼로그 표시하지 않음
+      await SupabaseAuthService().signInWithKakao();
       
-      final result = await SupabaseAuthService().signInWithKakao();
-      
-      if (context.mounted) {
-        Navigator.of(context).pop(); // 로딩 다이얼로그 닫기
-        
-        if (result.isSuccess) {
-          // 로그인 성공 - 메인 페이지로 이동
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const MainNavigation()),
-          );
-        } else {
-          // 로그인 실패
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(result.error ?? 'Kakao 로그인에 실패했습니다.'),
-              backgroundColor: AppColors.error,
-            ),
-          );
-        }
-      }
+      // 웹에서는 리다이렉트가 발생하므로 이 코드는 실행되지 않음
+      // 리다이렉트 후 앱이 다시 로드될 때 AuthWrapper에서 로그인 상태 확인
     } catch (e) {
       if (context.mounted) {
-        Navigator.of(context).pop(); // 로딩 다이얼로그 닫기
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('로그인 중 오류가 발생했습니다: $e'),
+            content: Text('Kakao 로그인 중 오류가 발생했습니다: $e'),
             backgroundColor: AppColors.error,
           ),
         );
