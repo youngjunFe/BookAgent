@@ -86,7 +86,40 @@ app.get('/api/search-books', async (req, res) => {
       return res.status(400).json({ error: 'Query parameter is required' });
     }
 
-    // 네이버 도서 검색 API 호출 (실제 구현 시 네이버 API 키 필요)
+    const clientId = process.env.NAVER_CLIENT_ID || 'pXWwOhZQKs1Z2e6DgpYx';
+    const clientSecret = process.env.NAVER_CLIENT_SECRET || 'n_OwRWYfjC';
+
+    // 네이버 도서 검색 API 호출
+    const naverResponse = await fetch(`https://openapi.naver.com/v1/search/book.json?query=${encodeURIComponent(query)}&display=10&sort=sim`, {
+      method: 'GET',
+      headers: {
+        'X-Naver-Client-Id': clientId,
+        'X-Naver-Client-Secret': clientSecret,
+      },
+    });
+
+    if (!naverResponse.ok) {
+      throw new Error(`Naver API error: ${naverResponse.status}`);
+    }
+
+    const naverData = await naverResponse.json();
+    
+    // 네이버 API 응답을 우리 형식으로 변환
+    const books = naverData.items.map(item => ({
+      title: item.title.replace(/<[^>]*>/g, ''), // HTML 태그 제거
+      author: item.author.replace(/<[^>]*>/g, ''),
+      publisher: item.publisher,
+      image: item.image || 'https://via.placeholder.com/120x180?text=책',
+      description: item.description.replace(/<[^>]*>/g, ''),
+      isbn: item.isbn,
+      link: item.link
+    }));
+
+    res.json({ books });
+  } catch (error) {
+    console.error('Book search error:', error);
+    
+    // 에러 시 목 데이터 반환
     const mockBooks = [
       {
         title: '데미안',
@@ -103,27 +136,15 @@ app.get('/api/search-books', async (req, res) => {
         image: 'https://via.placeholder.com/120x180?text=어린왕자',
         description: '사랑과 우정, 인생의 의미를 담은 명작',
         isbn: '9788954429818'
-      },
-      {
-        title: '1984',
-        author: '조지 오웰',
-        publisher: '민음사',
-        image: 'https://via.placeholder.com/120x180?text=1984',
-        description: '전체주의 사회를 그린 디스토피아 소설',
-        isbn: '9788937460773'
       }
     ];
 
-    // 검색어와 일치하는 책들 필터링
     const filteredBooks = mockBooks.filter(book => 
       book.title.toLowerCase().includes(query.toLowerCase()) ||
       book.author.toLowerCase().includes(query.toLowerCase())
     );
 
     res.json({ books: filteredBooks });
-  } catch (error) {
-    console.error('Book search error:', error);
-    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
