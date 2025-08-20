@@ -90,35 +90,40 @@ app.get('/api/search-books', async (req, res) => {
     const clientSecret = process.env.NAVER_CLIENT_SECRET || 'n_OwRWYfjC';
 
     // 네이버 도서 검색 API 호출
-    const naverResponse = await fetch(`https://openapi.naver.com/v1/search/book.json?query=${encodeURIComponent(query)}&display=10&sort=sim`, {
-      method: 'GET',
-      headers: {
-        'X-Naver-Client-Id': clientId,
-        'X-Naver-Client-Secret': clientSecret,
-      },
-    });
+    const naverResponse = await fetch(
+      `https://openapi.naver.com/v1/search/book.json?query=${encodeURIComponent(
+        query
+      )}&display=10&sort=sim`,
+      {
+        method: 'GET',
+        headers: {
+          'X-Naver-Client-Id': clientId,
+          'X-Naver-Client-Secret': clientSecret,
+        },
+      }
+    );
 
     if (!naverResponse.ok) {
       throw new Error(`Naver API error: ${naverResponse.status}`);
     }
 
     const naverData = await naverResponse.json();
-    
+
     // 네이버 API 응답을 우리 형식으로 변환
-    const books = naverData.items.map(item => ({
+    const books = naverData.items.map((item) => ({
       title: item.title.replace(/<[^>]*>/g, ''), // HTML 태그 제거
       author: item.author.replace(/<[^>]*>/g, ''),
       publisher: item.publisher,
       image: item.image || 'https://via.placeholder.com/120x180?text=책',
       description: item.description.replace(/<[^>]*>/g, ''),
       isbn: item.isbn,
-      link: item.link
+      link: item.link,
     }));
 
     res.json({ books });
   } catch (error) {
     console.error('Book search error:', error);
-    
+
     // 에러 시 목 데이터 반환
     const mockBooks = [
       {
@@ -127,7 +132,7 @@ app.get('/api/search-books', async (req, res) => {
         publisher: '민음사',
         image: 'https://via.placeholder.com/120x180?text=데미안',
         description: '한 소년의 성장과 자아 발견의 여정을 그린 작품',
-        isbn: '9788937460012'
+        isbn: '9788937460012',
       },
       {
         title: '어린왕자',
@@ -135,13 +140,14 @@ app.get('/api/search-books', async (req, res) => {
         publisher: '문학동네',
         image: 'https://via.placeholder.com/120x180?text=어린왕자',
         description: '사랑과 우정, 인생의 의미를 담은 명작',
-        isbn: '9788954429818'
-      }
+        isbn: '9788954429818',
+      },
     ];
 
-    const filteredBooks = mockBooks.filter(book => 
-      book.title.toLowerCase().includes(query.toLowerCase()) ||
-      book.author.toLowerCase().includes(query.toLowerCase())
+    const filteredBooks = mockBooks.filter(
+      (book) =>
+        book.title.toLowerCase().includes(query.toLowerCase()) ||
+        book.author.toLowerCase().includes(query.toLowerCase())
     );
 
     res.json({ books: filteredBooks });
