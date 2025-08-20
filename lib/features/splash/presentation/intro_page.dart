@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../auth/presentation/login_page.dart';
+import '../../guest/presentation/guest_demo_page.dart';
+import '../../../shared/widgets/main_navigation.dart';
 
 class IntroPage extends StatefulWidget {
   const IntroPage({super.key});
@@ -81,9 +83,9 @@ class _IntroPageState extends State<IntroPage> {
   }
 
   void _startBrowsing() {
-    // 둘러보기 - 게스트 모드로 홈 화면 이동
+    // 둘러보기 - 게스트 데모 페이지로 이동
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => const MainNavigation()),
+      MaterialPageRoute(builder: (context) => const GuestDemoPage()),
     );
   }
 
