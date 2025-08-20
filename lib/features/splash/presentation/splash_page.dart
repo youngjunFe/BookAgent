@@ -3,6 +3,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../shared/widgets/main_navigation.dart';
 import '../../auth/services/supabase_auth_service.dart';
 import '../../auth/presentation/login_page.dart';
+import 'intro_page.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -34,10 +35,30 @@ class _SplashPageState extends State<SplashPage> {
         MaterialPageRoute(builder: (context) => const MainNavigation()),
       );
     } else {
-      // 비로그인 사용자 - 로그인 페이지로 직접 이동
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const LoginPage()),
-      );
+      // 비로그인 사용자 - 온보딩으로 이동 (첫 방문) 또는 메인으로 이동 (재방문)
+      final hasSeenOnboarding = await _checkOnboardingSeen();
+      
+      if (hasSeenOnboarding) {
+        // 재방문 - 바로 메인화면 (게스트 모드)
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const MainNavigation()),
+        );
+      } else {
+        // 첫 방문 - 온보딩 표시
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const IntroPage()),
+        );
+      }
+    }
+  }
+  
+  Future<bool> _checkOnboardingSeen() async {
+    // SharedPreferences로 온보딩 표시 여부 확인
+    try {
+      // 임시로 false 반환 (항상 온보딩 표시)
+      return false;
+    } catch (e) {
+      return false;
     }
   }
 

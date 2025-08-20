@@ -4,6 +4,7 @@ import '../../core/constants/app_colors.dart';
 import '../../features/home/presentation/home_page.dart';
 import '../../features/library/presentation/library_page.dart';
 import '../../features/auth/services/auth_service.dart';
+import '../../features/auth/presentation/login_page.dart';
 
 class MainNavigation extends StatefulWidget {
   final int initialIndex;
@@ -17,16 +18,113 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   late int _currentIndex;
 
-  final List<Widget> _pages = [
+  List<Widget> get _pages => [
     const HomeView(),
     const LibraryPage(),
-    const MyPage(),
+    _buildMyPageWithAuth(),
   ];
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+  }
+
+  Widget _buildMyPageWithAuth() {
+    return FutureBuilder<bool>(
+      future: _checkLoginStatus(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(
+            backgroundColor: AppColors.background,
+            body: const Center(child: CircularProgressIndicator()),
+          );
+        }
+        
+        final isLoggedIn = snapshot.data ?? false;
+        
+        if (isLoggedIn) {
+          return const MyPage();
+        } else {
+          return _buildLoginPrompt();
+        }
+      },
+    );
+  }
+
+  Future<bool> _checkLoginStatus() async {
+    try {
+      final authService = AuthService();
+      return await authService.restoreLoginState();
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Widget _buildLoginPrompt() {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.person_outline,
+                size: 80,
+                color: AppColors.primary,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                '로그인이 필요합니다',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '마이페이지를 이용하려면\n로그인해주세요',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: AppColors.textSecondary,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => const LoginPage()),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: const Text(
+                    '로그인하기',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
