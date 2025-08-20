@@ -78,6 +78,55 @@ app.post('/api/character-chat', async (req, res) => {
   }
 });
 
+// Naver Book Search endpoint
+app.get('/api/search-books', async (req, res) => {
+  try {
+    const { query } = req.query;
+    if (!query) {
+      return res.status(400).json({ error: 'Query parameter is required' });
+    }
+
+    // 네이버 도서 검색 API 호출 (실제 구현 시 네이버 API 키 필요)
+    const mockBooks = [
+      {
+        title: '데미안',
+        author: '헤르만 헤세',
+        publisher: '민음사',
+        image: 'https://via.placeholder.com/120x180?text=데미안',
+        description: '한 소년의 성장과 자아 발견의 여정을 그린 작품',
+        isbn: '9788937460012'
+      },
+      {
+        title: '어린왕자',
+        author: '생텍쥐페리',
+        publisher: '문학동네',
+        image: 'https://via.placeholder.com/120x180?text=어린왕자',
+        description: '사랑과 우정, 인생의 의미를 담은 명작',
+        isbn: '9788954429818'
+      },
+      {
+        title: '1984',
+        author: '조지 오웰',
+        publisher: '민음사',
+        image: 'https://via.placeholder.com/120x180?text=1984',
+        description: '전체주의 사회를 그린 디스토피아 소설',
+        isbn: '9788937460773'
+      }
+    ];
+
+    // 검색어와 일치하는 책들 필터링
+    const filteredBooks = mockBooks.filter(book => 
+      book.title.toLowerCase().includes(query.toLowerCase()) ||
+      book.author.toLowerCase().includes(query.toLowerCase())
+    );
+
+    res.json({ books: filteredBooks });
+  } catch (error) {
+    console.error('Book search error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Review generation endpoint
 app.post('/api/generate-review', async (req, res) => {
   try {
