@@ -33,22 +33,27 @@ app.post('/api/chat', async (req, res) => {
     const openai = new OpenAI({ apiKey });
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: 'gpt-3.5-turbo',
       messages: [
         {
-          role: "system",
-          content: "당신은 도서 리뷰와 독서에 도움을 주는 친근한 AI 어시스턴트입니다. 한국어로 답변해주세요."
+          role: 'system',
+          content:
+            '당신은 도서 리뷰와 독서에 도움을 주는 친근한 AI 어시스턴트입니다. 한국어로 답변해주세요.',
         },
         {
-          role: "user",
-          content: chatContext ? `컨텍스트: ${chatContext}\n\n질문: ${userMessage}` : userMessage
-        }
+          role: 'user',
+          content: chatContext
+            ? `컨텍스트: ${chatContext}\n\n질문: ${userMessage}`
+            : userMessage,
+        },
       ],
       max_tokens: 1000,
-      temperature: 0.7
+      temperature: 0.7,
     });
 
-    const aiReply = completion.choices[0]?.message?.content || '죄송합니다. 응답을 생성할 수 없습니다.';
+    const aiReply =
+      completion.choices[0]?.message?.content ||
+      '죄송합니다. 응답을 생성할 수 없습니다.';
 
     res.json({ reply: aiReply });
   } catch (error) {
@@ -61,9 +66,9 @@ app.post('/api/chat', async (req, res) => {
 app.post('/api/character-chat', async (req, res) => {
   try {
     const { character, message } = req.body || {};
-    
+
     const response = {
-      reply: `${character} 캐릭터로서 답변: ${message}`
+      reply: `${character} 캐릭터로서 답변: ${message}`,
     };
 
     res.json(response);
@@ -77,9 +82,9 @@ app.post('/api/character-chat', async (req, res) => {
 app.post('/api/generate-review', async (req, res) => {
   try {
     const { bookTitle, content } = req.body || {};
-    
+
     const response = {
-      review: `${bookTitle}에 대한 AI 생성 리뷰: ${content}`
+      review: `${bookTitle}에 대한 AI 생성 리뷰: ${content}`,
     };
 
     res.json(response);
