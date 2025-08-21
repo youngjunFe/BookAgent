@@ -157,13 +157,50 @@ app.get('/api/search-books', async (req, res) => {
 // Review generation endpoint
 app.post('/api/generate-review', async (req, res) => {
   try {
-    const { bookTitle, content } = req.body || {};
+    const { bookTitle, content, chatHistory } = req.body || {};
+    
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      console.error('OpenAI API key not found');
+      return res.status(500).json({ error: 'OpenAI API key not configured' });
+    }
 
-    const response = {
-      review: `${bookTitle}에 대한 AI 생성 리뷰: ${content}`,
-    };
+    // OpenAI API 호출
+    const OpenAI = require('openai');
+    const openai = new OpenAI({ apiKey });
 
-    res.json(response);
+    const prompt = `다음은 "${bookTitle}"에 대한 독자와 AI의 대화 내용입니다:
+
+${chatHistory || content}
+
+위 대화 내용을 바탕으로 "${bookTitle}"에 대한 깊이 있는 발제문을 작성해주세요. 다음 요소들을 포함해주세요:
+
+1. 책의 핵심 주제와 메시지
+2. 독자가 느낀 감동과 깨달음
+3. 개인적인 해석과 의미
+4. 다른 사람들과 나누고 싶은 생각
+
+발제문은 한국어로 작성하고, 개인적이고 진솔한 톤으로 써주세요.`;
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        {
+          role: 'system',
+          content: '당신은 독서 발제문 작성 전문가입니다. 독자의 감정과 생각을 잘 정리하여 깊이 있는 발제문을 작성해주세요.',
+        },
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+      max_tokens: 1500,
+      temperature: 0.8,
+    });
+
+    const generatedReview = completion.choices[0]?.message?.content || '발제문 생성에 실패했습니다.';
+
+    res.json({ review: generatedReview });
   } catch (error) {
     console.error('Review generation error:', error);
     res.status(500).json({ error: 'Internal server error' });
