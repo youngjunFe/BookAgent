@@ -9,11 +9,15 @@ import '../../review/presentation/review_creation_page.dart';
 class AiChatPage extends StatefulWidget {
   final String? initialContext;
   final String? bookTitle;
+  final bool isGuestMode;
+  final VoidCallback? onChatComplete;
   
   const AiChatPage({
     super.key,
     this.initialContext,
     this.bookTitle,
+    this.isGuestMode = false,
+    this.onChatComplete,
   });
 
   @override
@@ -110,7 +114,24 @@ class _AiChatPageState extends State<AiChatPage> {
         backgroundColor: AppColors.background,
         elevation: 1,
         shadowColor: AppColors.dividerColor,
-        actions: [
+        actions: widget.isGuestMode ? [
+          // 게스트 모드에서는 발제문 생성 버튼만 표시
+          ElevatedButton.icon(
+            onPressed: () {
+              if (widget.onChatComplete != null) {
+                widget.onChatComplete!();
+              }
+            },
+            icon: const Icon(Icons.create, size: 18),
+            label: const Text('발제문 생성'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            ),
+          ),
+          const SizedBox(width: 8),
+        ] : [
           IconButton(
             onPressed: _showSaveReviewDialog,
             icon: const Icon(Icons.save_outlined),

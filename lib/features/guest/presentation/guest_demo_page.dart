@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../auth/presentation/login_page.dart';
 import '../../../shared/widgets/main_navigation.dart';
+import '../../chat/presentation/ai_chat_page.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -220,59 +221,17 @@ class _GuestDemoPageState extends State<GuestDemoPage> {
   }
 
   Widget _buildAiChat() {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        children: [
-          Text(
-            '${_selectedBook?.title}에 대해 AI와 대화해보세요',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Center(
-                child: Text(
-                  'AI 채팅 인터페이스가 여기에 표시됩니다',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          
-          const SizedBox(height: 24),
-          
-          ElevatedButton(
-            onPressed: () {
-              setState(() {
-                _currentStep = 2;
-              });
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              minimumSize: const Size(double.infinity, 56),
-            ),
-            child: const Text(
-              '발제문 생성하기',
-              style: TextStyle(fontSize: 18, color: Colors.white),
-            ),
-          ),
-        ],
-      ),
+    // 실제 AI 채팅 페이지를 임베드
+    return AiChatPage(
+      initialContext: '선택한 책: ${_selectedBook?.title} (${_selectedBook?.author})\n\n이 책에 대해 대화해보세요!',
+      bookTitle: _selectedBook?.title ?? '선택한 책',
+      isGuestMode: true,
+      onChatComplete: () {
+        // AI 대화 완료 후 발제문 생성 단계로
+        setState(() {
+          _currentStep = 2;
+        });
+      },
     );
   }
 
