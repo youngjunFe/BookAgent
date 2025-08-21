@@ -21,6 +21,8 @@ class _GuestDemoPageState extends State<GuestDemoPage> {
   BookSearchResult? _selectedBook;
   bool _isSearching = false;
   int _currentStep = 0; // 0: 검색, 1: AI 대화, 2: 발제문 생성
+  String _generatedReview = '';
+  String _chatHistory = '';
   
   @override
   void initState() {
@@ -228,11 +230,45 @@ class _GuestDemoPageState extends State<GuestDemoPage> {
       isGuestMode: true,
       onChatComplete: () {
         // AI 대화 완료 후 발제문 생성 단계로
-        setState(() {
-          _currentStep = 2;
-        });
+        _generateReviewFromChat();
       },
     );
+  }
+
+  Future<void> _generateReviewFromChat() async {
+    setState(() {
+      _currentStep = 2;
+      _generatedReview = ''; // 로딩 상태
+    });
+
+    try {
+      // 실제 AI 발제문 생성 API 호출
+      final response = await http.post(
+        Uri.parse('https://bookagent-production.up.railway.app/api/generate-review'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'bookTitle': _selectedBook?.title ?? '',
+          'content': '게스트 모드에서 생성된 발제문',
+          'chatHistory': _chatHistory.isNotEmpty ? _chatHistory : '${_selectedBook?.title}에 대한 AI 대화 내용',
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _generatedReview = data['review'] ?? '발제문 생성에 실패했습니다.';
+        });
+      } else {
+        setState(() {
+          _generatedReview = '발제문 생성에 실패했습니다. 다시 시도해주세요.';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _generatedReview = '네트워크 오류로 발제문 생성에 실패했습니다.';
+      });
+      print('Review generation error: $e');
+    }
   }
 
   Widget _buildReviewGeneration() {
@@ -241,7 +277,7 @@ class _GuestDemoPageState extends State<GuestDemoPage> {
       child: Column(
         children: [
           Text(
-            '발제문이 생성되었습니다!',
+            _generatedReview.isEmpty ? '발제문 생성 중...' : '발제문이 생성되었습니다!',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -258,18 +294,36 @@ class _GuestDemoPageState extends State<GuestDemoPage> {
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: SingleChildScrollView(
-                child: Text(
-                  '${_selectedBook?.title}에 대한 발제문\n\n'
-                  '이 책을 통해 느낀 감동과 깨달음을 AI가 정리해드렸습니다...\n\n'
-                  '(실제로는 AI와의 대화 내용을 바탕으로 개인화된 발제문이 생성됩니다)',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 16,
-                    height: 1.5,
+              child: _generatedReview.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'AI가 대화 내용을 바탕으로\n발제문을 생성하고 있습니다...',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : SingleChildScrollView(
+                    child: Text(
+                      _generatedReview,
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 16,
+                        height: 1.5,
+                      ),
+                    ),
                   ),
-                ),
-              ),
             ),
           ),
           
