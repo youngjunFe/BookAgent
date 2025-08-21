@@ -32,6 +32,18 @@ class _IntroPageState extends State<IntroPage> {
       showBrowseButton: false,
     ),
     IntroPageData(
+      title: 'AI 지혜와 5분 대화로 당신의 감동을',
+      description: '하나의 에세이로 만들어 드립니다',
+      features: [
+        'AI와 5분 대화',
+        '개인화된 질문',
+        '감동을 에세이로 변환',
+      ],
+      buttonText: 'AI와 대화하기',
+      showBrowseButton: true,
+      showAiChatButton: true,
+    ),
+    IntroPageData(
       title: '어떤 책을 읽으셨나요?',
       description: '네이버 도서 검색으로 찾아보세요',
       features: [
@@ -42,17 +54,6 @@ class _IntroPageState extends State<IntroPage> {
       buttonText: '다음',
       showBrowseButton: true,
       showSearchDemo: true,
-    ),
-    IntroPageData(
-      title: 'AI 지혜와 5분 대화로 당신의 감동을',
-      description: '하나의 에세이로 만들어 드립니다',
-      features: [
-        'AI와 5분 대화',
-        '개인화된 질문',
-        '감동을 에세이로 변환',
-      ],
-      buttonText: '다음',
-      showBrowseButton: true,
     ),
     IntroPageData(
       title: '지금 시작하세요',
@@ -68,6 +69,15 @@ class _IntroPageState extends State<IntroPage> {
   ];
 
   void _nextPage() {
+    // "AI와 대화하기" 버튼인 경우 책 검색 페이지로 이동
+    if (_pages[_currentPage].showAiChatButton == true) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+      return;
+    }
+    
     if (_currentPage < _pages.length - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
@@ -531,6 +541,7 @@ class IntroPageData {
   final String buttonText;
   final bool showBrowseButton;
   final bool showSearchDemo;
+  final bool showAiChatButton;
 
   IntroPageData({
     required this.title,
@@ -539,6 +550,7 @@ class IntroPageData {
     required this.buttonText,
     this.showBrowseButton = false,
     this.showSearchDemo = false,
+    this.showAiChatButton = false,
   });
 }
 
