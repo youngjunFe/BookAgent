@@ -5,7 +5,6 @@ import '../../../shared/widgets/main_navigation.dart';
 import '../../chat/presentation/ai_chat_page.dart';
 import '../../chat/presentation/character_selection_page.dart';
 import '../../reading_goals/presentation/reading_goals_page.dart';
-import '../../weather/presentation/weather_card.dart';
 
 
 class HomePage extends StatelessWidget {
@@ -25,12 +24,16 @@ class HomeView extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+        child: Column(
+          children: [
+            // 스크롤 가능한 상단 영역
+            Expanded(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                 // App Header
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -100,53 +103,8 @@ class HomeView extends StatelessWidget {
                 
                 const SizedBox(height: 20),
                 
-                // 날씨 기반 개인화 메시지
-                const WeatherCard(),
-                
-                const SizedBox(height: 32),
-                
-                // Main Action Buttons
-                Column(
-                  children: [
-                    // AI 리뷰 작성 버튼
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                                              onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => const AiChatPage(),
-                          ),
-                        );
-                      },
-                        icon: const Icon(Icons.auto_awesome, size: 24),
-                        label: Text(AppStrings.startReview),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 20),
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: AppColors.onPrimary,
-                        ),
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    // 서재 보기 버튼
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          // TODO: 서재 페이지로 이동
-                        },
-                        icon: const Icon(Icons.library_books, size: 24),
-                        label: Text(AppStrings.goToLibrary),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 20),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                // 시간별 개인화 메시지
+                _buildTimeBasedMessage(),
                 
                 const SizedBox(height: 32),
                 
@@ -228,11 +186,119 @@ class HomeView extends StatelessWidget {
                 
                 _buildRecentActivity(context),
                 
-                const SizedBox(height: 24),
-              ],
+                const SizedBox(height: 100), // CTA 영역을 위한 여백
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            
+            // 고정된 CTA 버튼 영역
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const AiChatPage(),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    'CTA',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimeBasedMessage() {
+    final hour = DateTime.now().hour;
+    String timeMessage;
+    String personalMessage;
+    
+    if (hour >= 6 && hour < 12) {
+      timeMessage = "좋은 아침이에요! 📚";
+      personalMessage = "새로운 하루, 책과 함께 시작해보세요!";
+    } else if (hour >= 12 && hour < 18) {
+      timeMessage = "오후의 여유로운 시간 ☀️";
+      personalMessage = "책이 줄 수 있어요. 책장을 펼쳐해 주세요!";
+    } else if (hour >= 18 && hour < 22) {
+      timeMessage = "저녁의 따뜻한 시간 🌅";
+      personalMessage = "하루를 마무리하며 좋은 책과 함께하세요.";
+    } else {
+      timeMessage = "밤의 고요한 시간 🌙";
+      personalMessage = "조용한 밤, 깊이 있는 독서는 어떠세요?";
+    }
+    
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primary.withOpacity(0.1),
+            AppColors.primary.withOpacity(0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            timeMessage,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary,
             ),
           ),
-        ),
+          const SizedBox(height: 8),
+          Text(
+            personalMessage,
+            style: TextStyle(
+              fontSize: 14,
+              color: AppColors.textSecondary,
+              height: 1.4,
+            ),
+          ),
+        ],
       ),
     );
   }
