@@ -229,8 +229,11 @@ class _GuestDemoPageState extends State<GuestDemoPage> {
       initialContext: '선택한 책: ${_selectedBook?.title} (${_selectedBook?.author})\n\n이 책에 대해 대화해보세요!',
       bookTitle: _selectedBook?.title ?? '선택한 책',
       isGuestMode: true,
-      onChatComplete: () {
-        // AI 대화 완료 후 발제문 생성 단계로
+      onChatCompleteWithHistory: (chatHistory) {
+        // AI 대화 내용을 받아서 발제문 생성
+        setState(() {
+          _chatHistory = chatHistory;
+        });
         _generateReviewFromChat();
       },
     );
@@ -243,16 +246,21 @@ class _GuestDemoPageState extends State<GuestDemoPage> {
     });
 
     try {
-      // 실제 AI 발제문 생성 API 호출
+      // 실제 AI 발제문 생성 API 호출 (대화 내용 포함)
       final response = await http.post(
         Uri.parse('https://bookagent-production.up.railway.app/api/generate-review'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'bookTitle': _selectedBook?.title ?? '',
-          'content': '게스트 모드에서 생성된 발제문',
-          'chatHistory': _chatHistory.isNotEmpty ? _chatHistory : '${_selectedBook?.title}에 대한 AI 대화 내용',
+          'content': _chatHistory.isNotEmpty ? _chatHistory : '대화 내용이 없습니다.',
+          'chatHistory': _chatHistory,
         }),
       );
+      
+      print('📝 발제문 생성 요청:');
+      print('책 제목: ${_selectedBook?.title}');
+      print('대화 내용 길이: ${_chatHistory.length}');
+      print('대화 내용 미리보기: ${_chatHistory.length > 100 ? _chatHistory.substring(0, 100) + "..." : _chatHistory}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);

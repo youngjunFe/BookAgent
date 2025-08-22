@@ -11,6 +11,7 @@ class AiChatPage extends StatefulWidget {
   final String? bookTitle;
   final bool isGuestMode;
   final VoidCallback? onChatComplete;
+  final Function(String)? onChatCompleteWithHistory;
   
   const AiChatPage({
     super.key,
@@ -18,6 +19,7 @@ class AiChatPage extends StatefulWidget {
     this.bookTitle,
     this.isGuestMode = false,
     this.onChatComplete,
+    this.onChatCompleteWithHistory,
   });
 
   @override
@@ -118,7 +120,13 @@ class _AiChatPageState extends State<AiChatPage> {
           // 게스트 모드에서는 발제문 생성 버튼만 표시
           ElevatedButton.icon(
             onPressed: () {
-              if (widget.onChatComplete != null) {
+              final chatHistory = _messages.map((msg) => 
+                '${msg.isUser ? "사용자" : "AI"}: ${msg.content}'
+              ).join('\n\n');
+              
+              if (widget.onChatCompleteWithHistory != null) {
+                widget.onChatCompleteWithHistory!(chatHistory);
+              } else if (widget.onChatComplete != null) {
                 widget.onChatComplete!();
               }
             },
