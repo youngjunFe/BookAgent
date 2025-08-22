@@ -121,7 +121,7 @@ class _AiChatPageState extends State<AiChatPage> {
           ElevatedButton.icon(
             onPressed: () {
               final chatHistory = _messages.map((msg) => 
-                '${msg.isUser ? "사용자" : "AI"}: ${msg.content}'
+                '${msg.isUser ? "사용자" : "AI"}: ${msg.text}'
               ).join('\n\n');
               
               if (widget.onChatCompleteWithHistory != null) {
