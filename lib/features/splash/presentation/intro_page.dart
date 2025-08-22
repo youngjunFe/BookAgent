@@ -98,9 +98,9 @@ class _IntroPageState extends State<IntroPage> {
   }
 
   void _startBrowsing() {
-    // 둘러보기 - 게스트 데모 페이지로 이동
+    // 둘러보기 - 홈화면으로 이동
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => const GuestDemoPage()),
+      MaterialPageRoute(builder: (context) => const MainNavigation()),
     );
   }
 
