@@ -213,7 +213,9 @@ class HomeView extends StatelessWidget {
                   onPressed: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (context) => const AiChatPage(),
+                        builder: (context) => const AiChatPage(
+                          initialContext: '새로운 독서 대화를 시작합니다. 어떤 책에 대해 이야기하고 싶으신가요?',
+                        ),
                       ),
                     );
                   },

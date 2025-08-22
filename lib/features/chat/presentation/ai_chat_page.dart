@@ -533,7 +533,8 @@ class _AiChatPageState extends State<AiChatPage> {
       );
       
       if (response.statusCode == 200) {
-        return response.body;
+        final data = jsonDecode(response.body);
+        return data['reply'] ?? '응답을 받을 수 없습니다.';
       } else {
         throw Exception('API Error: ${response.statusCode}');
       }
