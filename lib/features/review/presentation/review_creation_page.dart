@@ -5,6 +5,7 @@ import '../models/review.dart';
 import 'review_editor_page.dart';
 import '../../chat/presentation/ai_chat_page.dart';
 import '../services/review_ai_service.dart';
+import '../../../shared/widgets/main_navigation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ReviewCreationPage extends StatefulWidget {
@@ -424,6 +425,19 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
             const SizedBox(width: 8),
             Expanded(
               child: ElevatedButton.icon(
+                onPressed: _saveReview,
+                icon: const Icon(Icons.save),
+                label: const Text('저장하기'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: ElevatedButton.icon(
                 onPressed: _editReview,
                 icon: const Icon(Icons.edit),
                 label: const Text('편집하기'),
@@ -476,6 +490,52 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
       _generatedContent = null;
     });
     _generateReview();
+  }
+
+  Future<void> _saveReview() async {
+    if (_generatedContent == null || _generatedContent!.isEmpty) return;
+    
+    try {
+      final review = Review(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        title: '${widget.bookTitle ?? '새로운 책'}에 대한 발제문',
+        content: _generatedContent!,
+        bookTitle: widget.bookTitle ?? '알 수 없음',
+        bookAuthor: widget.bookAuthor,
+        status: ReviewStatus.published,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        chatHistory: widget.chatHistory,
+      );
+
+      // TODO: 실제 Supabase에 저장 로직 추가
+      // await ReviewRepository().create(review);
+      
+      // 임시 저장 데이터 삭제
+      await _clearTempReview();
+      
+      // 저장 완료 메시지
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('발제문이 저장되었습니다!'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+      
+      // 메인 페이지로 이동
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const MainNavigation()),
+        (route) => false,
+      );
+      
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('저장에 실패했습니다.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
   void _editReview() {

@@ -421,40 +421,43 @@ class _GuestDemoPageState extends State<GuestDemoPage> {
           
           const SizedBox(height: 24),
           
-          // 임시저장 및 로그인 버튼들 (발제문이 생성된 경우에만 표시)
-          if (_generatedReview.isNotEmpty) ...[
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _saveTemporarily,
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: AppColors.primary),
-                      minimumSize: const Size(0, 56),
-                    ),
-                    child: Text(
-                      '임시저장',
-                      style: TextStyle(color: AppColors.primary),
-                    ),
+          // 발제문 단계에서는 항상 저장 버튼들 표시
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _generatedReview.isNotEmpty ? _saveTemporarily : null,
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: AppColors.primary),
+                    minimumSize: const Size(0, 56),
+                  ),
+                  child: Text(
+                    '임시저장',
+                    style: TextStyle(color: AppColors.primary),
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _quickSignUp,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      minimumSize: const Size(0, 56),
-                    ),
-                    child: const Text(
-                      '3초만에 가입하기',
-                      style: TextStyle(fontSize: 16, color: Colors.white),
-                    ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _generatedReview.isNotEmpty ? _quickSignUp : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    minimumSize: const Size(0, 56),
+                  ),
+                  child: const Text(
+                    '3초만에 가입하기',
+                    style: TextStyle(fontSize: 16, color: Colors.white),
                   ),
                 ),
-              ],
-            ),
-          ] else ...[
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // 다시 시작 버튼
+          if (_generatedReview.isEmpty) ...[
             // 발제문 생성 전에는 다시 시작/메인 이동 버튼
             Row(
               children: [
