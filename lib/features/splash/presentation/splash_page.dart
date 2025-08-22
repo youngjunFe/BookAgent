@@ -3,6 +3,8 @@ import '../../../core/constants/app_colors.dart';
 import '../../../shared/widgets/main_navigation.dart';
 import '../../auth/services/supabase_auth_service.dart';
 import '../../auth/presentation/login_page.dart';
+import '../../review/presentation/review_creation_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'intro_page.dart';
 
 class SplashPage extends StatefulWidget {
@@ -30,10 +32,20 @@ class _SplashPageState extends State<SplashPage> {
     final isLoggedIn = await authService.restoreLoginState();
     
     if (isLoggedIn) {
-      // 로그인된 사용자 - 메인 내비게이션으로 이동
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const MainNavigation()),
-      );
+      // 로그인된 사용자 - 임시 저장된 발제문 확인
+      final hasTempReview = await _checkTempReview();
+      
+      if (hasTempReview) {
+        // 임시 저장된 발제문이 있으면 작성 페이지로 이동
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const ReviewCreationPage()),
+        );
+      } else {
+        // 임시 저장된 발제문이 없으면 메인 내비게이션으로 이동
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const MainNavigation()),
+        );
+      }
     } else {
       // 비로그인 사용자 - 온보딩으로 이동 (첫 방문) 또는 메인으로 이동 (재방문)
       final hasSeenOnboarding = await _checkOnboardingSeen();
@@ -55,6 +67,16 @@ class _SplashPageState extends State<SplashPage> {
   Future<bool> _checkOnboardingSeen() async {
     // 비로그인 사용자는 항상 온보딩 표시
     return false;
+  }
+
+  Future<bool> _checkTempReview() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final tempReview = prefs.getString('temp_review');
+      return tempReview != null && tempReview.isNotEmpty;
+    } catch (e) {
+      return false;
+    }
   }
 
   @override

@@ -5,6 +5,7 @@ import '../models/review.dart';
 import 'review_editor_page.dart';
 import '../../chat/presentation/ai_chat_page.dart';
 import '../services/review_ai_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ReviewCreationPage extends StatefulWidget {
   final String? chatHistory;
@@ -29,8 +30,48 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
   @override
   void initState() {
     super.initState();
+    _loadTempReview();
     if (widget.chatHistory != null) {
       _generateReview();
+    }
+  }
+
+  Future<void> _loadTempReview() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final tempReview = prefs.getString('temp_review');
+      final tempBookTitle = prefs.getString('temp_book_title');
+      final tempBookAuthor = prefs.getString('temp_book_author');
+      
+      if (tempReview != null && tempReview.isNotEmpty) {
+        setState(() {
+          _generatedContent = tempReview;
+        });
+        
+        // 임시 저장된 데이터가 있음을 사용자에게 알림
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('임시 저장된 "$tempBookTitle" 발제문을 불러왔습니다.'),
+              backgroundColor: AppColors.primary,
+            ),
+          );
+        });
+      }
+    } catch (e) {
+      print('임시 저장 데이터 로드 실패: $e');
+    }
+  }
+
+  Future<void> _clearTempReview() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('temp_review');
+      await prefs.remove('temp_book_title');
+      await prefs.remove('temp_book_author');
+      await prefs.remove('temp_chat_history');
+    } catch (e) {
+      print('임시 저장 데이터 삭제 실패: $e');
     }
   }
 
@@ -454,7 +495,10 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
       MaterialPageRoute(
         builder: (context) => ReviewEditorPage(review: review),
       ),
-    );
+    ).then((_) {
+      // 편집 페이지에서 돌아온 후 임시 데이터 삭제
+      _clearTempReview();
+    });
   }
 
     void _startAiChat() {

@@ -4,6 +4,7 @@ import '../../auth/presentation/login_page.dart';
 import '../../../shared/widgets/main_navigation.dart';
 import '../../chat/presentation/ai_chat_page.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
 class GuestDemoPage extends StatefulWidget {
@@ -314,63 +315,182 @@ class _GuestDemoPageState extends State<GuestDemoPage> {
                       ],
                     ),
                   )
-                : SingleChildScrollView(
-                    child: Text(
-                      _generatedReview,
-                      style: TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 16,
-                        height: 1.5,
+                : Stack(
+                    children: [
+                      // 전체 발제문 (블러 처리됨)
+                      SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // 미리보기 영역 (처음 두 줄)
+                            Text(
+                              _getPreviewText(),
+                              style: TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 16,
+                                height: 1.5,
+                              ),
+                            ),
+                            
+                            // 블러 처리된 나머지 내용
+                            Container(
+                              margin: const EdgeInsets.only(top: 8),
+                              child: Stack(
+                                children: [
+                                  Text(
+                                    _getBlurredText(),
+                                    style: TextStyle(
+                                      color: AppColors.textSecondary.withOpacity(0.3),
+                                      fontSize: 16,
+                                      height: 1.5,
+                                    ),
+                                  ),
+                                  // 그라데이션 오버레이
+                                  Container(
+                                    height: 200,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: [
+                                          AppColors.surface.withOpacity(0.1),
+                                          AppColors.surface.withOpacity(0.9),
+                                          AppColors.surface,
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            
+                            const SizedBox(height: 40),
+                            
+                            // 로그인 유도 메시지
+                            Container(
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: AppColors.primary.withOpacity(0.3),
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.lock_outline,
+                                    color: AppColors.primary,
+                                    size: 32,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    '전체 발제문을 확인하려면',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    '로그인이 필요합니다',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
+                    ],
                   ),
             ),
           ),
           
           const SizedBox(height: 24),
           
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                    setState(() {
-                      _currentStep = 0;
-                      _selectedBook = null;
-                      _searchResults.clear();
-                      _searchController.clear();
-                    });
-                  },
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: AppColors.primary),
-                    minimumSize: const Size(0, 56),
-                  ),
-                  child: Text(
-                    '다시 시작',
-                    style: TextStyle(color: AppColors.primary),
+          // 임시저장 및 로그인 버튼들 (발제문이 생성된 경우에만 표시)
+          if (_generatedReview.isNotEmpty) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _saveTemporarily,
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: AppColors.primary),
+                      minimumSize: const Size(0, 56),
+                    ),
+                    child: Text(
+                      '임시저장',
+                      style: TextStyle(color: AppColors.primary),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(builder: (context) => const MainNavigation()),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    minimumSize: const Size(0, 56),
-                  ),
-                  child: const Text(
-                    '메인으로 이동',
-                    style: TextStyle(fontSize: 16, color: Colors.white),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _quickSignUp,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      minimumSize: const Size(0, 56),
+                    ),
+                    child: const Text(
+                      '3초만에 가입하기',
+                      style: TextStyle(fontSize: 16, color: Colors.white),
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ] else ...[
+            // 발제문 생성 전에는 다시 시작/메인 이동 버튼
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      setState(() {
+                        _currentStep = 0;
+                        _selectedBook = null;
+                        _searchResults.clear();
+                        _searchController.clear();
+                      });
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: AppColors.primary),
+                      minimumSize: const Size(0, 56),
+                    ),
+                    child: Text(
+                      '다시 시작',
+                      style: TextStyle(color: AppColors.primary),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(builder: (context) => const MainNavigation()),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      minimumSize: const Size(0, 56),
+                    ),
+                    child: const Text(
+                      '메인으로 이동',
+                      style: TextStyle(fontSize: 16, color: Colors.white),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -412,6 +532,60 @@ class _GuestDemoPageState extends State<GuestDemoPage> {
       _selectedBook = book;
       _currentStep = 1;
     });
+  }
+
+  String _getPreviewText() {
+    if (_generatedReview.isEmpty) return '';
+    
+    final lines = _generatedReview.split('\n');
+    final previewLines = lines.take(2).toList();
+    return previewLines.join('\n');
+  }
+
+  String _getBlurredText() {
+    if (_generatedReview.isEmpty) return '';
+    
+    final lines = _generatedReview.split('\n');
+    if (lines.length <= 2) return '';
+    
+    final remainingLines = lines.skip(2).toList();
+    return remainingLines.join('\n');
+  }
+
+  Future<void> _saveTemporarily() async {
+    try {
+      // SharedPreferences에 임시 저장
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('temp_review', _generatedReview);
+      await prefs.setString('temp_book_title', _selectedBook?.title ?? '');
+      await prefs.setString('temp_book_author', _selectedBook?.author ?? '');
+      await prefs.setString('temp_chat_history', _chatHistory);
+      
+      // 저장 완료 메시지
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('발제문이 임시 저장되었습니다!'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+      
+      // 로그인 페이지로 이동
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('임시 저장에 실패했습니다.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  void _quickSignUp() {
+    // 3초만에 가입하기도 임시저장 후 로그인 페이지로
+    _saveTemporarily();
   }
 
   @override
