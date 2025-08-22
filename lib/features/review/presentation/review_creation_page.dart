@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_colors.dart';
 import '../models/review.dart';
+import '../data/review_repository.dart';
 import 'review_editor_page.dart';
 import '../../chat/presentation/ai_chat_page.dart';
 import '../services/review_ai_service.dart';
@@ -508,8 +509,9 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
         chatHistory: widget.chatHistory,
       );
 
-      // TODO: 실제 Supabase에 저장 로직 추가
-      // await ReviewRepository().create(review);
+      // 실제 Supabase에 저장
+      final reviewRepository = ReviewRepository();
+      await reviewRepository.create(review);
       
       // 임시 저장 데이터 삭제
       await _clearTempReview();

@@ -5,6 +5,7 @@ import '../../../shared/widgets/main_navigation.dart';
 import '../../chat/presentation/ai_chat_page.dart';
 import '../../chat/presentation/character_selection_page.dart';
 import '../../reading_goals/presentation/reading_goals_page.dart';
+import '../../book_search/presentation/book_search_page.dart';
 
 
 class HomePage extends StatelessWidget {
@@ -213,9 +214,7 @@ class HomeView extends StatelessWidget {
                   onPressed: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (context) => const AiChatPage(
-                          initialContext: '새로운 독서 대화를 시작합니다. 어떤 책에 대해 이야기하고 싶으신가요?',
-                        ),
+                        builder: (context) => const BookSearchPage(),
                       ),
                     );
                   },

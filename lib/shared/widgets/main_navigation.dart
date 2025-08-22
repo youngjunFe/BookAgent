@@ -3,7 +3,7 @@ import '../../core/constants/app_strings.dart';
 import '../../core/constants/app_colors.dart';
 import '../../features/home/presentation/home_page.dart';
 import '../../features/library/presentation/library_page.dart';
-import '../../features/auth/services/auth_service.dart';
+import '../../features/auth/services/supabase_auth_service.dart';
 import '../../features/auth/presentation/login_page.dart';
 
 class MainNavigation extends StatefulWidget {
@@ -54,9 +54,10 @@ class _MainNavigationState extends State<MainNavigation> {
 
   Future<bool> _checkLoginStatus() async {
     try {
-      final authService = AuthService();
+      final authService = SupabaseAuthService();
       return await authService.restoreLoginState();
     } catch (e) {
+      print('마이페이지 로그인 체크 에러: $e');
       return false;
     }
   }
@@ -311,8 +312,8 @@ class MyPage extends StatelessWidget {
   }
   
   Future<dynamic> _getUserInfo() async {
-    // AuthService에서 현재 사용자 정보 가져오기
-    return AuthService().currentUser;
+    // SupabaseAuthService에서 현재 사용자 정보 가져오기
+    return SupabaseAuthService().currentUser;
   }
   
   Future<void> _handleLogout(BuildContext context) async {
@@ -342,7 +343,7 @@ class MyPage extends StatelessWidget {
     
     if (shouldLogout == true && context.mounted) {
       // 로그아웃 실행
-      await AuthService().signOut();
+      await SupabaseAuthService().signOut();
       
       // 로그인 페이지로 이동 (스택 전체 교체)
       if (context.mounted) {
