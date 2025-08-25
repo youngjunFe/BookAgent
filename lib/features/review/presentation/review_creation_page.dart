@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_colors.dart';
 import '../models/review.dart';
@@ -46,15 +47,29 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
       final tempBookAuthor = prefs.getString('temp_book_author');
       
       if (tempReview != null && tempReview.isNotEmpty) {
+        String reviewContent = tempReview;
+        
+        // JSON 형태로 저장된 경우 파싱
+        try {
+          if (tempReview.startsWith('{"review":')) {
+            final data = json.decode(tempReview);
+            if (data is Map && data['review'] is String) {
+              reviewContent = data['review'] as String;
+            }
+          }
+        } catch (_) {
+          // JSON 파싱 실패 시 원본 사용
+        }
+        
         setState(() {
-          _generatedContent = tempReview;
+          _generatedContent = reviewContent;
         });
         
         // 임시 저장된 데이터가 있음을 사용자에게 알림
         WidgetsBinding.instance.addPostFrameCallback((_) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('임시 저장된 "$tempBookTitle" 발제문을 불러왔습니다.'),
+              content: Text('임시 저장된 "${tempBookTitle ?? '책'}" 발제문을 불러왔습니다.'),
               backgroundColor: AppColors.primary,
             ),
           );

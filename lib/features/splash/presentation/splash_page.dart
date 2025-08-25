@@ -36,9 +36,20 @@ class _SplashPageState extends State<SplashPage> {
       final hasTempReview = await _checkTempReview();
       
       if (hasTempReview) {
-        // 임시 저장된 발제문이 있으면 작성 페이지로 이동
+        // 임시 저장된 발제문이 있으면 작성 페이지로 이동 (책 정보도 함께 전달)
+        final prefs = await SharedPreferences.getInstance();
+        final tempBookTitle = prefs.getString('temp_book_title');
+        final tempBookAuthor = prefs.getString('temp_book_author');
+        final tempChatHistory = prefs.getString('temp_chat_history');
+        
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const ReviewCreationPage()),
+          MaterialPageRoute(
+            builder: (context) => ReviewCreationPage(
+              bookTitle: tempBookTitle,
+              bookAuthor: tempBookAuthor,
+              chatHistory: tempChatHistory,
+            ),
+          ),
         );
       } else {
         // 임시 저장된 발제문이 없으면 메인 내비게이션으로 이동
