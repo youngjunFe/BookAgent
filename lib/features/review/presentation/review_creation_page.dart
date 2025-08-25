@@ -510,17 +510,32 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
 
   // AI 생성 발제문에서 제목 추출
   String _extractTitleFromContent(String content) {
+    print('🔍 제목 추출 시작 - 내용 첫 100자: ${content.substring(0, content.length > 100 ? 100 : content.length)}');
+    
     final lines = content.split('\n');
     if (lines.isNotEmpty) {
       final firstLine = lines[0].trim();
+      print('🔍 첫 번째 줄: "$firstLine"');
+      
+      // "제목:" 으로 시작하는 경우 해당 부분 제거
+      if (firstLine.startsWith('제목:')) {
+        String title = firstLine.substring(3).trim(); // "제목:" 제거
+        print('✅ 제목 추출 성공: "$title"');
+        if (title.isNotEmpty) {
+          return title;
+        }
+      }
       // 첫 번째 줄이 제목인 경우 (보통 "제목" 또는 "책 제목에 대한 발제문" 형태)
       if (firstLine.isNotEmpty && 
           (firstLine.contains('발제문') || firstLine.contains('에 대한') || firstLine.length < 50)) {
+        print('✅ 일반 제목 추출: "$firstLine"');
         return firstLine;
       }
     }
     // 제목을 찾지 못한 경우 기본 제목 사용
-    return '${widget.bookTitle ?? '새로운 책'}에 대한 발제문';
+    final defaultTitle = '${widget.bookTitle ?? '새로운 책'}에 대한 발제문';
+    print('❌ 제목 추출 실패, 기본 제목 사용: "$defaultTitle"');
+    return defaultTitle;
   }
 
   Future<void> _saveReview() async {
