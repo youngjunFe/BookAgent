@@ -493,13 +493,30 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
     _generateReview();
   }
 
+  // AI 생성 발제문에서 제목 추출
+  String _extractTitleFromContent(String content) {
+    final lines = content.split('\n');
+    if (lines.isNotEmpty) {
+      final firstLine = lines[0].trim();
+      // 첫 번째 줄이 제목인 경우 (보통 "제목" 또는 "책 제목에 대한 발제문" 형태)
+      if (firstLine.isNotEmpty && 
+          (firstLine.contains('발제문') || firstLine.contains('에 대한') || firstLine.length < 50)) {
+        return firstLine;
+      }
+    }
+    // 제목을 찾지 못한 경우 기본 제목 사용
+    return '${widget.bookTitle ?? '새로운 책'}에 대한 발제문';
+  }
+
   Future<void> _saveReview() async {
     if (_generatedContent == null || _generatedContent!.isEmpty) return;
     
     try {
+      final extractedTitle = _extractTitleFromContent(_generatedContent!);
+      
       final review = Review(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        title: '${widget.bookTitle ?? '새로운 책'}에 대한 발제문',
+        title: extractedTitle,
         content: _generatedContent!,
         bookTitle: widget.bookTitle ?? '알 수 없음',
         bookAuthor: widget.bookAuthor,
@@ -541,9 +558,11 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
   }
 
   void _editReview() {
+    final extractedTitle = _extractTitleFromContent(_generatedContent!);
+    
     final review = Review(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: '${widget.bookTitle ?? '새로운 책'}에 대한 발제문',
+      title: extractedTitle,
       content: _generatedContent!,
       bookTitle: widget.bookTitle ?? '알 수 없음',
       bookAuthor: widget.bookAuthor,
