@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../../../core/supabase/supabase_client_provider.dart';
 import '../../../core/config/app_config.dart';
 
@@ -22,9 +23,18 @@ class ReviewAiService {
         final resp = await http.post(
           uri,
           headers: {'Content-Type': 'application/json'},
-          body: '{"chat_history": ${_escapeJson(chatHistory)}, "book_title": ${_escapeJson(bookTitle)}}',
+          body: '{"bookTitle": ${_escapeJson(bookTitle)}, "chatHistory": ${_escapeJson(chatHistory)}}',
         );
         if (resp.statusCode >= 200 && resp.statusCode < 300 && resp.body.isNotEmpty) {
+          // JSON 응답 파싱
+          try {
+            final data = json.decode(resp.body);
+            if (data is Map && data['review'] is String) {
+              return data['review'] as String;
+            }
+          } catch (_) {
+            // JSON 파싱 실패 시 원본 반환
+          }
           return resp.body;
         }
       }
