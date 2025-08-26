@@ -76,7 +76,8 @@ class _SplashPageState extends State<SplashPage> {
   }
   
   Future<bool> _checkOnboardingSeen() async {
-    // 비로그인 사용자는 항상 온보딩 표시
+    // 비로그인 사용자는 항상 온보딩 표시 (강제)
+    print('🔍 온보딩 체크: 항상 false 반환 (온보딩 강제 표시)');
     return false;
   }
 

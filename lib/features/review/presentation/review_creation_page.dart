@@ -590,11 +590,31 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
   void _editReview() {
     final extractedTitle = _extractTitleFromContent(_generatedContent!);
     
+    // AI 생성 발제문에서 실제 책 제목 추출 시도
+    String actualBookTitle = widget.bookTitle ?? '알 수 없음';
+    
+    // 발제문 내용에서 책 제목을 찾아보기
+    if (actualBookTitle == '알 수 없음' && _generatedContent!.contains('서론:')) {
+      final lines = _generatedContent!.split('\n');
+      for (String line in lines) {
+        if (line.contains('"') && line.contains('을 읽으면서')) {
+          // "책제목"을 읽으면서 패턴에서 책 제목 추출
+          final match = RegExp(r'"([^"]+)"을? 읽으면서').firstMatch(line);
+          if (match != null) {
+            actualBookTitle = match.group(1) ?? actualBookTitle;
+            break;
+          }
+        }
+      }
+    }
+    
+    print('📚 편집용 Review 생성 - 책 제목: "$actualBookTitle", 발제문 제목: "$extractedTitle"');
+    
     final review = Review(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: extractedTitle,
       content: _generatedContent!,
-      bookTitle: widget.bookTitle ?? '알 수 없음',
+      bookTitle: actualBookTitle,
       bookAuthor: widget.bookAuthor,
       status: ReviewStatus.draft,
       createdAt: DateTime.now(),
