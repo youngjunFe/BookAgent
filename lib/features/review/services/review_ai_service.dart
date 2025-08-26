@@ -26,16 +26,24 @@ class ReviewAiService {
           body: '{"bookTitle": ${_escapeJson(bookTitle)}, "chatHistory": ${_escapeJson(chatHistory)}}',
         );
         if (resp.statusCode >= 200 && resp.statusCode < 300 && resp.body.isNotEmpty) {
-          // JSON 응답 파싱
+          print('🔍 Railway API 응답: ${resp.body.substring(0, resp.body.length > 200 ? 200 : resp.body.length)}...');
+          
+          // JSON 응답 파싱 (강력한 처리)
           try {
             final data = json.decode(resp.body);
             if (data is Map && data['review'] is String) {
-              return data['review'] as String;
+              final reviewContent = data['review'] as String;
+              print('✅ JSON 파싱 성공: ${reviewContent.substring(0, reviewContent.length > 100 ? 100 : reviewContent.length)}...');
+              return reviewContent;
             }
-          } catch (_) {
-            // JSON 파싱 실패 시 원본 반환
+          } catch (e) {
+            print('❌ JSON 파싱 실패: $e');
+            print('❌ 원본 응답: ${resp.body}');
           }
-          return resp.body;
+          
+          // JSON 파싱 실패 시 fallback 사용 (raw body 반환 금지)
+          print('⚠️ JSON 파싱 실패, fallback 사용');
+          return _fallback(bookTitle);
         }
       }
 

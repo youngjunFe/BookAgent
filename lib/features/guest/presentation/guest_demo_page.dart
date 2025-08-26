@@ -264,8 +264,10 @@ class _GuestDemoPageState extends State<GuestDemoPage> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        final reviewContent = data['review'] ?? '발제문 생성에 실패했습니다.';
+        print('📝 GuestDemo 발제문 생성 성공: ${reviewContent.substring(0, reviewContent.length > 100 ? 100 : reviewContent.length)}...');
         setState(() {
-          _generatedReview = data['review'] ?? '발제문 생성에 실패했습니다.';
+          _generatedReview = reviewContent;
         });
       } else {
         setState(() {
