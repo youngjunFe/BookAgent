@@ -131,6 +131,11 @@ class _ReviewTabState extends State<ReviewTab> {
         _isLoading = false;
       });
       print('발제문 로드 실패: $e');
+      
+      // 인증 오류인 경우 로그인 페이지로 이동
+      if (e.toString().contains('사용자 인증이 필요합니다')) {
+        Navigator.of(context).pushReplacementNamed('/login');
+      }
     }
   }
 

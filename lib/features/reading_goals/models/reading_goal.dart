@@ -1,5 +1,6 @@
 class ReadingGoal {
   final String id;
+  final String userId; // 🚨 보안: 사용자 ID 추가
   final String title;
   final GoalType type;
   final int targetValue;
@@ -11,6 +12,7 @@ class ReadingGoal {
 
   const ReadingGoal({
     required this.id,
+    required this.userId,
     required this.title,
     required this.type,
     required this.targetValue,
@@ -33,6 +35,7 @@ class ReadingGoal {
 
   ReadingGoal copyWith({
     String? id,
+    String? userId,
     String? title,
     GoalType? type,
     int? targetValue,
@@ -44,6 +47,7 @@ class ReadingGoal {
   }) {
     return ReadingGoal(
       id: id ?? this.id,
+      userId: userId ?? this.userId,
       title: title ?? this.title,
       type: type ?? this.type,
       targetValue: targetValue ?? this.targetValue,
@@ -55,10 +59,11 @@ class ReadingGoal {
     );
   }
 
-  // 샘플 데이터
-  static List<ReadingGoal> get sampleGoals => [
+  // 샘플 데이터 (보안상 사용 금지)
+  static List<ReadingGoal> getSampleGoalsForUser(String userId) => [
     ReadingGoal(
       id: '1',
+      userId: userId,
       title: '이번 달 3권 읽기',
       type: GoalType.monthly,
       targetValue: 3,
@@ -70,6 +75,7 @@ class ReadingGoal {
     ),
     ReadingGoal(
       id: '2',
+      userId: userId,
       title: '올해 24권 읽기',
       type: GoalType.yearly,
       targetValue: 24,
@@ -81,6 +87,7 @@ class ReadingGoal {
     ),
     ReadingGoal(
       id: '3',
+      userId: userId,
       title: '10일 연속 독서',
       type: GoalType.streak,
       targetValue: 10,
@@ -139,6 +146,7 @@ extension GoalTypeExtension on GoalType {
     }
   }
 }
+
 
 
 

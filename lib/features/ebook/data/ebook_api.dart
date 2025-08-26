@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/supabase/supabase_client_provider.dart';
+import '../../../features/auth/services/supabase_auth_service.dart';
 import '../models/ebook.dart';
 
 abstract class EBookApi {
@@ -22,9 +23,17 @@ class SupabaseEBookApi implements EBookApi {
 
   @override
   Future<List<EBook>> list() async {
+    // 현재 로그인된 사용자 ID 가져오기
+    final currentUser = SupabaseAuthService().currentUser;
+    if (currentUser == null) {
+      throw Exception('사용자 인증이 필요합니다');
+    }
+    
+    // 현재 사용자의 전자책만 조회
     final response = await _client
         .from(_ebooksTable)
         .select()
+        .eq('user_id', currentUser.id)  // 중요: 사용자별 필터링
         .order('last_read_at', ascending: false);
     
     return (response as List)
@@ -34,9 +43,17 @@ class SupabaseEBookApi implements EBookApi {
 
   @override
   Future<EBook> create(EBook ebook) async {
+    // 현재 로그인된 사용자 ID 확인
+    final currentUser = SupabaseAuthService().currentUser;
+    if (currentUser == null) {
+      throw Exception('사용자 인증이 필요합니다');
+    }
+    
+    // 사용자 ID가 포함된 전자책 생성
+    final ebookWithUserId = ebook.copyWith(userId: currentUser.id);
     final inserted = await _client
         .from(_ebooksTable)
-        .insert(_ebookToInsertRow(ebook))
+        .insert(_ebookToInsertRow(ebookWithUserId))
         .select()
         .single();
     
@@ -45,10 +62,18 @@ class SupabaseEBookApi implements EBookApi {
 
   @override
   Future<EBook> update(EBook ebook) async {
+    // 현재 로그인된 사용자 ID 확인
+    final currentUser = SupabaseAuthService().currentUser;
+    if (currentUser == null) {
+      throw Exception('사용자 인증이 필요합니다');
+    }
+    
+    // 자신의 전자책만 수정 가능
     final updated = await _client
         .from(_ebooksTable)
         .update(_ebookToRow(ebook))
         .eq('id', ebook.id)
+        .eq('user_id', currentUser.id)  // 중요: 사용자 소유권 확인
         .select()
         .single();
     
@@ -57,7 +82,18 @@ class SupabaseEBookApi implements EBookApi {
 
   @override
   Future<void> delete(String id) async {
-    await _client.from(_ebooksTable).delete().eq('id', id);
+    // 현재 로그인된 사용자 ID 확인
+    final currentUser = SupabaseAuthService().currentUser;
+    if (currentUser == null) {
+      throw Exception('사용자 인증이 필요합니다');
+    }
+    
+    // 자신의 전자책만 삭제 가능
+    await _client
+        .from(_ebooksTable)
+        .delete()
+        .eq('id', id)
+        .eq('user_id', currentUser.id);  // 중요: 사용자 소유권 확인
   }
 
   @override
@@ -68,6 +104,13 @@ class SupabaseEBookApi implements EBookApi {
     required DateTime lastReadAt,
   }) async {
     try {
+      // 현재 로그인된 사용자 ID 확인
+      final currentUser = SupabaseAuthService().currentUser;
+      if (currentUser == null) {
+        throw Exception('사용자 인증이 필요합니다');
+      }
+      
+      // 자신의 전자책만 진행률 업데이트 가능
       await _client
           .from(_ebooksTable)
           .update({
@@ -75,7 +118,8 @@ class SupabaseEBookApi implements EBookApi {
             'progress': progress,
             'last_read_at': lastReadAt.toIso8601String(),
           })
-          .eq('id', id);
+          .eq('id', id)
+          .eq('user_id', currentUser.id);  // 중요: 사용자 소유권 확인
       
       print('✅ 진행률 업데이트 성공: $currentPage페이지, ${(progress * 100).toInt()}%');
     } catch (e) {
@@ -86,6 +130,13 @@ class SupabaseEBookApi implements EBookApi {
 
   @override
   Future<EBook> markAsCompleted(String id) async {
+    // 현재 로그인된 사용자 ID 확인
+    final currentUser = SupabaseAuthService().currentUser;
+    if (currentUser == null) {
+      throw Exception('사용자 인증이 필요합니다');
+    }
+    
+    // 자신의 전자책만 완독 처리 가능
     final updated = await _client
         .from(_ebooksTable)
         .update({
@@ -94,6 +145,7 @@ class SupabaseEBookApi implements EBookApi {
           'last_read_at': DateTime.now().toIso8601String(),
         })
         .eq('id', id)
+        .eq('user_id', currentUser.id)  // 중요: 사용자 소유권 확인
         .select()
         .single();
     
@@ -104,6 +156,7 @@ class SupabaseEBookApi implements EBookApi {
   Map<String, dynamic> _ebookToRow(EBook ebook) {
     return {
       'id': ebook.id,
+      'user_id': ebook.userId,  // 중요: 사용자 ID 포함
       'title': ebook.title,
       'author': ebook.author,
       'content': ebook.content,
@@ -127,6 +180,7 @@ class SupabaseEBookApi implements EBookApi {
   EBook _ebookFromRow(Map<String, dynamic> row) {
     return EBook(
       id: row['id'] as String,
+      userId: row['user_id'] as String,  // 중요: 사용자 ID 포함
       title: row['title'] as String,
       author: row['author'] as String,
       content: row['content'] as String,

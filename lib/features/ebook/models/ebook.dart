@@ -1,5 +1,6 @@
 class EBook {
   final String id;
+  final String userId; // 추가: 사용자 ID로 데이터 격리
   final String title;
   final String author;
   final String content;
@@ -14,6 +15,7 @@ class EBook {
 
   EBook({
     required this.id,
+    required this.userId,
     required this.title,
     required this.author,
     required this.content,
@@ -43,6 +45,7 @@ class EBook {
 
   EBook copyWith({
     String? id,
+    String? userId,
     String? title,
     String? author,
     String? content,
@@ -57,6 +60,7 @@ class EBook {
   }) {
     return EBook(
       id: id ?? this.id,
+      userId: userId ?? this.userId,
       title: title ?? this.title,
       author: author ?? this.author,
       content: content ?? this.content,
@@ -74,6 +78,7 @@ class EBook {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'userId': userId,
       'title': title,
       'author': author,
       'content': content,
@@ -90,6 +95,7 @@ class EBook {
   factory EBook.fromJson(Map<String, dynamic> json) {
     return EBook(
       id: json['id'],
+      userId: json['userId'],
       title: json['title'],
       author: json['author'],
       content: json['content'],
@@ -103,11 +109,12 @@ class EBook {
     );
   }
 
-  // 샘플 책들
-  static List<EBook> get sampleBooks {
+  // 샘플 책들 (실제 환경에서는 사용자 ID가 자동으로 할당됨)
+  static List<EBook> getSampleBooksForUser(String userId) {
     return [
       EBook(
         id: '1',
+        userId: userId,
         title: '어린 왕자',
         author: '앙투안 드 생텍쥐페리',
         content: _sampleContent1,
@@ -120,6 +127,7 @@ class EBook {
       ),
       EBook(
         id: '2',
+        userId: userId,
         title: '데미안',
         author: '헤르만 헤세',
         content: _sampleContent2,
@@ -131,6 +139,7 @@ class EBook {
       ),
       EBook(
         id: '3',
+        userId: userId,
         title: '1984',
         author: '조지 오웰',
         content: _sampleContent3,

@@ -29,13 +29,81 @@ class _ReviewEditorPageState extends State<ReviewEditorPage> {
   bool _hasChanges = false;
   final _repo = ReviewRepository();
 
+  // ===== Sanitization helpers (editor-level) =====
+  bool _isBanned(String? v) {
+    if (v == null) return true;
+    final t = v.trim();
+    return t.isEmpty || t == '안녕하세요' || t == '책';
+  }
+
+  String _stripMarkdown(String text) {
+    String t = text;
+    t = t.replaceAll(RegExp(r'\*\*(.*?)\*\*'), r'$1');
+    t = t.replaceAll('```', '').replaceAll('`', '');
+    t = t.replaceAll(RegExp('[“”]'), '"');
+    t = t.replaceAll('『', '').replaceAll('』', '');
+    t = t.replaceAll('《', '').replaceAll('》', '');
+    t = t.replaceAll(RegExp(r'^\*+'), '');
+    t = t.replaceAll(RegExp(r'\*+$'), '');
+    t = t.replaceAll(RegExp(r'^\"+|\"+$'), '');
+    t = t.replaceAll(RegExp('[ \t]+\n'), '\n');
+    t = t.replaceAll(RegExp('[\u200B-\u200D\uFEFF]'), '');
+    return t.trim();
+  }
+
+  String _sanitizeContent(String content) {
+    final lines = content.split('\n');
+    final List<String> out = [];
+    for (var line in lines) {
+      String l = line.trim();
+      l = l.replaceAll(RegExp('[\u200B-\u200D\uFEFF]'), '');
+      if (RegExp(r'^[\*\s\"\-·>]{0,8}(제\s*목|TITLE|Title|title)\s*[:：\-]').hasMatch(l)) {
+        continue;
+      }
+      if (RegExp(r'^[\*\s>\-·]{0,8}(서\s*론|본\s*론|결\s*론|인\s*용\s*구|요\s*약|요\s*점|마\s*무\s*리)\s*[:：\-\.]*\s*\*{0,3}\s*$').hasMatch(l)) {
+        continue;
+      }
+      l = l.replaceAll(RegExp(r'\*\*(.*?)\*\*'), r'$1');
+      l = l.replaceAll(RegExp(r'(?<!\*)\*(?!\s)(.*?)(?<!\s)\*(?!\*)'), r'$1');
+      l = l.replaceAll(RegExp(r'~~(.*?)~~'), r'$1');
+      l = l.replaceAll(RegExp(r'^#{1,6}\s*'), '');
+      l = l.replaceAll(RegExp(r'^\*+'), '');
+      l = l.replaceAll(RegExp(r'\*+$'), '');
+      l = _stripMarkdown(l);
+      if (l.isEmpty) continue;
+      out.add(l);
+    }
+    String collapsed = out.join('\n').replaceAll(RegExp('\n{3,}'), '\n\n');
+    return collapsed.trim();
+  }
+
+  String _sanitizeTitle(String title, {String? fallbackBook}) {
+    String t = title.trim();
+    // remove leading "제목: ..."
+    final m = RegExp(r'^\**\s*제목\s*[:：]\s*\"?([^\"]+)\"?').firstMatch(t);
+    if (m != null) {
+      t = m.group(1)!.trim();
+    }
+    t = _stripMarkdown(t);
+    if (_isBanned(t) || t == '제목') {
+      final fb = _isBanned(fallbackBook) ? '새로운 발제문' : '${fallbackBook}에 대한 발제문';
+      return fb;
+    }
+    return t;
+  }
+
   @override
   void initState() {
     super.initState();
     _currentReview = widget.review;
-    _titleController = TextEditingController(text: _currentReview.title);
-    _contentController = TextEditingController(text: _currentReview.content);
-    _bookTitleController = TextEditingController(text: _currentReview.bookTitle);
+    // Sanitize incoming values for safe editing view
+    final sanitizedContent = _sanitizeContent(_currentReview.content);
+    final sanitizedTitle = _sanitizeTitle(_currentReview.title, fallbackBook: _currentReview.bookTitle);
+    final initialBookTitle = _isBanned(_currentReview.bookTitle) ? '' : _currentReview.bookTitle;
+
+    _titleController = TextEditingController(text: sanitizedTitle);
+    _contentController = TextEditingController(text: sanitizedContent);
+    _bookTitleController = TextEditingController(text: initialBookTitle);
     _bookAuthorController = TextEditingController(text: _currentReview.bookAuthor ?? '');
     _tagsController = TextEditingController(text: _currentReview.tags.join(', '));
 
@@ -524,11 +592,16 @@ class _ReviewEditorPageState extends State<ReviewEditorPage> {
         .where((tag) => tag.isNotEmpty)
         .toList();
 
+    // Apply sanitization before saving model
+    final nextTitle = _sanitizeTitle(_titleController.text, fallbackBook: _bookTitleController.text);
+    final nextContent = _sanitizeContent(_contentController.text);
+    final nextBookTitle = _isBanned(_bookTitleController.text) ? '' : _bookTitleController.text.trim();
+
     _currentReview = _currentReview.copyWith(
-      title: _titleController.text,
-      content: _contentController.text,
-      bookTitle: _bookTitleController.text,
-      bookAuthor: _bookAuthorController.text.isEmpty ? null : _bookAuthorController.text,
+      title: nextTitle,
+      content: nextContent,
+      bookTitle: nextBookTitle,
+      bookAuthor: _bookAuthorController.text.isEmpty ? null : _bookAuthorController.text.trim(),
       status: status,
       tags: tags,
       updatedAt: DateTime.now(),

@@ -38,10 +38,15 @@ class _BookManagementPageState extends State<BookManagementPage> {
       });
     } catch (e) {
       setState(() {
-        _books = EBook.sampleBooks;
+        _books = []; // 보안상 샘플 데이터 표시 금지
         _isLoading = false;
       });
       print('책 목록 로드 실패: $e');
+      
+      // 인증 오류인 경우 로그인 페이지로 이동
+      if (e.toString().contains('사용자 인증이 필요합니다')) {
+        Navigator.of(context).pushReplacementNamed('/login');
+      }
     }
   }
 

@@ -95,6 +95,7 @@ class _GoalCreationPageState extends State<GoalCreationPage> {
     if (_formKey.currentState!.validate()) {
       final goal = ReadingGoal(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
+        userId: '', // API에서 자동으로 현재 사용자 ID로 설정됨
         title: _titleController.text.trim(),
         type: _selectedType,
         targetValue: int.parse(_targetController.text),
@@ -364,6 +365,7 @@ class _GoalCreationPageState extends State<GoalCreationPage> {
     }
   }
 }
+
 
 
 

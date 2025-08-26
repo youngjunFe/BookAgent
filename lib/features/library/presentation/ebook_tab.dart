@@ -47,6 +47,12 @@ class _EBookTabState extends State<EBookTab> {
       setState(() {
         _error = '목록을 불러오지 못했습니다';
       });
+      print('전자책 로드 실패: $e');
+      
+      // 인증 오류인 경우 로그인 페이지로 이동
+      if (e.toString().contains('사용자 인증이 필요합니다')) {
+        Navigator.of(context).pushReplacementNamed('/login');
+      }
     } finally {
       if (!mounted) return;
       setState(() {

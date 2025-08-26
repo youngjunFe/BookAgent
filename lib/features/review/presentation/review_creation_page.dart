@@ -29,10 +29,16 @@ class ReviewCreationPage extends StatefulWidget {
 class _ReviewCreationPageState extends State<ReviewCreationPage> {
   bool _isGenerating = false;
   String? _generatedContent;
+  // 화면/저장 전체에서 일관되게 사용할 책 메타
+  String? _bookTitle;
+  String? _bookAuthor;
 
   @override
   void initState() {
     super.initState();
+    // 위젯으로 전달된 값을 우선 적용
+    _bookTitle = widget.bookTitle;
+    _bookAuthor = widget.bookAuthor;
     _loadTempReview();
     if (widget.chatHistory != null) {
       _generateReview();
@@ -61,9 +67,23 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
           // JSON 파싱 실패 시 원본 사용
         }
         
+        // 본문은 항상 정제된 결과만 보이도록 강제
+        final sanitized = _sanitizeContent(reviewContent);
         setState(() {
-          _generatedContent = reviewContent;
+          _generatedContent = sanitized;
+          // 위젯으로 전달되지 않았고 임시 저장 값이 있으면 보강
+          if ((_bookTitle == null || _bookTitle!.isEmpty) &&
+              (tempBookTitle != null && !_isBannedTitle(tempBookTitle))) {
+            _bookTitle = tempBookTitle.trim();
+          }
+          if ((_bookAuthor == null || _bookAuthor!.isEmpty) &&
+              (tempBookAuthor != null && tempBookAuthor.trim().isNotEmpty)) {
+            _bookAuthor = tempBookAuthor.trim();
+          }
         });
+
+        print('🧭 [ReviewCreationPage] Loaded from temp: '
+            'title="${_bookTitle ?? '(none)'}", author="${_bookAuthor ?? '(none)'}"');
         
         // 임시 저장된 데이터가 있음을 사용자에게 알림
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -154,7 +174,7 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
                       height: 1.5,
                     ),
                   ),
-                  if (widget.bookTitle != null) ...[
+                  if (_bookTitle != null && !_isBannedTitle(_bookTitle!)) ...[
                     const SizedBox(height: 16),
                     Container(
                       padding: const EdgeInsets.all(12),
@@ -175,14 +195,14 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  widget.bookTitle!,
+                                  _bookTitle!,
                                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                                if (widget.bookAuthor != null)
+                                if (_bookAuthor != null)
                                   Text(
-                                    widget.bookAuthor!,
+                                    _bookAuthor!,
                                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                       color: AppColors.textSecondary,
                                     ),
@@ -495,10 +515,14 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
     );
 
     if (!mounted) return;
+    final sanitized = _sanitizeContent(content);
+    _inferMetaFromContent(sanitized);
     setState(() {
       _isGenerating = false;
-      _generatedContent = content;
+      _generatedContent = sanitized;
     });
+    print('🧹 [ReviewCreationPage] Generated + sanitized content length: '
+        '${_generatedContent!.length}');
   }
 
   void _regenerateReview() {
@@ -508,53 +532,143 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
     _generateReview();
   }
 
-  // AI 생성 발제문에서 제목 추출
-  String _extractTitleFromContent(String content) {
-    print('🔍 제목 추출 시작 - 내용 첫 100자: ${content.substring(0, content.length > 100 ? 100 : content.length)}');
-    
+  // 불필요한 Markdown/따옴표/별표 정리
+  String _stripMarkdown(String text) {
+    String t = text;
+    // 굵게 **텍스트** 제거
+    t = t.replaceAll(RegExp(r'\*\*(.*?)\*\*'), r'$1');
+    // 인라인 코드, 백틱 제거
+    t = t.replaceAll('```', '').replaceAll('`', '');
+    // 따옴표/책제목 기호 정리
+    t = t.replaceAll(RegExp('[“”]'), '"');
+    t = t.replaceAll('『', '').replaceAll('』', '');
+    t = t.replaceAll('《', '').replaceAll('》', '');
+    // 라인 양끝 따옴표/별표 제거
+    t = t.replaceAll(RegExp(r'^\*+'), '');
+    t = t.replaceAll(RegExp(r'\*+$'), '');
+    t = t.replaceAll(RegExp(r'^\"+|\"+$'), '');
+    // 공백 정리
+    t = t.replaceAll(RegExp('[ \t]+\n'), '\n');
+    return t.trim();
+  }
+
+  // 금지된/무의미한 제목값 식별
+  bool _isBannedTitle(String value) {
+    String t = value
+        .replaceAll(RegExp('[\u200B-\u200D\uFEFF\u00A0]'), '')
+        .replaceAll('"', '')
+        .replaceAll("'", '')
+        .replaceAll('*', '')
+        .trim();
+    return t.isEmpty || t == '안녕하세요' || t == '책';
+  }
+
+  // 본문 정리: 제목/섹션 머리글 제거, 마크다운 기호 제거
+  String _sanitizeContent(String content) {
     final lines = content.split('\n');
-    if (lines.isNotEmpty) {
-      final firstLine = lines[0].trim();
-      print('🔍 첫 번째 줄: "$firstLine"');
-      
-      // "제목:" 으로 시작하는 경우 해당 부분 제거
-      if (firstLine.startsWith('제목:')) {
-        String title = firstLine.substring(3).trim(); // "제목:" 제거
-        print('✅ 제목 추출 성공: "$title"');
-        if (title.isNotEmpty) {
-          return title;
-        }
+    final List<String> out = [];
+    for (var line in lines) {
+      String l = line.trim();
+      // 제로폭 문자 제거 (BOM 포함)
+      l = l.replaceAll(RegExp('[\u200B-\u200D\uFEFF]'), '');
+      // 1) 발제문 제목 라인 제거: "제목:" 혹은 굵게 처리된 제목 패턴
+      if (RegExp(r'^[\*\s\"\-·>]{0,8}(제\s*목|TITLE|Title|title)\s*[:：\-]').hasMatch(l)) {
+        continue; // 제목은 별도 필드에서만 관리
       }
-      // 첫 번째 줄이 제목인 경우 (보통 "제목" 또는 "책 제목에 대한 발제문" 형태)
-      if (firstLine.isNotEmpty && 
-          (firstLine.contains('발제문') || firstLine.contains('에 대한') || firstLine.length < 50)) {
-        print('✅ 일반 제목 추출: "$firstLine"');
-        return firstLine;
+      // 2) 서론/본론/결론 머리글(별표 유무 포함) 라인 제거
+      if (RegExp(r'^[\*\s>\-·]{0,8}(서\s*론|본\s*론|결\s*론|인\s*용\s*구|요\s*약|요\s*점|마\s*무\s*리)\s*[:：\-\.]*\s*\*{0,3}\s*$').hasMatch(l)) {
+        continue;
+      }
+      // 3) 라인 내 마크다운 강조 제거(**..**, *..*, ~~..~~) + 헤딩 해시 제거
+      l = l.replaceAll(RegExp(r'\*\*(.*?)\*\*'), r'$1');
+      l = l.replaceAll(RegExp(r'(?<!\*)\*(?!\s)(.*?)(?<!\s)\*(?!\*)'), r'$1');
+      l = l.replaceAll(RegExp(r'~~(.*?)~~'), r'$1');
+      l = l.replaceAll(RegExp(r'^#{1,6}\s*'), '');
+      // 4) 라인 앞뒤 별표/공백 정리
+      l = l.replaceAll(RegExp(r'^\*+'), '');
+      l = l.replaceAll(RegExp(r'\*+$'), '');
+      l = _stripMarkdown(l);
+      if (l.isEmpty) continue; // 정리 후 빈 줄은 생략
+      out.add(l);
+    }
+    // 5) 연속 빈 줄은 1개로 축약
+    String collapsed = out.join('\n').replaceAll(RegExp('\n{3,}'), '\n\n');
+    return collapsed.trim();
+  }
+
+  // 생성된 본문에서 책 제목/저자 유추
+  void _inferMetaFromContent(String content) {
+    String text = content;
+    // 저자 패턴: 저자:, 지은이:, 글:, by ...
+    final authorMatch = RegExp(r'(저자|지은이|글)\s*[:：]\s*([^\n]+)').firstMatch(text)
+        ?? RegExp(r'\bby\s+([^\n]+)', caseSensitive: false).firstMatch(text);
+    if (authorMatch != null) {
+      final author = authorMatch.group(authorMatch.groupCount)!.trim();
+      if (_bookAuthor == null || _bookAuthor!.isEmpty) {
+        _bookAuthor = author;
       }
     }
-    // 제목을 찾지 못한 경우 기본 제목 사용
-    final defaultTitle = '${widget.bookTitle ?? '새로운 책'}에 대한 발제문';
-    print('❌ 제목 추출 실패, 기본 제목 사용: "$defaultTitle"');
-    return defaultTitle;
+
+    // 내용 속 따옴표로 감싼 책 제목 패턴
+    if (_bookTitle == null || _bookTitle!.isEmpty || _isBannedTitle(_bookTitle!)) {
+      final titleMatch = RegExp(r'"([^\"]{2,50})"').firstMatch(text)
+          ?? RegExp(r'『([^』]{2,50})』').firstMatch(text)
+          ?? RegExp(r'《([^》]{2,50})》').firstMatch(text);
+      if (titleMatch != null) {
+        _bookTitle = titleMatch.group(1)!.trim();
+      }
+    }
+  }
+
+  // AI 생성 발제문에서 제목 추출
+  String _extractTitleFromContent(String content) {
+    // 전체를 먼저 정제한 뒤 첫 줄로 판단
+    final sanitized = _sanitizeContent(content);
+    final head = sanitized.split('\n').firstWhere((_) => true, orElse: () => '').trim();
+    // 패턴 1: **제목: "..."** 또는 제목: "..."
+    final m1 = RegExp(r'^\**\s*제목\s*[:：]\s*\"?([^\"]+)\"?').firstMatch(head);
+    if (m1 != null) {
+      final t = _stripMarkdown(m1.group(1)!.trim());
+      if (t.isNotEmpty && t != '안녕하세요' && t != '제목') return t;
+    }
+    // 패턴 2: 첫 줄이 비교적 짧은 문장 → 제목으로 간주
+    if (head.isNotEmpty && head.length <= 50) {
+      final t = _stripMarkdown(head);
+      if (t.isNotEmpty && t != '안녕하세요' && t != '책' && !t.startsWith('서론') && !t.startsWith('본문')) {
+        return t;
+      }
+    }
+    // 기본값: 금지된 제목값이면 안전한 대체값 사용
+    final base = (_bookTitle == null || _isBannedTitle(_bookTitle!))
+        ? '새로운 책'
+        : _bookTitle!;
+    return _stripMarkdown('$base에 대한 발제문');
   }
 
   Future<void> _saveReview() async {
     if (_generatedContent == null || _generatedContent!.isEmpty) return;
     
     try {
-      final extractedTitle = _extractTitleFromContent(_generatedContent!);
+      // 저장 직전 한 번 더 정제해 안전 보장
+      final cleaned = _sanitizeContent(_generatedContent!);
+      final extractedTitle = _extractTitleFromContent(cleaned);
       
       final review = Review(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
+        userId: '', // API에서 자동으로 현재 사용자 ID로 설정됨
         title: extractedTitle,
-        content: _generatedContent!,
-        bookTitle: widget.bookTitle ?? '알 수 없음',
-        bookAuthor: widget.bookAuthor,
+        content: cleaned,
+        bookTitle: _bookTitle ?? '알 수 없음',
+        bookAuthor: _bookAuthor,
         status: ReviewStatus.published,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
         chatHistory: widget.chatHistory,
       );
+
+      print('💾 [ReviewCreationPage] Save review: '
+          'bookTitle="${review.bookTitle}", bookAuthor="${review.bookAuthor ?? '(none)'}", '
+          'title="${review.title}", contentLen=${review.content.length}');
 
       // 실제 Supabase에 저장
       final reviewRepository = ReviewRepository();
@@ -578,23 +692,38 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
       );
       
     } catch (e) {
+      print('🚨 [ReviewCreationPage._saveReview] 저장 실패: $e');
+      print('📍 [ReviewCreationPage._saveReview] 에러 세부사항: ${e.runtimeType}');
+      
+      String errorMessage = '저장에 실패했습니다.';
+      if (e.toString().contains('user_id')) {
+        errorMessage = '사용자 인증 오류. 로그인을 다시 시도하세요.';
+      } else if (e.toString().contains('relation') || e.toString().contains('column')) {
+        errorMessage = '데이터베이스 오류. 관리자에게 문의하세요.';
+      }
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('저장에 실패했습니다.'),
+          content: Text(errorMessage),
           backgroundColor: AppColors.error,
+          duration: const Duration(seconds: 5),
         ),
       );
     }
   }
 
   void _editReview() {
-    final extractedTitle = _extractTitleFromContent(_generatedContent!);
+    final cleaned = _sanitizeContent(_generatedContent!);
+    final extractedTitle = _extractTitleFromContent(cleaned);
     
     // AI 생성 발제문에서 실제 책 제목 추출 시도
-    String actualBookTitle = widget.bookTitle ?? '알 수 없음';
+    String actualBookTitle = _bookTitle ?? '';
+    if (_bookTitle != null && _isBannedTitle(_bookTitle!)) {
+      actualBookTitle = '';
+    }
     
     // 발제문 내용에서 책 제목을 찾아보기
-    if (actualBookTitle == '알 수 없음' && _generatedContent!.contains('서론:')) {
+    if ((actualBookTitle.isEmpty) && _generatedContent!.contains('서론:')) {
       final lines = _generatedContent!.split('\n');
       for (String line in lines) {
         if (line.contains('"') && line.contains('을 읽으면서')) {
@@ -612,10 +741,11 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
     
     final review = Review(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
+      userId: '', // API에서 자동으로 현재 사용자 ID로 설정됨
       title: extractedTitle,
-      content: _generatedContent!,
-      bookTitle: actualBookTitle,
-      bookAuthor: widget.bookAuthor,
+      content: cleaned,
+      bookTitle: actualBookTitle.isEmpty ? '' : actualBookTitle,
+      bookAuthor: _bookAuthor,
       status: ReviewStatus.draft,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
@@ -642,8 +772,9 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => AiChatPage(
-          initialContext: '발제문: ${widget.bookTitle ?? ''}\n\n$_generatedContent',
-          bookTitle: widget.bookTitle,
+          initialContext: '발제문: ${_bookTitle ?? ''}\n\n${_sanitizeContent(_generatedContent!)}',
+          bookTitle: _bookTitle,
+          bookAuthor: _bookAuthor,
         ),
       ),
     );
@@ -669,10 +800,11 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
   void _createManually() {
     final review = Review(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
+      userId: '', // API에서 자동으로 현재 사용자 ID로 설정됨
       title: '새로운 발제문',
       content: '',
-      bookTitle: widget.bookTitle ?? '',
-      bookAuthor: widget.bookAuthor,
+      bookTitle: _bookTitle ?? '',
+      bookAuthor: _bookAuthor,
       status: ReviewStatus.draft,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),

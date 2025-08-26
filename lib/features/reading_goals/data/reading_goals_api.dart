@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/supabase/supabase_client_provider.dart';
+import '../../../features/auth/services/supabase_auth_service.dart';
 import '../models/reading_goal.dart';
 import '../models/reading_stats.dart';
 import '../models/achievement.dart';
@@ -22,10 +23,17 @@ class SupabaseReadingGoalsApi implements ReadingGoalsApi {
 
   @override
   Future<List<ReadingGoal>> list() async {
+    // 🚨 보안 수정: 사용자 인증 필수
+    final currentUser = SupabaseAuthService().currentUser;
+    if (currentUser == null) {
+      throw Exception('사용자 인증이 필요합니다');
+    }
+    
     try {
       final rows = await _client
           .from(_goalsTable)
           .select()
+          .eq('user_id', currentUser.id)  // 🚨 중요: 사용자별 필터링
           .order('created_at', ascending: false);
       
       return (rows as List)
@@ -33,15 +41,23 @@ class SupabaseReadingGoalsApi implements ReadingGoalsApi {
           .toList();
     } catch (e) {
       print('❌ fetchGoals 에러: $e');
-      return ReadingGoal.sampleGoals;
+      return []; // 🚨 보안: 샘플 데이터 제거
     }
   }
 
   @override
   Future<ReadingGoal> create(ReadingGoal goal) async {
+    // 🚨 보안 수정: 사용자 인증 필수
+    final currentUser = SupabaseAuthService().currentUser;
+    if (currentUser == null) {
+      throw Exception('사용자 인증이 필요합니다');
+    }
+    
+    // 🚨 사용자 ID 포함하여 생성
+    final goalWithUserId = goal.copyWith(userId: currentUser.id);
     final inserted = await _client
         .from(_goalsTable)
-        .insert(_goalToInsertRow(goal))
+        .insert(_goalToInsertRow(goalWithUserId))
         .select()
         .single();
     
@@ -50,10 +66,18 @@ class SupabaseReadingGoalsApi implements ReadingGoalsApi {
 
   @override
   Future<ReadingGoal> update(ReadingGoal goal) async {
+    // 🚨 보안 수정: 사용자 인증 필수
+    final currentUser = SupabaseAuthService().currentUser;
+    if (currentUser == null) {
+      throw Exception('사용자 인증이 필요합니다');
+    }
+    
+    // 🚨 자신의 목표만 수정 가능
     final updated = await _client
         .from(_goalsTable)
         .update(_goalToRow(goal))
         .eq('id', goal.id)
+        .eq('user_id', currentUser.id)  // 🚨 사용자 소유권 확인
         .select()
         .single();
     
@@ -62,22 +86,41 @@ class SupabaseReadingGoalsApi implements ReadingGoalsApi {
 
   @override
   Future<void> delete(String id) async {
-    await _client.from(_goalsTable).delete().eq('id', id);
+    // 🚨 보안 수정: 사용자 인증 필수
+    final currentUser = SupabaseAuthService().currentUser;
+    if (currentUser == null) {
+      throw Exception('사용자 인증이 필요합니다');
+    }
+    
+    // 🚨 자신의 목표만 삭제 가능
+    await _client
+        .from(_goalsTable)
+        .delete()
+        .eq('id', id)
+        .eq('user_id', currentUser.id);  // 🚨 사용자 소유권 확인
   }
 
   @override
   Future<ReadingStats> fetchStats() async {
+    // 🚨 보안 수정: 사용자 인증 필수
+    final currentUser = SupabaseAuthService().currentUser;
+    if (currentUser == null) {
+      throw Exception('사용자 인증이 필요합니다');
+    }
+    
     try {
-      // 1. 전체 독서 통계 집계
+      // 1. 🚨 중요: 현재 사용자의 독서 통계만 집계
       final reviewsResponse = await _client
           .from('reviews')
           .select('book_title, created_at, updated_at')
-          .eq('status', 'completed');
+          .eq('status', 'completed')
+          .eq('user_id', currentUser.id); // 🚨 사용자별 필터링
       
-              final ebooksResponse = await _client
-            .from('ebooks')
-            .select('title, current_page, total_pages, progress, last_read_at')
-            .gte('progress', 1.0); // 완료된 책들만
+      final ebooksResponse = await _client
+          .from('ebooks')
+          .select('title, current_page, total_pages, progress, last_read_at')
+          .gte('progress', 1.0) // 완료된 책들만
+          .eq('user_id', currentUser.id); // 🚨 사용자별 필터링
       
       // 2. 기본 통계 계산
       final completedReviews = reviewsResponse as List;
@@ -147,11 +190,12 @@ class SupabaseReadingGoalsApi implements ReadingGoalsApi {
       // 7. 평균 평점 (추후 리뷰에서 평점 시스템 추가 시 구현)
       const averageRating = 4.0;
       
-      // 8. 달성한 목표 수
+      // 8. 달성한 목표 수 (🚨 사용자별 필터링)
       final goalsResponse = await _client
           .from(_goalsTable)
           .select('is_completed')
-          .eq('is_completed', true);
+          .eq('is_completed', true)
+          .eq('user_id', currentUser.id); // 🚨 사용자별 필터링
       final goalAchievements = (goalsResponse as List).length;
       
       return ReadingStats(
@@ -175,6 +219,7 @@ class SupabaseReadingGoalsApi implements ReadingGoalsApi {
 
   @override
   Future<List<Achievement>> fetchAchievements() async {
+    // 🚨 업적은 공통 데이터이므로 모든 사용자가 볼 수 있음
     try {
       final rows = await _client
           .from(_achievementsTable)
@@ -186,7 +231,7 @@ class SupabaseReadingGoalsApi implements ReadingGoalsApi {
           .toList();
     } catch (e) {
       print('❌ fetchAchievements 에러: $e');
-      return Achievement.sampleAchievements;
+      return []; // 🚨 보안: 샘플 데이터 제거
     }
   }
 
@@ -205,11 +250,8 @@ class SupabaseReadingGoalsApi implements ReadingGoalsApi {
       
       return _achievementFromRow(updated as Map<String, dynamic>);
     } catch (e) {
-      // 테이블이 없는 경우 더미 데이터 반환
-      return Achievement.sampleAchievements.firstWhere(
-        (a) => a.id == achievementId,
-        orElse: () => Achievement.sampleAchievements.first,
-      );
+      print('❌ unlockAchievement 에러: $e');
+      throw Exception('업적 해제에 실패했습니다');
     }
   }
 
@@ -217,6 +259,7 @@ class SupabaseReadingGoalsApi implements ReadingGoalsApi {
   Map<String, dynamic> _goalToRow(ReadingGoal goal) {
     return {
       'id': goal.id,
+      'user_id': goal.userId,  // 🚨 사용자 ID 포함
       'title': goal.title,
       'type': goal.type.name,
       'target_value': goal.targetValue,
@@ -237,6 +280,7 @@ class SupabaseReadingGoalsApi implements ReadingGoalsApi {
   ReadingGoal _goalFromRow(Map<String, dynamic> row) {
     return ReadingGoal(
       id: row['id'] as String,
+      userId: row['user_id'] as String,  // 🚨 사용자 ID 포함
       title: row['title'] as String,
       type: GoalType.values.firstWhere(
         (e) => e.name == (row['type'] as String),

@@ -56,6 +56,7 @@ class _AddBookPageState extends State<AddBookPage> {
 
       final newBook = EBook(
         id: const Uuid().v4(),
+        userId: '', // API에서 자동으로 현재 사용자 ID로 설정됨
         title: _titleController.text.trim(),
         author: _authorController.text.trim(),
         content: _contentController.text.trim(),

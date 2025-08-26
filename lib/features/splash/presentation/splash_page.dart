@@ -41,12 +41,21 @@ class _SplashPageState extends State<SplashPage> {
         final tempBookTitle = prefs.getString('temp_book_title');
         final tempBookAuthor = prefs.getString('temp_book_author');
         final tempChatHistory = prefs.getString('temp_chat_history');
+        bool _isBanned(String? v) {
+          if (v == null) return true;
+          final t = v.trim();
+          return t.isEmpty || t == '안녕하세요' || t == '책';
+        }
+
+        print('🚀 [SplashPage] Temp handoff to ReviewCreationPage: '
+            'title="${_isBanned(tempBookTitle) ? '(none)' : tempBookTitle}", '
+            'author="${_isBanned(tempBookAuthor) ? '(none)' : tempBookAuthor}"');
         
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (context) => ReviewCreationPage(
-              bookTitle: tempBookTitle,
-              bookAuthor: tempBookAuthor,
+              bookTitle: _isBanned(tempBookTitle) ? null : tempBookTitle,
+              bookAuthor: _isBanned(tempBookAuthor) ? null : tempBookAuthor,
               chatHistory: tempChatHistory,
             ),
           ),
@@ -57,22 +66,13 @@ class _SplashPageState extends State<SplashPage> {
           MaterialPageRoute(builder: (context) => const MainNavigation()),
         );
       }
-    } else {
-      // 비로그인 사용자 - 온보딩으로 이동 (첫 방문) 또는 메인으로 이동 (재방문)
-      final hasSeenOnboarding = await _checkOnboardingSeen();
-      
-      if (hasSeenOnboarding) {
-        // 재방문 - 바로 메인화면 (게스트 모드)
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const MainNavigation()),
-        );
-      } else {
-        // 첫 방문 - 온보딩 표시
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const IntroPage()),
-        );
-      }
-    }
+            } else {
+          // 🚨🚨🚨 비로그인 사용자 - 항상 로그인 페이지로 이동 (보안상 필수)
+          print('🚨 [SplashPage] 비인증 사용자 감지 - 로그인 페이지로 강제 리디렉션');
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const LoginPage()),
+          );
+        }
   }
   
   Future<bool> _checkOnboardingSeen() async {

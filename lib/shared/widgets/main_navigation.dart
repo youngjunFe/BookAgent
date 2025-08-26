@@ -17,10 +17,12 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> {
   late int _currentIndex;
+  bool _isAuthChecked = false;
+  bool _isLoggedIn = false;
 
   List<Widget> get _pages => [
     const HomeView(),
-    const LibraryPage(),
+    const LibraryPage(), 
     _buildMyPageWithAuth(),
   ];
 
@@ -28,6 +30,78 @@ class _MainNavigationState extends State<MainNavigation> {
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+    _checkAuthenticationStatus();
+  }
+
+  // 🚨🚨🚨 최강 인증 체크: 앱 전체 접근 제어
+  Future<void> _checkAuthenticationStatus() async {
+    try {
+      print('🔒 [MainNavigation] 인증 상태 확인 시작');
+      
+      final authService = SupabaseAuthService();
+      final isLoggedIn = await authService.restoreLoginState();
+      
+      print('📋 [MainNavigation] 로그인 상태: $isLoggedIn');
+      
+      setState(() {
+        _isLoggedIn = isLoggedIn;
+        _isAuthChecked = true;
+      });
+      
+      // 🚨🚨🚨 비로그인 사용자는 즉시 로그인 페이지로 리다이렉트
+      if (!isLoggedIn && mounted) {
+        print('🚨 [MainNavigation] 비인증 사용자 감지 - 로그인 페이지로 강제 리디렉션');
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+        );
+        return;
+      }
+      
+      // 🚨 추가 보안: 주기적으로 인증 상태 재확인
+      _startPeriodicAuthCheck();
+      
+    } catch (e) {
+      print('❌ [MainNavigation] 인증 상태 확인 실패: $e');
+      setState(() {
+        _isLoggedIn = false;
+        _isAuthChecked = true;
+      });
+      
+      // 에러 발생시에도 로그인 페이지로 리다이렉트
+      if (mounted) {
+        print('🚨 [MainNavigation] 인증 오류 - 로그인 페이지로 리디렉션');
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+        );
+      }
+    }
+  }
+  
+  // 🚨 주기적 인증 확인 (30초마다)
+  void _startPeriodicAuthCheck() {
+    Future.delayed(const Duration(seconds: 30), () async {
+      if (!mounted) return;
+      
+      try {
+        final authService = SupabaseAuthService();
+        final currentUser = authService.currentUser;
+        
+        if (currentUser == null) {
+          print('🚨 [MainNavigation] 주기적 체크: 세션 만료 감지');
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => const LoginPage()),
+            );
+          }
+          return;
+        }
+        
+        // 다음 체크 예약
+        _startPeriodicAuthCheck();
+      } catch (e) {
+        print('❌ [MainNavigation] 주기적 인증 체크 실패: $e');
+      }
+    });
   }
 
   Widget _buildMyPageWithAuth() {
@@ -130,6 +204,23 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
+    // 🚨 인증 체크가 완료되지 않았거나 로그인되지 않은 경우 로딩 화면
+    if (!_isAuthChecked || !_isLoggedIn) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('인증 확인 중...'),
+            ],
+          ),
+        ),
+      );
+    }
+    
     return Scaffold(
       body: _pages[_currentIndex],
       bottomNavigationBar: Container(

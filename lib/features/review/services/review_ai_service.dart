@@ -23,7 +23,7 @@ class ReviewAiService {
         final resp = await http.post(
           uri,
           headers: {'Content-Type': 'application/json'},
-          body: '{"bookTitle": ${_escapeJson(bookTitle)}, "chatHistory": ${_escapeJson(chatHistory)}}',
+          body: '{"bookTitle": ${_escapeJson(bookTitle)}, "chatHistory": ${_escapeJson(chatHistory)}, "constraints": ${_escapeJson(_constraintsPrompt())}, "format": "json", "schema": {"title":"string","content":"string"}}',
         );
         if (resp.statusCode >= 200 && resp.statusCode < 300 && resp.body.isNotEmpty) {
           print('🔍 Railway API 응답: ${resp.body.substring(0, resp.body.length > 200 ? 200 : resp.body.length)}...');
@@ -54,15 +54,17 @@ class ReviewAiService {
           body: {
             'chat_history': chatHistory ?? '',
             'book_title': bookTitle ?? '',
+            'constraints': _constraintsPrompt(),
           },
         );
 
         final data = res.data;
         if (data is Map && data['content'] is String) {
-          return data['content'] as String;
+          final content = data['content'] as String;
+          return _extractFromJsonOrRaw(content);
         }
         if (data is String && data.isNotEmpty) {
-          return data;
+          return _extractFromJsonOrRaw(data);
         }
       } catch (_) {
         // 아래 HTTP 폴백 시도
@@ -77,12 +79,12 @@ class ReviewAiService {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ${AppConfig.supabaseAnonKey}',
           },
-          body: '{"chat_history": ${_escapeJson(chatHistory)}, "book_title": ${_escapeJson(bookTitle)}}',
+          body: '{"chat_history": ${_escapeJson(chatHistory)}, "book_title": ${_escapeJson(bookTitle)}, "constraints": ${_escapeJson(_constraintsPrompt())}, "format": "json", "schema": {"title":"string","content":"string"}}',
         );
         if (resp.statusCode >= 200 && resp.statusCode < 300) {
           final body = resp.body;
           if (body.isNotEmpty) {
-            return body;
+            return _extractFromJsonOrRaw(body);
           }
         }
       } catch (_) {}
@@ -93,14 +95,37 @@ class ReviewAiService {
   }
 
   static String _fallback(String? bookTitle) {
-    return '${bookTitle ?? '책'}에 대한 발제문\n\n'
-        '이 작품을 읽으며 가장 인상 깊었던 지점과 질문들을 정리해보세요.\n'
-        '1) 핵심 메시지\n2) 인물의 변화\n3) 나의 관점 변화';
+    final title = (bookTitle == null || bookTitle.trim().isEmpty) ? '책' : bookTitle.trim();
+    return '${title}에 대한 발제문\n\n'
+        '첫 줄은 발제문 제목으로 간결하게 작성하고, 그 이후는 평문으로만 작성하세요.\n'
+        '- 금지: 인사말 금지, "제목:" 금지, 서론/본론/결론 머리글 금지, 마크다운 기호 금지';
   }
 
   static String _escapeJson(String? value) {
     final v = (value ?? '').replaceAll('\\', r'\\').replaceAll('"', r'\"').replaceAll('\n', r'\n');
     return '"$v"';
+  }
+
+  static String _constraintsPrompt() {
+    return '응답 형식은 JSON 객체 하나만: {"title": string, "content": string}. '\
+           '- title: 60자 이하, 인사말/"제목:"/마크다운/따옴표 금지. '\
+           '- content: 순수 평문 단락만; 서론/본론/결론/요약 등 머리글 금지, 마크다운(**, *, #, >, ```) 금지, 코드펜스, 리스트, 인사말 금지. '\
+           '- 책 제목/저자 정보를 응답에 포함하지 말 것. '\
+           '- JSON 외의 어떠한 텍스트(설명/코드펜스 등)도 추가하지 말 것.';
+  }
+
+  // Try to parse {title, content} JSON; if not JSON, return raw
+  static String _extractFromJsonOrRaw(String raw) {
+    try {
+      final data = json.decode(raw);
+      if (data is Map && data['title'] is String && data['content'] is String) {
+        final title = (data['title'] as String).trim();
+        final content = (data['content'] as String).trim();
+        // Combine into a single string; the caller still sanitizes
+        return '$title\n\n$content';
+      }
+    } catch (_) {}
+    return raw;
   }
 }
 

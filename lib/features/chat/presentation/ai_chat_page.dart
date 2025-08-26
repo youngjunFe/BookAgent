@@ -9,6 +9,7 @@ import '../../review/presentation/review_creation_page.dart';
 class AiChatPage extends StatefulWidget {
   final String? initialContext;
   final String? bookTitle;
+  final String? bookAuthor;
   final bool isGuestMode;
   final VoidCallback? onChatComplete;
   final Function(String)? onChatCompleteWithHistory;
@@ -17,6 +18,7 @@ class AiChatPage extends StatefulWidget {
     super.key,
     this.initialContext,
     this.bookTitle,
+    this.bookAuthor,
     this.isGuestMode = false,
     this.onChatComplete,
     this.onChatCompleteWithHistory,
@@ -618,28 +620,35 @@ class _AiChatPageState extends State<AiChatPage> {
     final chatHistory = _messages
         .map((msg) => '${msg.isUser ? '사용자' : 'AI'}: ${msg.text}')
         .join('\n\n');
-    
-    // 책 제목 추출 (간단한 로직)
-    String? bookTitle;
-    for (final message in _messages) {
-      if (message.text.contains('책') && message.text.length < 100) {
-        // 책 제목이 포함된 것 같은 짧은 메시지에서 추출
-        final words = message.text.split(' ');
-        for (final word in words) {
-          if (word.length > 2 && !['책을', '책이', '책의', '책에'].contains(word)) {
-            bookTitle = word.replaceAll(RegExp(r'[^\w가-힣]'), '');
-            if (bookTitle.isNotEmpty) break;
-          }
-        }
-        if (bookTitle != null && bookTitle.isNotEmpty) break;
-      }
+
+    // 책 제목/저자는 검색(선택) 값에 절대 우선권 부여
+    String? selectedTitle = widget.bookTitle;
+    String? selectedAuthor = widget.bookAuthor;
+
+    // 금지 값 필터링
+    bool _isBanned(String? v) {
+      if (v == null) return true;
+      final t = v.trim();
+      return t.isEmpty || t == '안녕하세요' || t == '책';
     }
-    
+
+    if (_isBanned(selectedTitle)) {
+      selectedTitle = null; // 의미 없는 기본값은 전달하지 않음
+    }
+    if (_isBanned(selectedAuthor)) {
+      selectedAuthor = null;
+    }
+
+    // 로깅: 어떤 값이 전달되는지 추적
+    print('📚 [AiChatPage] Navigate to ReviewCreationPage with: '
+        'title="${selectedTitle ?? '(none)'}", author="${selectedAuthor ?? '(none)'}"');
+
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => ReviewCreationPage(
           chatHistory: chatHistory,
-          bookTitle: bookTitle ?? '책',
+          bookTitle: selectedTitle,
+          bookAuthor: selectedAuthor,
         ),
       ),
     );

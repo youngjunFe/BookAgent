@@ -15,6 +15,7 @@ enum ReadingStatus {
 
 class Review {
   final String id;
+  final String userId; // 추가: 사용자 ID로 데이터 격리
   final String title;
   final String content;
   final String bookTitle;
@@ -31,6 +32,7 @@ class Review {
   
   Review({
     required this.id,
+    required this.userId,
     required this.title,
     required this.content,
     required this.bookTitle,
@@ -73,6 +75,7 @@ class Review {
   // 복사본 생성 (수정용)
   Review copyWith({
     String? id,
+    String? userId,
     String? title,
     String? content,
     String? bookTitle,
@@ -89,6 +92,7 @@ class Review {
   }) {
     return Review(
       id: id ?? this.id,
+      userId: userId ?? this.userId,
       title: title ?? this.title,
       content: content ?? this.content,
       bookTitle: bookTitle ?? this.bookTitle,
@@ -109,6 +113,7 @@ class Review {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'userId': userId,
       'title': title,
       'content': content,
       'bookTitle': bookTitle,
@@ -129,6 +134,7 @@ class Review {
   factory Review.fromJson(Map<String, dynamic> json) {
     return Review(
       id: json['id'],
+      userId: json['userId'],
       title: json['title'],
       content: json['content'],
       bookTitle: json['bookTitle'],
@@ -335,6 +341,7 @@ class Book {
   @override
   int get hashCode => id.hashCode;
 }
+
 
 
 
