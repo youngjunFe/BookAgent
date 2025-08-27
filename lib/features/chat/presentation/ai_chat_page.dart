@@ -34,6 +34,27 @@ class _AiChatPageState extends State<AiChatPage> {
   final List<ChatMessage> _messages = [];
   bool _isTyping = false;
 
+  String _displayTextFor(ChatMessage message) {
+    if (message.isUser) return message.text;
+    final t = message.text.trim();
+    // If the assistant text still contains a JSON-like object with reply, extract it
+    final re = RegExp(r'"reply"\s*:\s*"([\s\S]*?)"');
+    final m = re.firstMatch(t);
+    if (m != null) {
+      return m
+          .group(1)!
+          .replaceAll(r'\n', '\n')
+          .replaceAll(r'\r', '\r')
+          .replaceAll(r'\t', '\t')
+          .replaceAll(r'\"', '"');
+    }
+    // Strip surrounding braces if it's a one-line object-like string
+    if (t.startsWith('{') && t.endsWith('}') && t.length < 400) {
+      return t.substring(1, t.length - 1);
+    }
+    return message.text;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -118,35 +139,7 @@ class _AiChatPageState extends State<AiChatPage> {
         backgroundColor: AppColors.background,
         elevation: 1,
         shadowColor: AppColors.dividerColor,
-        actions: widget.isGuestMode ? [
-          // 게스트 모드에서는 발제문 생성 버튼만 표시
-          ElevatedButton.icon(
-            onPressed: () {
-              final chatHistory = _messages.map((msg) => 
-                '${msg.isUser ? "사용자" : "AI"}: ${msg.text}'
-              ).join('\n\n');
-              
-              if (widget.onChatCompleteWithHistory != null) {
-                widget.onChatCompleteWithHistory!(chatHistory);
-              } else if (widget.onChatComplete != null) {
-                widget.onChatComplete!();
-              }
-            },
-            icon: const Icon(Icons.create, size: 18),
-            label: const Text('발제문 생성'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            ),
-          ),
-          const SizedBox(width: 8),
-        ] : [
-          IconButton(
-            onPressed: _showSaveReviewDialog,
-            icon: const Icon(Icons.save_outlined),
-            tooltip: '발제문으로 저장',
-          ),
+        actions: [
           PopupMenuButton<String>(
             onSelected: (value) {
               switch (value) {
@@ -290,7 +283,7 @@ class _AiChatPageState extends State<AiChatPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    message.text,
+                    _displayTextFor(message),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: message.isUser
                           ? AppColors.onPrimary
@@ -535,12 +528,95 @@ class _AiChatPageState extends State<AiChatPage> {
       );
       
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return data['reply'] ?? '응답을 받을 수 없습니다.';
+        final body = response.body.trim();
+        print('🔍 원본 응답: $body');
+        
+        // 1단계: 직접 JSON 파싱 시도
+        try {
+          final decoded = jsonDecode(body);
+          if (decoded is Map) {
+            // 가능한 응답 키들 체크
+            final keys = ['reply', 'message', 'content', 'text', 'response', 'answer'];
+            for (final key in keys) {
+              if (decoded[key] is String) {
+                final result = (decoded[key] as String).trim();
+                if (result.isNotEmpty && !result.startsWith('{')) {
+                  print('✅ JSON 키 "$key"에서 추출: ${result.substring(0, result.length > 50 ? 50 : result.length)}...');
+                  return result;
+                }
+              }
+            }
+          }
+        } catch (e) {
+          print('⚠️ JSON 직접 파싱 실패: $e');
+        }
+        
+        // 2단계: 중첩 JSON 문자열 처리
+        if (body.startsWith('"') && body.endsWith('"')) {
+          try {
+            // 문자열로 인코딩된 JSON 디코딩
+            final unescaped = jsonDecode(body) as String;
+            print('🔍 문자열 디코딩: $unescaped');
+            final decoded = jsonDecode(unescaped);
+            if (decoded is Map) {
+              final keys = ['reply', 'message', 'content', 'text', 'response', 'answer'];
+              for (final key in keys) {
+                if (decoded[key] is String) {
+                  final result = (decoded[key] as String).trim();
+                  if (result.isNotEmpty && !result.startsWith('{')) {
+                    print('✅ 중첩 JSON에서 추출: ${result.substring(0, result.length > 50 ? 50 : result.length)}...');
+                    return result;
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            print('⚠️ 중첩 JSON 파싱 실패: $e');
+          }
+        }
+        
+        // 3단계: 정규식으로 JSON 필드 추출
+        final patterns = [
+          RegExp(r'"reply"\s*:\s*"([^"]*(?:\\.[^"]*)*)"'),
+          RegExp(r'"message"\s*:\s*"([^"]*(?:\\.[^"]*)*)"'),
+          RegExp(r'"content"\s*:\s*"([^"]*(?:\\.[^"]*)*)"'),
+          RegExp(r'"text"\s*:\s*"([^"]*(?:\\.[^"]*)*)"'),
+          RegExp(r'"response"\s*:\s*"([^"]*(?:\\.[^"]*)*)"'),
+          RegExp(r'"answer"\s*:\s*"([^"]*(?:\\.[^"]*)*)"'),
+        ];
+        
+        for (final pattern in patterns) {
+          final match = pattern.firstMatch(body);
+          if (match != null && match.group(1) != null) {
+            final raw = match.group(1)!;
+            final cleaned = raw
+                .replaceAll(r'\"', '"')
+                .replaceAll(r'\\n', '\n')
+                .replaceAll(r'\\r', '\r')
+                .replaceAll(r'\\t', '\t')
+                .replaceAll(r'\\\\', '\\');
+            if (cleaned.trim().isNotEmpty && !cleaned.trim().startsWith('{')) {
+              print('✅ 정규식으로 추출: ${cleaned.substring(0, cleaned.length > 50 ? 50 : cleaned.length)}...');
+              return cleaned.trim();
+            }
+          }
+        }
+        
+        // 4단계: 원본이 순수 텍스트인지 확인
+        if (!body.startsWith('{') && !body.startsWith('[') && body.length > 0) {
+          print('✅ 순수 텍스트로 반환: ${body.substring(0, body.length > 50 ? 50 : body.length)}...');
+          return body;
+        }
+        
+        // 5단계: 마지막 대안 - 원본 반환
+        print('⚠️ 모든 파싱 실패, 원본 반환');
+        return body.isNotEmpty ? body : '응답을 받을 수 없습니다.';
+        
       } else {
         throw Exception('API Error: ${response.statusCode}');
       }
     } catch (e) {
+      print('❌ AI API 호출 실패: $e');
       throw Exception('Failed to call AI API: $e');
     }
   }

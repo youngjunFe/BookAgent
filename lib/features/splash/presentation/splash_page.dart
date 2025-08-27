@@ -66,13 +66,13 @@ class _SplashPageState extends State<SplashPage> {
           MaterialPageRoute(builder: (context) => const MainNavigation()),
         );
       }
-            } else {
-          // 🚨🚨🚨 비로그인 사용자 - 항상 로그인 페이지로 이동 (보안상 필수)
-          print('🚨 [SplashPage] 비인증 사용자 감지 - 로그인 페이지로 강제 리디렉션');
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const LoginPage()),
-          );
-        }
+    } else {
+      // 비로그인 사용자는 데모 페이지로 이동
+      print('🧪 [SplashPage] 비인증 사용자 - 게스트 데모 페이지로 이동');
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const IntroPage()),
+      );
+    }
   }
   
   Future<bool> _checkOnboardingSeen() async {
