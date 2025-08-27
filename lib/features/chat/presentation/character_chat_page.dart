@@ -541,13 +541,34 @@ class _CharacterChatPageState extends State<CharacterChatPage> {
       print('🎭 Character API 응답 본문: ${response.body.substring(0, response.body.length > 100 ? 100 : response.body.length)}...');
 
       if (response.statusCode == 200) {
-        // 일반 chat API는 직접 텍스트 응답을 반환
-        final characterResponse = response.body.trim();
-        if (characterResponse.isNotEmpty) {
-          return characterResponse;
-        } else {
-          print('❌ Character API 빈 응답');
-          throw Exception('Empty response from Character API');
+        final responseBody = response.body.trim();
+        
+        // JSON 응답인지 확인
+        try {
+          if (responseBody.startsWith('{') && responseBody.endsWith('}')) {
+            // JSON 형태로 응답이 온 경우
+            final jsonData = jsonDecode(responseBody);
+            final characterResponse = jsonData['reply'] ?? jsonData['response'] ?? responseBody;
+            
+            if (characterResponse.isNotEmpty) {
+              return characterResponse.toString();
+            } else {
+              print('❌ Character API JSON 파싱 후 빈 응답');
+              throw Exception('Empty response after JSON parsing');
+            }
+          } else {
+            // 일반 텍스트 응답인 경우
+            if (responseBody.isNotEmpty) {
+              return responseBody;
+            } else {
+              print('❌ Character API 빈 응답');
+              throw Exception('Empty response from Character API');
+            }
+          }
+        } catch (jsonError) {
+          print('❌ JSON 파싱 실패, 원본 텍스트 반환: $jsonError');
+          // JSON 파싱에 실패하면 원본 텍스트를 반환
+          return responseBody.isNotEmpty ? responseBody : '응답을 처리할 수 없습니다.';
         }
       } else {
         throw Exception('API Error: ${response.statusCode} - ${response.body}');
