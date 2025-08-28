@@ -5,10 +5,10 @@ class AppColors {
   
   // === Solid Colors ===
   
-  // Primary Colors - Ink Blue (디지털 플랫폼의 안정성과 지속적인 신뢰감)
-  static const Color primary = Color(0xFF3D7486); // Ink Blue 500
-  static const Color primaryLight = Color(0xFFAEC9E6); // Ink Blue 300
-  static const Color primaryDark = Color(0xFF1C3A50); // Ink Blue 900
+  // Primary Colors - Ink Blue (디자이너 디자인 시스템 정확한 값)
+  static const Color primary = Color(0xFF3D74B6); // Ink Blue 500 (정확한 값)
+  static const Color primaryLight = Color(0xFFAEC9E6); // Ink Blue 300 
+  static const Color primaryDark = Color(0xFF2C65A3); // Ink Blue 700
   static const Color primarySurface = Color(0xFFE2EAF4); // Ink Blue 100
   
   // Secondary Colors - Brick Red (창작욕과 감성을 자극)
