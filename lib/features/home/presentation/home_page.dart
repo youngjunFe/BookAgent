@@ -18,232 +18,122 @@ class HomePage extends StatelessWidget {
   }
 }
 
-class HomeView extends StatelessWidget {
+class HomeView extends StatefulWidget {
   const HomeView({super.key});
+
+  @override
+  State<HomeView> createState() => _HomeViewState();
+}
+
+class _HomeViewState extends State<HomeView> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.grey[50],
       body: SafeArea(
         child: Column(
           children: [
-            // 스크롤 가능한 상단 영역
-            Expanded(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                // App Header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      AppStrings.appName,
-                      style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
+            // Header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '홈',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
                     ),
-                    IconButton(
-                      onPressed: () {
-                        // TODO: 공지사항 페이지로 이동
-                      },
-                      icon: const Icon(
-                        Icons.notifications_outlined,
-                        color: AppColors.primary,
-                        size: 28,
-                      ),
+                  ),
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: AppColors.primarySurface,
+                      shape: BoxShape.circle,
                     ),
-                  ],
-                ),
-                
-                const SizedBox(height: 32),
-                
-                // Welcome Section - 새로운 디자인 시스템 적용
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        AppColors.secondarySurface, // 새로운 Container 색상
-                        AppColors.primarySurface,   // 새로운 Container 색상
-                      ],
+                    child: Icon(
+                      Icons.person_outline,
+                      color: AppColors.primary,
+                      size: 20,
                     ),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: ElevationLevels.level1, // Level1 Elevation 적용
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        AppStrings.homeIntroTitle,
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          height: 1.3,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        AppStrings.homeIntroSubtitle,
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppColors.textSecondary,
-                          height: 1.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                
-                const SizedBox(height: 20),
-                
-                // 시간별 개인화 메시지
-                _buildTimeBasedMessage(),
-                
-                const SizedBox(height: 32),
-                
-                // Quick Actions
-                Text(
-                  '빠른 액션',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                
-                const SizedBox(height: 16),
-                
-                Row(
-                  children: [
-                    Expanded(
-                      child: _QuickActionCard(
-                        icon: Icons.menu_book,
-                        title: '전자책 읽기',
-                        subtitle: '책을 읽어보세요',
-                        color: AppColors.reading,
-                        onTap: () {
-                          // 나의 서재의 전자책 탭으로 이동
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => const MainNavigation(initialIndex: 1), // 서재 탭으로 이동
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _QuickActionCard(
-                        icon: Icons.chat_bubble_outline,
-                        title: '등장인물과 대화',
-                        subtitle: '캐릭터와 대화해보세요',
-                        color: AppColors.secondary,
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => const CharacterSelectionPage(),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                
-                const SizedBox(height: 16),
-
-                // 독서 목표 카드
-                _QuickActionCard(
-                  icon: Icons.flag,
-                  title: '독서 목표',
-                  subtitle: '목표를 설정하고 달성 현황을 확인해보세요',
-                  color: Colors.amber,
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const ReadingGoalsPage(),
-                      ),
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 24),
-                
-                // Recent Activity
-                Text(
-                  '최근 활동',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                
-                const SizedBox(height: 16),
-                
-                _buildRecentActivity(context),
-                
-                const SizedBox(height: 100), // CTA 영역을 위한 여백
-                    ],
-                  ),
-                ),
+                ],
               ),
             ),
             
-            // 고정된 CTA 버튼 영역 - 새로운 디자인 시스템 적용
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                boxShadow: ElevationLevels.level2, // Level2 Elevation 적용
-              ),
-              child: SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const BookSearchPage(),
+            // 스크롤 가능한 컨텐츠 영역
+            Expanded(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 20),
+                      
+                      // 인사말
+                      Text(
+                        '사용자님, 상쾌한 아침이에요.\n처음과 오늘 첫 감동을 나눠보세요.',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                          height: 1.4,
+                        ),
                       ),
-                    );
-                  },
-                  style: ButtonStyle(
-                    backgroundColor: MaterialStateProperty.resolveWith((states) {
-                      if (states.contains(MaterialState.pressed)) {
-                        // Pressed: opacity-0.10 (10%)
-                        return AppColors.primary.withOpacity(0.90);
-                      }
-                      if (states.contains(MaterialState.hovered)) {
-                        // Hover: opacity-0.08 (8%)
-                        return AppColors.primary.withOpacity(0.92);
-                      }
-                      return AppColors.primary;
-                    }),
-                    foregroundColor: MaterialStateProperty.all(AppColors.onPrimary),
-                    shape: MaterialStateProperty.all(
-                      RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                      
+                      const SizedBox(height: 32),
+                      
+                      // 슬라이드 캐러셀
+                      _buildImageCarousel(),
+                      
+                      const SizedBox(height: 32),
+                      
+                      // 지금 감동을 기록하세요 버튼
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const BookSearchPage(),
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: Text(
+                            '지금 감동을 기록하세요',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    elevation: MaterialStateProperty.resolveWith((states) {
-                      if (states.contains(MaterialState.pressed)) {
-                        return ElevationLevels.getFlutterElevation(1);
-                      }
-                      if (states.contains(MaterialState.hovered)) {
-                        return ElevationLevels.getFlutterElevation(3);
-                      }
-                      return ElevationLevels.getFlutterElevation(2);
-                    }),
-                  ),
-                  child: const Text(
-                    '새로운 책 찾기',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
+                      
+                      const SizedBox(height: 100), // 하단 여백
+                    ],
                   ),
                 ),
               ),
@@ -254,243 +144,180 @@ class HomeView extends StatelessWidget {
     );
   }
 
-  Widget _buildTimeBasedMessage() {
-    final hour = DateTime.now().hour;
-    String timeMessage;
-    String personalMessage;
-    
-    if (hour >= 6 && hour < 12) {
-      timeMessage = "좋은 아침이에요! 📚";
-      personalMessage = "새로운 하루, 책과 함께 시작해보세요!";
-    } else if (hour >= 12 && hour < 18) {
-      timeMessage = "오후의 여유로운 시간 ☀️";
-      personalMessage = "책이 줄 수 있어요. 책장을 펼쳐해 주세요!";
-    } else if (hour >= 18 && hour < 22) {
-      timeMessage = "저녁의 따뜻한 시간 🌅";
-      personalMessage = "하루를 마무리하며 좋은 책과 함께하세요.";
-    } else {
-      timeMessage = "밤의 고요한 시간 🌙";
-      personalMessage = "조용한 밤, 깊이 있는 독서는 어떠세요?";
-    }
-    
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.primary.withOpacity(0.1),
-            AppColors.primary.withOpacity(0.05),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.primary.withOpacity(0.2),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            timeMessage,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.primary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            personalMessage,
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-              height: 1.4,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // 이미지 캐러셀 위젯
+  Widget _buildImageCarousel() {
+    final List<String> tempImages = [
+      'https://picsum.photos/350/200?random=1',
+      'https://picsum.photos/350/200?random=2', 
+      'https://picsum.photos/350/200?random=3',
+    ];
 
-  Widget _buildRecentActivity(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.dividerColor,
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildActivityItem(
-            context,
-            icon: Icons.menu_book,
-            title: '《잉크 속의 눈》 읽기 완료',
-            subtitle: '방금 전',
-            iconColor: AppColors.success,
-          ),
-          const SizedBox(height: 12),
-          _buildActivityItem(
-            context,
-            icon: Icons.chat_bubble,
-            title: '해리 포터와 대화',
-            subtitle: '5분 전',
-            iconColor: AppColors.primary,
-          ),
-          const SizedBox(height: 12),
-          _buildActivityItem(
-            context,
-            icon: Icons.edit,
-            title: '골목의 왕, 라떼 발제문 작성',
-            subtitle: '1시간 전',
-            iconColor: Colors.orange,
-          ),
-          const SizedBox(height: 12),
-          _buildActivityItem(
-            context,
-            icon: Icons.flag,
-            title: '월간 독서 목표 달성',
-            subtitle: '2시간 전',
-            iconColor: Colors.amber,
-          ),
-          const SizedBox(height: 16),
-          Center(
-            child: TextButton(
-              onPressed: () {
-                // 전체 활동 내역 페이지로 이동
-              },
-              child: const Text('모든 활동 보기'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActivityItem(BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color iconColor,
-  }) {
-    return Row(
+    return Column(
       children: [
+        // 캐러셀 영역
         Container(
-          width: 40,
-          height: 40,
+          height: 200,
           decoration: BoxDecoration(
-            color: iconColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(16),
+            color: Colors.grey[200],
           ),
-          child: Icon(
-            icon,
-            color: iconColor,
-            size: 20,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Stack(
             children: [
-              Text(
-                title,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w500,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              // PageView
+              PageView.builder(
+                controller: _pageController,
+                onPageChanged: (index) {
+                  setState(() {
+                    _currentPage = index;
+                  });
+                },
+                itemCount: tempImages.length,
+                itemBuilder: (context, index) {
+                  return Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      color: Colors.grey[300],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.network(
+                        tempImages[index],
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.grey[300],
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.image,
+                                    size: 48,
+                                    color: Colors.grey[600],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    '임시 이미지 ${index + 1}',
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  );
+                },
               ),
-              Text(
-                subtitle,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textHint,
+              
+              // 이전 버튼 
+              Positioned(
+                left: 16,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: GestureDetector(
+                    onTap: () {
+                      if (_currentPage > 0) {
+                        _pageController.previousPage(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      }
+                    },
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.9),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.chevron_left,
+                        color: AppColors.textPrimary,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              
+              // 다음 버튼
+              Positioned(
+                right: 16,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: GestureDetector(
+                    onTap: () {
+                      if (_currentPage < tempImages.length - 1) {
+                        _pageController.nextPage(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      }
+                    },
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.9),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.chevron_right,
+                        color: AppColors.textPrimary,
+                        size: 24,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ],
+          ),
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // 페이지 인디케이터
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(
+            tempImages.length,
+            (index) => Container(
+              width: 8,
+              height: 8,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _currentPage == index
+                    ? AppColors.primary
+                    : Colors.grey[400],
+              ),
+            ),
           ),
         ),
       ],
-    );
-  }
-}
-
-class _QuickActionCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _QuickActionCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.cardColor,
-      borderRadius: BorderRadius.circular(16),
-      elevation: ElevationLevels.getFlutterElevation(1), // Level1 Elevation
-      shadowColor: Colors.black,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        splashColor: color.withOpacity(0.10), // State Layer - Pressed (10%)
-        highlightColor: color.withOpacity(0.08), // State Layer - Hover (8%)
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: AppColors.dividerColor,
-              width: 1,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                title,
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
