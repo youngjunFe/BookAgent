@@ -137,12 +137,17 @@ class _BookSearchPageState extends State<BookSearchPage> {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: book.image.isNotEmpty
+                    child: _shouldShowImage(book)
                       ? Image.network(
                           book.image,
                           fit: BoxFit.cover,
                           loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
+                            if (loadingProgress == null) {
+                              print('✅ [${book.title}] Image loaded successfully!');
+                              print('🔗 URL: "${book.image}"');
+                              print('─' * 50);
+                              return child;
+                            }
                             return Container(
                               decoration: BoxDecoration(
                                 color: AppColors.primarySurface,
@@ -161,6 +166,10 @@ class _BookSearchPageState extends State<BookSearchPage> {
                             );
                           },
                           errorBuilder: (context, error, stackTrace) {
+                            print('❌ [${book.title}] Image loading FAILED!');
+                            print('🔗 URL: "${book.image}"');
+                            print('💥 Error: $error');
+                            print('─' * 50);
                             return _buildBookCoverPlaceholder(book.title);
                           },
                         )
@@ -332,6 +341,24 @@ class _BookSearchPageState extends State<BookSearchPage> {
         ),
       ),
     );
+  }
+
+  /// 🖼️ 이미지 표시 여부 판단 (디버깅 포함)
+  bool _shouldShowImage(BookSearchResult book) {
+    print('🖼️ [${book.title}] Image URL: "${book.image}"');
+    print('📏 Length: ${book.image.length}');
+    print('🔍 isEmpty: ${book.image.isEmpty}');
+    print('✂️ trimmed isEmpty: ${book.image.trim().isEmpty}');
+    print('🌐 Starts with http: ${book.image.startsWith('http')}');
+    
+    final shouldShow = book.image.isNotEmpty && 
+                      book.image.trim().isNotEmpty && 
+                      (book.image.startsWith('http://') || book.image.startsWith('https://'));
+    
+    print('✅ Should show image: $shouldShow');
+    print('─' * 50);
+    
+    return shouldShow;
   }
 
   /// 📚 책 표지 플레이스홀더 생성 (책 제목 기반 색상 + 이니셜)
