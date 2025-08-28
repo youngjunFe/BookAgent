@@ -20,7 +20,7 @@ class _BookSearchPageState extends State<BookSearchPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: const Text('책 검색'),
         backgroundColor: AppColors.surface,
@@ -32,7 +32,7 @@ class _BookSearchPageState extends State<BookSearchPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '어떤 책에 대해 이야기하고 싶으신가요?',
+              '어떤 책을 읽으셨나요?',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -51,7 +51,7 @@ class _BookSearchPageState extends State<BookSearchPage> {
               child: TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: '책 제목이나 저자명을 입력하세요',
+                  hintText: '편하고 입력해 주세요',
                   border: InputBorder.none,
                   suffixIcon: IconButton(
                     icon: _isSearching 
@@ -109,144 +109,126 @@ class _BookSearchPageState extends State<BookSearchPage> {
 
   Widget _buildBookItem(BookSearchResult book) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: AppColors.cardColor,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: ElevationLevels.level1, // Level1 Elevation
+        color: Colors.white,
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.dividerColor.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: () => _selectBook(book),
-          borderRadius: BorderRadius.circular(16),
-          splashColor: AppColors.primary.withOpacity(0.10), // State Layer - Pressed (10%)
-          highlightColor: AppColors.primary.withOpacity(0.08), // State Layer - Hover (8%)
+          splashColor: AppColors.primary.withOpacity(0.05),
+          highlightColor: AppColors.primary.withOpacity(0.03),
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 📚 개선된 책 표지 - 더 크고 세련되게
+                // 📚 책 표지 이미지 (작게)
                 Container(
-                  width: 80,  // 60 → 80으로 확대
-                  height: 110, // 80 → 110으로 확대
+                  width: 45,
+                  height: 60,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: ElevationLevels.level2, // Level2 Elevation for 책 표지
+                    borderRadius: BorderRadius.circular(6),
+                    color: AppColors.primarySurface,
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                                    child: book.image.isNotEmpty
-          ? _buildImageWithProxy(book)
-          : _buildBookCoverPlaceholder(book.title),
+                    borderRadius: BorderRadius.circular(6),
+                    child: book.image.isNotEmpty
+                        ? _buildImageWithProxy(book)
+                        : _buildSimplePlaceholder(book.title),
                   ),
                 ),
-                const SizedBox(width: 20),
+                const SizedBox(width: 16),
                 
-                // 📖 개선된 책 정보 - 새로운 Typography 적용
+                // 📖 책 정보
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // 제목 - Title Large 적용
+                      // 분류 (민음사, 시간과공간사, 유페이퍼 등)
+                      Text(
+                        book.publisher.isNotEmpty ? book.publisher : '출판사',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      
+                      // 책 제목
                       Text(
                         book.title,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: AppColors.textPrimary,
+                        style: TextStyle(
+                          fontSize: 16,
                           fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
                         ),
-                        maxLines: 2,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 2),
                       
-                      // 저자 - Body Medium 적용
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.person_outline,
-                            size: 16,
-                            color: AppColors.textSecondary,
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              book.author,
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      
-                      // 출판사 - Body Small 적용
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.business_outlined,
-                            size: 14,
-                            color: AppColors.textHint,
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              book.publisher,
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppColors.textHint,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                      
-                      // 설명 - Body Small 적용
-                      if (book.description.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceVariant,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            book.description,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.textSecondary,
-                              height: 1.4,
-                            ),
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                      // 저자 정보
+                      Text(
+                        book.author.isNotEmpty ? book.author : '저자 정보 없음',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
                         ),
-                      ],
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ],
                   ),
                 ),
                 
-                const SizedBox(width: 16),
-                
-                // 화살표 아이콘
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    color: AppColors.primary,
-                    size: 16,
-                  ),
+                // 오른쪽 화살표
+                Icon(
+                  Icons.chevron_right,
+                  size: 24,
+                  color: AppColors.textHint,
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 📚 간단한 책 표지 플레이스홀더 (작은 사이즈용)
+  Widget _buildSimplePlaceholder(String title) {
+    final colors = [
+      AppColors.primary,
+      AppColors.secondary,
+      AppColors.tertiary,
+      AppColors.accentSageGreen,
+      AppColors.accentBurgundy,
+    ];
+    
+    final colorIndex = title.length % colors.length;
+    final selectedColor = colors[colorIndex];
+    
+    // 제목의 첫 글자 가져오기
+    final initial = title.isNotEmpty ? title[0].toUpperCase() : '?';
+    
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      color: selectedColor.withOpacity(0.1),
+      child: Center(
+        child: Text(
+          initial,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: selectedColor,
           ),
         ),
       ),
