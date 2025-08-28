@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/theme/elevation_levels.dart';
 import '../../../shared/widgets/main_navigation.dart';
 import '../../chat/presentation/ai_chat_page.dart';
 import '../../chat/presentation/character_selection_page.dart';
@@ -61,7 +62,7 @@ class HomeView extends StatelessWidget {
                 
                 const SizedBox(height: 32),
                 
-                // Welcome Section
+                // Welcome Section - 새로운 디자인 시스템 적용
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(24),
@@ -70,15 +71,12 @@ class HomeView extends StatelessWidget {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        AppColors.secondary.withOpacity(0.1),
-                        AppColors.primary.withOpacity(0.1),
+                        AppColors.secondarySurface, // 새로운 Container 색상
+                        AppColors.primarySurface,   // 새로운 Container 색상
                       ],
                     ),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: AppColors.dividerColor,
-                      width: 1,
-                    ),
+                    boxShadow: ElevationLevels.level1, // Level1 Elevation 적용
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -194,18 +192,12 @@ class HomeView extends StatelessWidget {
               ),
             ),
             
-            // 고정된 CTA 버튼 영역
+            // 고정된 CTA 버튼 영역 - 새로운 디자인 시스템 적용
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: AppColors.background,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
+                color: AppColors.surface,
+                boxShadow: ElevationLevels.level2, // Level2 Elevation 적용
               ),
               child: SizedBox(
                 width: double.infinity,
@@ -218,16 +210,36 @@ class HomeView extends StatelessWidget {
                       ),
                     );
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                  style: ButtonStyle(
+                    backgroundColor: MaterialStateProperty.resolveWith((states) {
+                      if (states.contains(MaterialState.pressed)) {
+                        // Pressed: opacity-0.10 (10%)
+                        return AppColors.primary.withOpacity(0.90);
+                      }
+                      if (states.contains(MaterialState.hovered)) {
+                        // Hover: opacity-0.08 (8%)
+                        return AppColors.primary.withOpacity(0.92);
+                      }
+                      return AppColors.primary;
+                    }),
+                    foregroundColor: MaterialStateProperty.all(AppColors.onPrimary),
+                    shape: MaterialStateProperty.all(
+                      RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                     ),
-                    elevation: 0,
+                    elevation: MaterialStateProperty.resolveWith((states) {
+                      if (states.contains(MaterialState.pressed)) {
+                        return ElevationLevels.getFlutterElevation(1);
+                      }
+                      if (states.contains(MaterialState.hovered)) {
+                        return ElevationLevels.getFlutterElevation(3);
+                      }
+                      return ElevationLevels.getFlutterElevation(2);
+                    }),
                   ),
                   child: const Text(
-                    'CTA',
+                    '새로운 책 찾기',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -429,46 +441,54 @@ class _QuickActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: AppColors.cardColor,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: AppColors.dividerColor,
-            width: 1,
+    return Material(
+      color: AppColors.cardColor,
+      borderRadius: BorderRadius.circular(16),
+      elevation: ElevationLevels.getFlutterElevation(1), // Level1 Elevation
+      shadowColor: Colors.black,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        splashColor: color.withOpacity(0.10), // State Layer - Pressed (10%)
+        highlightColor: color.withOpacity(0.08), // State Layer - Hover (8%)
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppColors.dividerColor,
+              width: 1,
+            ),
           ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: 24,
+                ),
               ),
-              child: Icon(
-                icon,
-                color: color,
-                size: 24,
+              const SizedBox(height: 12),
+              Text(
+                title,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w600,
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: Theme.of(context).textTheme.bodySmall,
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/theme/elevation_levels.dart';
 import '../../features/home/presentation/home_page.dart';
 import '../../features/library/presentation/library_page.dart';
 import '../../features/auth/services/supabase_auth_service.dart';
@@ -224,14 +225,8 @@ class _MainNavigationState extends State<MainNavigation> {
     return Scaffold(
       body: _pages[_currentIndex],
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 8,
-              offset: Offset(0, -2),
-            ),
-          ],
+        decoration: BoxDecoration(
+          boxShadow: ElevationLevels.level2, // Level2 Elevation - 메인 인터랙션 요소
         ),
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
