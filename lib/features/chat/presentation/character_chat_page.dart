@@ -78,19 +78,24 @@ class _CharacterChatPageState extends State<CharacterChatPage> {
         title: Row(
           children: [
             Container(
-              width: 40,
-              height: 40,
+              width: AppSpacing.iconXl,
+              height: AppSpacing.iconXl,
               decoration: BoxDecoration(
-                color: _getCharacterColor(),
-                borderRadius: BorderRadius.circular(20),
+                gradient: _characterTheme.gradient,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                boxShadow: [
+                  BoxShadow(
+                    color: _characterTheme.primaryColor.withOpacity(0.3),
+                    blurRadius: AppSpacing.elevationMedium,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Center(
                 child: Text(
-                  widget.character.name[0],
+                  _characterTheme.emoji,
                   style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
+                    fontSize: 20,
                   ),
                 ),
               ),
@@ -750,27 +755,32 @@ class _CharacterChatPageState extends State<CharacterChatPage> {
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
+        title:           Row(
           children: [
             Container(
-              width: 40,
-              height: 40,
+              width: AppSpacing.iconXl,
+              height: AppSpacing.iconXl,
               decoration: BoxDecoration(
-                color: _getCharacterColor(),
-                borderRadius: BorderRadius.circular(20),
+                gradient: _characterTheme.gradient,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                boxShadow: [
+                  BoxShadow(
+                    color: _characterTheme.primaryColor.withOpacity(0.3),
+                    blurRadius: AppSpacing.elevationMedium,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Center(
                 child: Text(
-                  widget.character.name[0],
+                  _characterTheme.emoji,
                   style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
+                    fontSize: 20,
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: AppSpacing.sm),
             Expanded(child: Text(widget.character.name)),
           ],
         ),
