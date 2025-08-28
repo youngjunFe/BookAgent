@@ -137,43 +137,9 @@ class _BookSearchPageState extends State<BookSearchPage> {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                            child: _shouldShowImage(book)
-          ? Image.network(
-              _getProxyImageUrl(book.image),
-              fit: BoxFit.cover,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) {
-                              print('✅ [${book.title}] Image loaded successfully!');
-                              print('🔗 URL: "${book.image}"');
-                              print('─' * 50);
-                              return child;
-                            }
-                            return Container(
-                              decoration: BoxDecoration(
-                                color: AppColors.primarySurface,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  value: loadingProgress.expectedTotalBytes != null
-                                      ? loadingProgress.cumulativeBytesLoaded /
-                                          loadingProgress.expectedTotalBytes!
-                                      : null,
-                                  strokeWidth: 2,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                            );
-                          },
-                          errorBuilder: (context, error, stackTrace) {
-                            print('❌ [${book.title}] Image loading FAILED!');
-                            print('🔗 URL: "${book.image}"');
-                            print('💥 Error: $error');
-                            print('─' * 50);
-                            return _buildBookCoverPlaceholder(book.title);
-                          },
-                        )
-                      : _buildBookCoverPlaceholder(book.title),
+                                    child: _shouldShowImage(book)
+          ? _buildImageWithFallbacks(book)
+          : _buildBookCoverPlaceholder(book.title),
                   ),
                 ),
                 const SizedBox(width: 20),
@@ -369,6 +335,66 @@ class _BookSearchPageState extends State<BookSearchPage> {
       return 'https://cors-anywhere.herokuapp.com/$originalUrl';
     }
     return originalUrl;
+  }
+
+  /// 🔄 다중 프록시 시도 (더 안정적인 이미지 로딩)
+  Widget _buildImageWithFallbacks(BookSearchResult book) {
+    final originalUrl = book.image;
+    
+    // 시도할 프록시 서비스들 (순서대로)
+    final proxyUrls = [
+      originalUrl, // 1. 원본 URL 먼저 시도
+      'https://cors-anywhere.herokuapp.com/$originalUrl', // 2. CORS Anywhere
+      'https://api.allorigins.win/raw?url=${Uri.encodeComponent(originalUrl)}', // 3. AllOrigins
+      'https://corsproxy.io/?${Uri.encodeComponent(originalUrl)}', // 4. CorsProxy.io
+    ];
+
+    return _buildImageWithProxyFallback(book, proxyUrls, 0);
+  }
+
+  /// 🔄 재귀적으로 프록시 URL들을 시도하는 위젯
+  Widget _buildImageWithProxyFallback(BookSearchResult book, List<String> proxyUrls, int currentIndex) {
+    if (currentIndex >= proxyUrls.length) {
+      // 모든 프록시 실패 시 플레이스홀더 표시
+      print('❌ [${book.title}] All proxy attempts failed, showing placeholder');
+      return _buildBookCoverPlaceholder(book.title);
+    }
+
+    final currentUrl = proxyUrls[currentIndex];
+    print('🔄 [${book.title}] Trying proxy ${currentIndex + 1}/${proxyUrls.length}: $currentUrl');
+
+    return Image.network(
+      currentUrl,
+      fit: BoxFit.cover,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) {
+          print('✅ [${book.title}] Image loaded successfully with proxy ${currentIndex + 1}!');
+          return child;
+        }
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.primarySurface,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Center(
+            child: CircularProgressIndicator(
+              value: loadingProgress.expectedTotalBytes != null
+                  ? loadingProgress.cumulativeBytesLoaded /
+                      loadingProgress.expectedTotalBytes!
+                  : null,
+              strokeWidth: 2,
+              color: AppColors.primary,
+            ),
+          ),
+        );
+      },
+      errorBuilder: (context, error, stackTrace) {
+        print('❌ [${book.title}] Proxy ${currentIndex + 1} failed: $error');
+        
+        // 다음 프록시 시도
+        return _buildImageWithProxyFallback(book, proxyUrls, currentIndex + 1);
+      },
+    );
   }
 
   /// 📚 책 표지 플레이스홀더 생성 (책 제목 기반 색상 + 이니셜)
