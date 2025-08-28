@@ -14,11 +14,54 @@ class SplashPage extends StatefulWidget {
   State<SplashPage> createState() => _SplashPageState();
 }
 
-class _SplashPageState extends State<SplashPage> {
+class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
+  late AnimationController _fadeController;
+  late AnimationController _scaleController;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _scaleAnimation;
+
   @override
   void initState() {
     super.initState();
+    
+    // 애니메이션 컨트롤러 초기화
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+    _scaleController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+    
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeInOut,
+    ));
+    
+    _scaleAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _scaleController,
+      curve: Curves.elasticOut,
+    ));
+    
+    // 애니메이션 시작
+    _fadeController.forward();
+    _scaleController.forward();
+    
     _initializeApp();
+  }
+
+  @override
+  void dispose() {
+    _fadeController.dispose();
+    _scaleController.dispose();
+    super.dispose();
   }
 
   Future<void> _initializeApp() async {
@@ -94,51 +137,114 @@ class _SplashPageState extends State<SplashPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // 메인 로고/제목
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: AppColors.primary,
-                  width: 2,
-                ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                '스플래시',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
-                ),
-              ),
-            ),
-            
-            const SizedBox(height: 40),
-            
-            // 로딩 인디케이터
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-              strokeWidth: 3,
-            ),
-            
-            const SizedBox(height: 20),
-            
-            Text(
-              '감동의 순간을 놓치지 마세요',
-              style: TextStyle(
-                fontSize: 16,
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFFFF8DC), // 크림색/연한 노란색
+              Color(0xFFFFE4B5), // 모카신 색
+              Color(0xFFFFC0CB), // 핑크색
+              Color(0xFFE6E6FA), // 라벤더색
+              Color(0xFFADD8E6), // 라이트 블루
+              Color(0xFF87CEEB), // 스카이 블루
+            ],
+            stops: [0.0, 0.2, 0.4, 0.6, 0.8, 1.0],
+          ),
         ),
+        child: SafeArea(
+          child: Center(
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: ScaleTransition(
+                scale: _scaleAnimation,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // 무지개 아이콘
+                    _buildRainbowIcon(),
+                    
+                    const SizedBox(height: 60),
+                    
+                    // 메인 텍스트
+                    Text(
+                      '감동의 순간을 놓치지 마세요',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF2C3E50), // 진한 네이비색
+                        letterSpacing: -0.5,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 무지개 아이콘 구현
+  Widget _buildRainbowIcon() {
+    return SizedBox(
+      width: 120,
+      height: 80,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // 가장 큰 반원 (외곽)
+          Container(
+            width: 120,
+            height: 60,
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(60)),
+              border: Border.all(
+                color: const Color(0xFFFF6B6B), // 빨간색
+                width: 6,
+              ),
+            ),
+          ),
+          // 두 번째 반원
+          Container(
+            width: 100,
+            height: 50,
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(50)),
+              border: Border.all(
+                color: const Color(0xFFFFE66D), // 노란색
+                width: 5,
+              ),
+            ),
+          ),
+          // 세 번째 반원
+          Container(
+            width: 80,
+            height: 40,
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
+              border: Border.all(
+                color: const Color(0xFF4ECDC4), // 청록색
+                width: 4,
+              ),
+            ),
+          ),
+          // 가장 작은 반원 (중앙)
+          Container(
+            width: 60,
+            height: 30,
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+              border: Border.all(
+                color: const Color(0xFF45B7D1), // 파란색
+                width: 3,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
