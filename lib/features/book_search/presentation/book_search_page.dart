@@ -138,13 +138,7 @@ class _BookSearchPageState extends State<BookSearchPage> {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                                     child: book.image.isNotEmpty
-          ? Image.network(
-              book.image,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return _buildBookCoverPlaceholder(book.title);
-              },
-            )
+          ? _buildImageWithProxy(book)
           : _buildBookCoverPlaceholder(book.title),
                   ),
                 ),
@@ -341,6 +335,45 @@ class _BookSearchPageState extends State<BookSearchPage> {
       return 'https://cors-anywhere.herokuapp.com/$originalUrl';
     }
     return originalUrl;
+  }
+
+  /// 🚀 간단한 프록시 이미지 로딩 (빠른 로딩을 위해)
+  Widget _buildImageWithProxy(BookSearchResult book) {
+    // 가장 안정적인 프록시 사용
+    final proxyUrl = 'https://cors-anywhere.herokuapp.com/${book.image}';
+    
+    print('🔄 [${book.title}] Loading with proxy: $proxyUrl');
+    
+    return Image.network(
+      proxyUrl,
+      fit: BoxFit.cover,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) {
+          print('✅ [${book.title}] Image loaded successfully!');
+          return child;
+        }
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.primarySurface,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Center(
+            child: CircularProgressIndicator(
+              value: loadingProgress.expectedTotalBytes != null
+                  ? loadingProgress.cumulativeBytesLoaded /
+                      loadingProgress.expectedTotalBytes!
+                  : null,
+              strokeWidth: 2,
+              color: AppColors.primary,
+            ),
+          ),
+        );
+      },
+      errorBuilder: (context, error, stackTrace) {
+        print('❌ [${book.title}] Proxy failed: $error');
+        return _buildBookCoverPlaceholder(book.title);
+      },
+    );
   }
 
   /// 🔄 다중 프록시 시도 (더 안정적인 이미지 로딩)
