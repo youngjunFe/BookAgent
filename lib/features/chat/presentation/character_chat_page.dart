@@ -3,7 +3,9 @@ import 'package:http/http.dart' as http;
 import 'dart:convert' show jsonEncode, jsonDecode;
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_spacing.dart';
 import '../../../core/config/app_config.dart';
+import '../../../core/theme/character_themes.dart';
 import '../models/character.dart';
 
 class CharacterChatPage extends StatefulWidget {
@@ -23,10 +25,13 @@ class _CharacterChatPageState extends State<CharacterChatPage> {
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
   bool _isTyping = false;
+  
+  late CharacterTheme _characterTheme;
 
   @override
   void initState() {
     super.initState();
+    _characterTheme = CharacterThemes.getTheme(widget.character.name);
     _addWelcomeMessage();
   }
 
@@ -165,29 +170,51 @@ class _CharacterChatPageState extends State<CharacterChatPage> {
         children: [
           // 캐릭터 소개 카드
           Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(16),
+            margin: EdgeInsets.all(AppSpacing.md),
+            padding: EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              color: _getCharacterColor().withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: _getCharacterColor().withOpacity(0.3),
-                width: 1,
+              gradient: LinearGradient(
+                colors: [
+                  _characterTheme.backgroundColor,
+                  _characterTheme.backgroundColor.withOpacity(0.8),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+              border: Border.all(
+                color: _characterTheme.primaryColor.withOpacity(0.2),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: _characterTheme.primaryColor.withOpacity(0.1),
+                  blurRadius: AppSpacing.elevationMedium,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.auto_stories,
-                  color: _getCharacterColor(),
-                  size: 20,
+                Container(
+                  padding: EdgeInsets.all(AppSpacing.sm),
+                  decoration: BoxDecoration(
+                    color: _characterTheme.primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                  ),
+                  child: Icon(
+                    Icons.auto_stories,
+                    color: _characterTheme.primaryColor,
+                    size: AppSpacing.iconSm,
+                  ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
-                    '${widget.character.name}와의 특별한 대화를 즐겨보세요!',
+                    '${widget.character.name}${_characterTheme.emoji}와의 특별한 대화를 즐겨보세요!',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: _characterTheme.primaryColor.withOpacity(0.8),
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
@@ -227,46 +254,60 @@ class _CharacterChatPageState extends State<CharacterChatPage> {
         children: [
           if (!message.isUser) ...[
             Container(
-              width: 32,
-              height: 32,
+              width: AppSpacing.iconLg,
+              height: AppSpacing.iconLg,
               decoration: BoxDecoration(
-                color: _getCharacterColor(),
-                borderRadius: BorderRadius.circular(16),
+                gradient: _characterTheme.gradient,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                boxShadow: [
+                  BoxShadow(
+                    color: _characterTheme.primaryColor.withOpacity(0.2),
+                    blurRadius: AppSpacing.elevationLow,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
               ),
               child: Center(
                 child: Text(
-                  widget.character.name[0],
+                  _characterTheme.emoji,
                   style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                    fontSize: 16,
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: AppSpacing.sm),
           ],
           Flexible(
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: message.isUser
-                    ? AppColors.primary
-                    : AppColors.surface,
-                borderRadius: BorderRadius.circular(20).copyWith(
+                    ? _characterTheme.primaryColor
+                    : _characterTheme.messageColor,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusXl).copyWith(
                   bottomLeft: message.isUser
-                      ? const Radius.circular(20)
-                      : const Radius.circular(4),
+                      ? Radius.circular(AppSpacing.radiusXl)
+                      : Radius.circular(AppSpacing.radiusXs),
                   bottomRight: message.isUser
-                      ? const Radius.circular(4)
-                      : const Radius.circular(20),
+                      ? Radius.circular(AppSpacing.radiusXs)
+                      : Radius.circular(AppSpacing.radiusXl),
                 ),
                 border: message.isUser
                     ? null
                     : Border.all(
-                        color: _getCharacterColor().withOpacity(0.2),
+                        color: _characterTheme.primaryColor.withOpacity(0.15),
                         width: 1,
                       ),
+                boxShadow: [
+                  BoxShadow(
+                    color: (message.isUser 
+                        ? _characterTheme.primaryColor 
+                        : _characterTheme.primaryColor).withOpacity(0.1),
+                    blurRadius: AppSpacing.elevationLow,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -322,19 +363,24 @@ class _CharacterChatPageState extends State<CharacterChatPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 32,
-            height: 32,
+            width: AppSpacing.iconLg,
+            height: AppSpacing.iconLg,
             decoration: BoxDecoration(
-              color: _getCharacterColor(),
-              borderRadius: BorderRadius.circular(16),
+              gradient: _characterTheme.gradient,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+              boxShadow: [
+                BoxShadow(
+                  color: _characterTheme.primaryColor.withOpacity(0.2),
+                  blurRadius: AppSpacing.elevationLow,
+                  offset: const Offset(0, 1),
+                ),
+              ],
             ),
             child: Center(
               child: Text(
-                widget.character.name[0],
+                _characterTheme.emoji,
                 style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
+                  fontSize: 16,
                 ),
               ),
             ),
@@ -348,7 +394,7 @@ class _CharacterChatPageState extends State<CharacterChatPage> {
                 bottomLeft: const Radius.circular(4),
               ),
               border: Border.all(
-                color: _getCharacterColor().withOpacity(0.2),
+                color: _characterTheme.primaryColor.withOpacity(0.15),
                 width: 1,
               ),
             ),
@@ -369,7 +415,7 @@ class _CharacterChatPageState extends State<CharacterChatPage> {
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
                     valueColor: AlwaysStoppedAnimation<Color>(
-                      _getCharacterColor().withOpacity(0.5),
+                      _characterTheme.primaryColor.withOpacity(0.7),
                     ),
                   ),
                 ),
@@ -409,8 +455,8 @@ class _CharacterChatPageState extends State<CharacterChatPage> {
                   borderSide: const BorderSide(color: AppColors.dividerColor),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide(color: _getCharacterColor(), width: 2),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusXxl),
+                  borderSide: BorderSide(color: _characterTheme.primaryColor, width: 2),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -425,19 +471,26 @@ class _CharacterChatPageState extends State<CharacterChatPage> {
             ),
           ),
           const SizedBox(width: 8),
-          Container(
-            decoration: BoxDecoration(
-              color: _getCharacterColor(),
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: IconButton(
-              onPressed: _sendMessage,
-              icon: const Icon(
-                Icons.send,
-                color: Colors.white,
+                      Container(
+              decoration: BoxDecoration(
+                gradient: _characterTheme.gradient,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusXxl),
+                boxShadow: [
+                  BoxShadow(
+                    color: _characterTheme.primaryColor.withOpacity(0.3),
+                    blurRadius: AppSpacing.elevationMedium,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: IconButton(
+                onPressed: _sendMessage,
+                icon: const Icon(
+                  Icons.send_rounded,
+                  color: Colors.white,
+                ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -771,22 +824,7 @@ class _CharacterChatPageState extends State<CharacterChatPage> {
     );
   }
 
-  Color _getCharacterColor() {
-    switch (widget.character.genre) {
-      case '판타지':
-        return Colors.purple;
-      case '로맨스':
-        return Colors.pink;
-      case '추리':
-        return Colors.indigo;
-      case '역사':
-        return Colors.brown;
-      case '소설':
-        return AppColors.primary;
-      default:
-        return AppColors.secondary;
-    }
-  }
+
 
   String _formatTime(DateTime dateTime) {
     return '${dateTime.hour.toString().padLeft(2, '0')}:'
