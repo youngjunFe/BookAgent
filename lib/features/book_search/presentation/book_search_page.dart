@@ -337,19 +337,39 @@ class _BookSearchPageState extends State<BookSearchPage> {
     return originalUrl;
   }
 
-  /// 🚀 간단한 프록시 이미지 로딩 (빠른 로딩을 위해)
+  /// 🚀 다중 프록시 fallback 시스템 (안정적인 이미지 로딩)
   Widget _buildImageWithProxy(BookSearchResult book) {
-    // 가장 안정적인 프록시 사용
-    final proxyUrl = 'https://cors-anywhere.herokuapp.com/${book.image}';
+    return _buildImageWithMultiProxy(book, 0);
+  }
+  
+  /// 🔄 여러 프록시 서비스를 순차적으로 시도
+  Widget _buildImageWithMultiProxy(BookSearchResult book, int proxyIndex) {
+    // 사용 가능한 프록시 서비스들
+    final proxyServices = [
+      'https://api.allorigins.win/raw?url=${Uri.encodeComponent(book.image)}',
+      'https://corsproxy.io/?${Uri.encodeComponent(book.image)}',
+      'https://cors-anywhere.herokuapp.com/${book.image}',
+      book.image, // 마지막에 원본 URL 시도
+    ];
     
-    print('🔄 [${book.title}] Loading with proxy: $proxyUrl');
+    if (proxyIndex >= proxyServices.length) {
+      print('❌ [${book.title}] All proxy services failed, showing placeholder');
+      return _buildBookCoverPlaceholder(book.title);
+    }
+    
+    final currentProxyUrl = proxyServices[proxyIndex];
+    final proxyName = proxyIndex == 0 ? 'AllOrigins' : 
+                     proxyIndex == 1 ? 'CorsProxy.io' :
+                     proxyIndex == 2 ? 'CORS-Anywhere' : 'Direct';
+                     
+    print('🔄 [${book.title}] Trying ${proxyName} (${proxyIndex + 1}/${proxyServices.length}): $currentProxyUrl');
     
     return Image.network(
-      proxyUrl,
+      currentProxyUrl,
       fit: BoxFit.cover,
       loadingBuilder: (context, child, loadingProgress) {
         if (loadingProgress == null) {
-          print('✅ [${book.title}] Image loaded successfully!');
+          print('✅ [${book.title}] Image loaded successfully with ${proxyName}!');
           return child;
         }
         return Container(
@@ -370,8 +390,9 @@ class _BookSearchPageState extends State<BookSearchPage> {
         );
       },
       errorBuilder: (context, error, stackTrace) {
-        print('❌ [${book.title}] Proxy failed: $error');
-        return _buildBookCoverPlaceholder(book.title);
+        print('❌ [${book.title}] ${proxyName} failed: $error');
+        // 다음 프록시 시도
+        return _buildImageWithMultiProxy(book, proxyIndex + 1);
       },
     );
   }
