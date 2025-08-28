@@ -73,70 +73,28 @@ class _HomeViewState extends State<HomeView> {
               ),
             ),
             
-            // 스크롤 가능한 컨텐츠 영역
-            Expanded(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 20),
-                      
-                      // 인사말
-                      Text(
-                        '사용자님, 상쾌한 아침이에요.\n처음과 오늘 첫 감동을 나눠보세요.',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                          height: 1.4,
-                        ),
-                      ),
-                      
-                      const SizedBox(height: 32),
-                      
-                      // 슬라이드 캐러셀
-                      _buildImageCarousel(),
-                      
-                      const SizedBox(height: 32),
-                      
-                      // 지금 감동을 기록하세요 버튼
-                      SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => const BookSearchPage(),
-                              ),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          child: Text(
-                            '지금 감동을 기록하세요',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                      
-                      const SizedBox(height: 100), // 하단 여백
-                    ],
+            // 인사말
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '사용자님, 상쾌한 아침이에요.\n처음과 오늘 첫 감동을 나눠보세요.',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                    height: 1.4,
                   ),
                 ),
               ),
+            ),
+            
+            const SizedBox(height: 24),
+            
+            // 전체 화면을 차지하는 캐러셀 (하단 메뉴바까지)
+            Expanded(
+              child: _buildFullScreenCarousel(),
             ),
           ],
         ),
@@ -144,180 +102,178 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  // 이미지 캐러셀 위젯
-  Widget _buildImageCarousel() {
+  // 전체 화면을 차지하는 캐러셀 위젯
+  Widget _buildFullScreenCarousel() {
     final List<String> tempImages = [
-      'https://picsum.photos/350/200?random=1',
-      'https://picsum.photos/350/200?random=2', 
-      'https://picsum.photos/350/200?random=3',
+      'https://picsum.photos/400/600?random=1',
+      'https://picsum.photos/400/600?random=2', 
+      'https://picsum.photos/400/600?random=3',
     ];
 
-    return Column(
-      children: [
-        // 캐러셀 영역
-        Container(
-          height: 200,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            color: Colors.grey[200],
-          ),
-          child: Stack(
-            children: [
-              // PageView
-              PageView.builder(
-                controller: _pageController,
-                onPageChanged: (index) {
-                  setState(() {
-                    _currentPage = index;
-                  });
-                },
-                itemCount: tempImages.length,
-                itemBuilder: (context, index) {
-                  return Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      color: Colors.grey[300],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Image.network(
-                        tempImages[index],
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: Colors.grey[300],
-                            child: Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.image,
-                                    size: 48,
-                                    color: Colors.grey[600],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    '임시 이미지 ${index + 1}',
-                                    style: TextStyle(
-                                      color: Colors.grey[600],
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: Colors.grey[200],
+      ),
+      child: Stack(
+        children: [
+          // PageView - 전체 영역 사용
+          PageView.builder(
+            controller: _pageController,
+            onPageChanged: (index) {
+              setState(() {
+                _currentPage = index;
+              });
+            },
+            itemCount: tempImages.length,
+            itemBuilder: (context, index) {
+              return Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  color: Colors.grey[300],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.network(
+                    tempImages[index],
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: Colors.grey[300],
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.image,
+                                size: 48,
+                                color: Colors.grey[600],
                               ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  );
-                },
-              ),
-              
-              // 이전 버튼 
-              Positioned(
-                left: 16,
-                top: 0,
-                bottom: 0,
-                child: Center(
-                  child: GestureDetector(
-                    onTap: () {
-                      if (_currentPage > 0) {
-                        _pageController.previousPage(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                        );
-                      }
-                    },
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
+                              const SizedBox(height: 8),
+                              Text(
+                                '임시 이미지 ${index + 1}',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: Icon(
-                        Icons.chevron_left,
-                        color: AppColors.textPrimary,
-                        size: 24,
-                      ),
-                    ),
+                        ),
+                      );
+                    },
                   ),
                 ),
-              ),
-              
-              // 다음 버튼
-              Positioned(
-                right: 16,
-                top: 0,
-                bottom: 0,
-                child: Center(
-                  child: GestureDetector(
-                    onTap: () {
-                      if (_currentPage < tempImages.length - 1) {
-                        _pageController.nextPage(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                        );
-                      }
-                    },
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        Icons.chevron_right,
-                        color: AppColors.textPrimary,
-                        size: 24,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+              );
+            },
           ),
-        ),
-        
-        const SizedBox(height: 16),
-        
-        // 페이지 인디케이터
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(
-            tempImages.length,
-            (index) => Container(
-              width: 8,
-              height: 8,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _currentPage == index
-                    ? AppColors.primary
-                    : Colors.grey[400],
+          
+          // 이전 버튼 (배경 제거)
+          Positioned(
+            left: 16,
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: GestureDetector(
+                onTap: () {
+                  if (_currentPage > 0) {
+                    _pageController.previousPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  }
+                },
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    // 흰색 배경 제거
+                  ),
+                  child: Icon(
+                    Icons.chevron_left,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                ),
               ),
             ),
           ),
-        ),
-      ],
+          
+          // 다음 버튼 (배경 제거)
+          Positioned(
+            right: 16,
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: GestureDetector(
+                onTap: () {
+                  if (_currentPage < tempImages.length - 1) {
+                    _pageController.nextPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  }
+                },
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    // 흰색 배경 제거
+                  ),
+                  child: Icon(
+                    Icons.chevron_right,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          
+          // '지금 감동을 기록하세요' 버튼 - 캐러셀 하단에 위치
+          Positioned(
+            left: 20,
+            right: 20,
+            bottom: 40,
+            child: SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const BookSearchPage(),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  elevation: 8,
+                  shadowColor: Colors.black.withOpacity(0.3),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: Text(
+                  '지금 감동을 기록하세요',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
