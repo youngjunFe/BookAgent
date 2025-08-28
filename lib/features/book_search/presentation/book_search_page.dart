@@ -137,36 +137,11 @@ class _BookSearchPageState extends State<BookSearchPage> {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                                    child: _shouldShowImage(book)
+                                    child: book.image.isNotEmpty
           ? Image.network(
-              book.image, // 원본 URL 그대로 사용!
+              book.image,
               fit: BoxFit.cover,
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) {
-                  print('✅ [${book.title}] 원본 URL로 이미지 로딩 성공!');
-                  print('🔗 URL: "${book.image}"');
-                  return child;
-                }
-                return Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.primarySurface,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      value: loadingProgress.expectedTotalBytes != null
-                          ? loadingProgress.cumulativeBytesLoaded /
-                              loadingProgress.expectedTotalBytes!
-                          : null,
-                      strokeWidth: 2,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                );
-              },
               errorBuilder: (context, error, stackTrace) {
-                print('❌ [${book.title}] 원본 URL 실패: $error');
-                print('🔗 URL: "${book.image}"');
                 return _buildBookCoverPlaceholder(book.title);
               },
             )
