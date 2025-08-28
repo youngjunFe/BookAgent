@@ -94,7 +94,10 @@ class _HomeViewState extends State<HomeView> {
             
             // 전체 화면을 차지하는 캐러셀 (하단 메뉴바까지)
             Expanded(
-              child: _buildFullScreenCarousel(),
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 20),
+                child: _buildFullScreenCarousel(),
+              ),
             ),
           ],
         ),
@@ -196,7 +199,7 @@ class _HomeViewState extends State<HomeView> {
                   ),
                   child: Icon(
                     Icons.chevron_left,
-                    color: Colors.white,
+                    color: Color(0xFF3D3D3D),
                     size: 32,
                   ),
                 ),
@@ -228,7 +231,7 @@ class _HomeViewState extends State<HomeView> {
                   ),
                   child: Icon(
                     Icons.chevron_right,
-                    color: Colors.white,
+                    color: Color(0xFF3D3D3D),
                     size: 32,
                   ),
                 ),
