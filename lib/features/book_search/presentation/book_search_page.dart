@@ -137,10 +137,10 @@ class _BookSearchPageState extends State<BookSearchPage> {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: _shouldShowImage(book)
-                      ? Image.network(
-                          book.image,
-                          fit: BoxFit.cover,
+                            child: _shouldShowImage(book)
+          ? Image.network(
+              _getProxyImageUrl(book.image),
+              fit: BoxFit.cover,
                           loadingBuilder: (context, child, loadingProgress) {
                             if (loadingProgress == null) {
                               print('✅ [${book.title}] Image loaded successfully!');
@@ -359,6 +359,16 @@ class _BookSearchPageState extends State<BookSearchPage> {
     print('─' * 50);
     
     return shouldShow;
+  }
+
+  String _getProxyImageUrl(String originalUrl) {
+    // CORS 우회를 위한 프록시 서비스 사용 (임시 해결책)
+    // 프로덕션에서는 자체 API 서버에 프록시 엔드포인트 구현 권장
+    if (originalUrl.contains('pstatic.net')) {
+      print('🔄 Using CORS proxy for: $originalUrl');
+      return 'https://cors-anywhere.herokuapp.com/$originalUrl';
+    }
+    return originalUrl;
   }
 
   /// 📚 책 표지 플레이스홀더 생성 (책 제목 기반 색상 + 이니셜)
