@@ -1,15 +1,11 @@
 {
-  "version": 2,
-  "buildCommand": "echo 'Using pre-built files'",
-  "outputDirectory": "build/web",
-  "routes": [
+  "github": {
+    "silent": true
+  },
+  "redirects": [
     {
-      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|json))",
-      "dest": "/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
