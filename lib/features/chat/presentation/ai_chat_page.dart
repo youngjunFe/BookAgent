@@ -578,9 +578,29 @@ class _AiChatPageState extends State<AiChatPage> {
         }),
       ).timeout(const Duration(seconds: 8));
 
+      print('🔍 API 응답 상태코드: ${response.statusCode}');
+      print('🔍 API 응답 본문: ${response.body}');
+      
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return data['response'] ?? 'AI 응답을 받을 수 없습니다.';
+        print('🔍 파싱된 JSON: $data');
+        
+        // 다양한 응답 형태 시도
+        String? aiResponse = data['response'] ?? 
+                            data['message'] ?? 
+                            data['reply'] ?? 
+                            data['answer'] ??
+                            data['content'];
+        
+        print('🔍 추출된 AI 응답: $aiResponse');
+        
+        if (aiResponse != null && aiResponse.isNotEmpty) {
+          return aiResponse;
+        } else {
+          print('❌ 응답 필드를 찾을 수 없음. 전체 응답을 반환.');
+          // JSON 전체가 문자열인 경우
+          return response.body.isNotEmpty ? response.body : '응답을 처리할 수 없습니다.';
+        }
       } else {
         throw Exception('HTTP ${response.statusCode}');
       }
