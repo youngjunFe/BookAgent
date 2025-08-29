@@ -37,15 +37,20 @@ class _AiChatPageState extends State<AiChatPage> {
   @override
   void initState() {
     super.initState();
-    _addWelcomeMessage();
-    
-    // 초기 컨텍스트가 있으면 AI가 먼저 발제문에 대해 언급
-    if (widget.initialContext != null) {
-      _addInitialContextMessage();
+    _addInitialMessage();
+  }
+
+  void _addInitialMessage() async {
+    // 책 정보가 있는 경우 AI 한줄평과 함께 메시지 생성
+    if (widget.bookTitle != null && widget.bookTitle!.isNotEmpty) {
+      await _addBookBasedMessage();
+    } else {
+      // 책 정보가 없는 경우 기본 환영 메시지
+      _addDefaultWelcomeMessage();
     }
   }
 
-  void _addWelcomeMessage() {
+  void _addDefaultWelcomeMessage() {
     _messages.add(
       ChatMessage(
         text: '안녕하세요! 저는 독서 도우미 AI입니다 📚\n\n'
@@ -57,16 +62,84 @@ class _AiChatPageState extends State<AiChatPage> {
     );
   }
 
-  void _addInitialContextMessage() {
-    _messages.add(
-      ChatMessage(
-        text: '방금 작성하신 "${widget.bookTitle ?? '책'}"에 대한 발제문을 읽어보았습니다! 📝\n\n'
-            '발제문의 내용을 바탕으로 더 깊이 있는 대화를 나눠보시겠어요?\n\n'
-            '궁금한 점이나 토론하고 싶은 부분이 있으시면 말씀해 주세요!',
-        isUser: false,
-        timestamp: DateTime.now(),
-      ),
-    );
+  Future<void> _addBookBasedMessage() async {
+    // 로딩 메시지 먼저 추가
+    setState(() {
+      _messages.add(
+        ChatMessage(
+          text: '안녕하세요! 저는 독서 도우미 AI입니다 📚',
+          isUser: false,
+          timestamp: DateTime.now(),
+        ),
+      );
+      _isTyping = true;
+    });
+
+    try {
+      // AI에게 책에 대한 한줄평 요청
+      final bookSummary = await _generateBookSummary(widget.bookTitle!, widget.bookAuthor);
+      
+      // 기존 로딩 메시지 제거하고 새 메시지 추가
+      setState(() {
+        _messages.removeLast();
+        _messages.add(
+          ChatMessage(
+            text: '안녕하세요! 저는 독서 도우미 AI입니다 📚\n\n'
+                '${widget.bookTitle}을 읽으셨다니..! ( \' - \' ) /\n'
+                '$bookSummary 하던데, 지금 무슨 감정을 느끼고 있나요?',
+            isUser: false,
+            timestamp: DateTime.now(),
+          ),
+        );
+        _isTyping = false;
+      });
+    } catch (e) {
+      print('❌ 책 한줄평 생성 실패: $e');
+      // 한줄평 생성 실패 시 기본 메시지
+      setState(() {
+        _messages.removeLast();
+        _messages.add(
+          ChatMessage(
+            text: '안녕하세요! 저는 독서 도우미 AI입니다 📚\n\n'
+                '${widget.bookTitle}을 읽으셨다니..! ( \' - \' ) /\n'
+                '정말 흥미로운 작품 하던데, 지금 무슨 감정을 느끼고 있나요?',
+            isUser: false,
+            timestamp: DateTime.now(),
+          ),
+        );
+        _isTyping = false;
+      });
+    }
+  }
+
+  Future<String> _generateBookSummary(String bookTitle, String? bookAuthor) async {
+    final prompt = '다음 책에 대한 간단한 한줄평을 작성해주세요. 감정적이고 공감할 수 있는 표현으로 20자 이내로 써주세요.\n\n'
+        '책 제목: $bookTitle\n'
+        '${bookAuthor != null ? '저자: $bookAuthor\n' : ''}'
+        '\n예시: "정말 감동적인 이야기", "마음을 울리는 작품", "생각할 거리가 많은 책"';
+
+    try {
+      final response = await _callRealAiApi(prompt);
+      // AI 응답에서 따옴표나 불필요한 문구 제거
+      String cleanSummary = response
+          .replaceAll('"', '')
+          .replaceAll("'", '')
+          .replaceAll('"', '')
+          .replaceAll('"', '')
+          .replaceAll('한줄평:', '')
+          .replaceAll('요약:', '')
+          .trim();
+      
+      // 길이가 너무 길면 자르기
+      if (cleanSummary.length > 30) {
+        cleanSummary = cleanSummary.substring(0, 30) + '...';
+      }
+      
+      return cleanSummary.isNotEmpty ? cleanSummary : '인상 깊은 작품';
+    } catch (e) {
+      print('❌ AI 한줄평 생성 실패: $e');
+      return '인상 깊은 작품';
+    }
   }
 
   @override
@@ -576,7 +649,7 @@ class _AiChatPageState extends State<AiChatPage> {
   void _clearChat() {
     setState(() {
       _messages.clear();
-      _addWelcomeMessage();
+      _addDefaultWelcomeMessage();
     });
   }
 
