@@ -33,6 +33,7 @@ class _AiChatPageState extends State<AiChatPage> {
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
   bool _isTyping = false;
+  int _remainingTurns = 10;
 
   @override
   void initState() {
@@ -84,8 +85,7 @@ class _AiChatPageState extends State<AiChatPage> {
         _messages.removeLast();
         _messages.add(
           ChatMessage(
-            text: '안녕하세요! 저는 독서 도우미 AI입니다 📚\n\n'
-                '${widget.bookTitle}을 읽으셨다니..! ( \' - \' ) /\n'
+            text: '${widget.bookTitle}을 읽으셨다니..! ( \' - \' ) /\n'
                 '$bookSummary 라고 하던데, 지금 무슨 감정을 느끼고 있나요?',
             isUser: false,
             timestamp: DateTime.now(),
@@ -100,8 +100,7 @@ class _AiChatPageState extends State<AiChatPage> {
         _messages.removeLast();
         _messages.add(
           ChatMessage(
-            text: '안녕하세요! 저는 독서 도우미 AI입니다 📚\n\n'
-                '${widget.bookTitle}을 읽으셨다니..! ( \' - \' ) /\n'
+            text: '${widget.bookTitle}을 읽으셨다니..! ( \' - \' ) /\n'
                 '정말 흥미로운 작품 라고 하던데, 지금 무슨 감정을 느끼고 있나요?',
             isUser: false,
             timestamp: DateTime.now(),
@@ -152,173 +151,239 @@ class _AiChatPageState extends State<AiChatPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Row(
+      backgroundColor: Colors.grey[50],
+      body: SafeArea(
+        child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.auto_awesome,
-                color: AppColors.primary,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'AI 독서 도우미',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            // 커스텀 헤더
+            _buildCustomHeader(),
+            
+            // 진행률 바
+            _buildProgressBar(),
+            
+            // 사용자 정보
+            _buildUserInfo(),
+            
+            // 채팅 영역
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: ListView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        itemCount: _messages.length + (_isTyping ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (index < _messages.length) {
+                            return _buildMessageBubble(_messages[index]);
+                          } else {
+                            return _buildTypingIndicator();
+                          }
+                        },
+                      ),
+                    ),
+                    _buildMessageInput(),
+                  ],
                 ),
-                Text(
-                  '온라인',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.success,
-                    fontWeight: FontWeight.normal,
-                  ),
-                ),
-              ],
+              ),
             ),
           ],
         ),
-        backgroundColor: AppColors.background,
-        elevation: 1,
-        shadowColor: AppColors.dividerColor,
-        actions: widget.isGuestMode ? [
-          // 게스트 모드에서는 발제문 생성 버튼만 표시
-          ElevatedButton.icon(
-            onPressed: () {
-              final chatHistory = _messages.map((msg) => 
-                '${msg.isUser ? "사용자" : "AI"}: ${msg.text}'
-              ).join('\n\n');
-              
-              if (widget.onChatCompleteWithHistory != null) {
-                widget.onChatCompleteWithHistory!(chatHistory);
-              } else if (widget.onChatComplete != null) {
-                widget.onChatComplete!();
-              }
-            },
-            icon: const Icon(Icons.create, size: 18),
-            label: const Text('발제문 생성'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            ),
-          ),
-          const SizedBox(width: 8),
-        ] : [
-          IconButton(
-            onPressed: _showSaveReviewDialog,
-            icon: const Icon(Icons.save_outlined),
-            tooltip: '발제문으로 저장',
-          ),
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              switch (value) {
-                case 'clear':
-                  _clearChat();
-                  break;
-                case 'export':
-                  _exportChat();
-                  break;
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'clear',
-                child: Row(
-                  children: [
-                    Icon(Icons.clear_all, size: 20),
-                    SizedBox(width: 8),
-                    Text('대화 초기화'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'export',
-                child: Row(
-                  children: [
-                    Icon(Icons.share, size: 20),
-                    SizedBox(width: 8),
-                    Text('대화 내보내기'),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
-      body: Column(
+    );
+  }
+
+  // 커스텀 헤더
+  Widget _buildCustomHeader() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
         children: [
-          // 안내 메시지
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            margin: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.secondary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.secondary.withOpacity(0.3),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.lightbulb_outline,
-                  color: AppColors.secondary,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'AI와 대화한 내용을 바탕으로 발제문을 자동 생성할 수 있어요!',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-              ],
+          IconButton(
+            onPressed: () => Navigator.of(context).pop(),
+            icon: Icon(
+              Icons.arrow_back_ios,
+              color: AppColors.textPrimary,
+              size: 20,
             ),
           ),
-          
-          // 채팅 메시지 리스트
           Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _messages.length + (_isTyping ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (index == _messages.length && _isTyping) {
-                  return _buildTypingIndicator();
-                }
-                return _buildMessageBubble(_messages[index]);
-              },
+            child: Text(
+              widget.bookTitle ?? 'AI 채팅',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+              textAlign: TextAlign.center,
             ),
           ),
-          
-          // 메시지 입력 영역
-          _buildMessageInput(),
+          const SizedBox(width: 48), // 좌우 균형을 위한 여백
         ],
       ),
     );
   }
 
+  // 진행률 바
+  Widget _buildProgressBar() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        children: [
+          // 텍스트와 버튼
+          Row(
+            children: [
+              Text(
+                '감상을 나누다보면 감동도',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '들어져요',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  '${_remainingTurns}번 남음',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // 진행률 바
+          Container(
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: (10 - _remainingTurns) / 10,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 사용자 정보
+  Widget _buildUserInfo() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.person,
+              color: Colors.grey[600],
+              size: 16,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            '치웃',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 메시지 입력창
+  Widget _buildMessageInput() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: TextField(
+                controller: _messageController,
+                decoration: InputDecoration(
+                  hintText: '치웃과 감상을 나누어보세요.',
+                  hintStyle: TextStyle(
+                    color: Colors.grey[500],
+                    fontSize: 14,
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                style: const TextStyle(fontSize: 14),
+                maxLines: null,
+                textInputAction: TextInputAction.send,
+                onSubmitted: (_) => _sendMessage(),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              onPressed: _sendMessage,
+              icon: const Icon(
+                Icons.keyboard_arrow_up,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 메시지 버블
   Widget _buildMessageBubble(ChatMessage message) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: Row(
-        mainAxisAlignment:
-            message.isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!message.isUser) ...[
@@ -327,76 +392,45 @@ class _AiChatPageState extends State<AiChatPage> {
               height: 32,
               decoration: BoxDecoration(
                 color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
+                shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.auto_awesome,
                 color: AppColors.primary,
                 size: 16,
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 12),
           ],
-          Flexible(
+          Expanded(
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: message.isUser
-                    ? AppColors.primary
-                    : AppColors.surface,
-                borderRadius: BorderRadius.circular(20).copyWith(
-                  bottomLeft: message.isUser
-                      ? const Radius.circular(20)
-                      : const Radius.circular(4),
-                  bottomRight: message.isUser
-                      ? const Radius.circular(4)
-                      : const Radius.circular(20),
-                ),
-                border: message.isUser
-                    ? null
-                    : Border.all(
-                        color: AppColors.dividerColor,
-                        width: 1,
-                      ),
+                color: message.isUser ? AppColors.primary : Colors.grey[200],
+                borderRadius: BorderRadius.circular(16),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    message.text,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: message.isUser
-                          ? AppColors.onPrimary
-                          : AppColors.textPrimary,
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _formatTime(message.timestamp),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: message.isUser
-                          ? AppColors.onPrimary.withOpacity(0.7)
-                          : AppColors.textHint,
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
+              child: Text(
+                message.text,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: message.isUser ? Colors.white : AppColors.textPrimary,
+                  height: 1.4,
+                ),
               ),
             ),
           ),
           if (message.isUser) ...[
-            const SizedBox(width: 8),
+            const SizedBox(width: 12),
             Container(
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: AppColors.secondary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
+                color: Colors.grey[300],
+                shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.person,
-                color: AppColors.secondary,
+                color: Colors.grey[600],
                 size: 16,
               ),
             ),
@@ -406,6 +440,7 @@ class _AiChatPageState extends State<AiChatPage> {
     );
   }
 
+  // 타이핑 인디케이터
   Widget _buildTypingIndicator() {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -417,110 +452,42 @@ class _AiChatPageState extends State<AiChatPage> {
             height: 32,
             decoration: BoxDecoration(
               color: AppColors.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
+              shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.auto_awesome,
               color: AppColors.primary,
               size: 16,
             ),
           ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(20).copyWith(
-                bottomLeft: const Radius.circular(4),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(16),
               ),
-              border: Border.all(
-                color: AppColors.dividerColor,
-                width: 1,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  AppStrings.aiThinking,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      AppColors.primary.withOpacity(0.5),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.primary,
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMessageInput() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(
-          top: BorderSide(
-            color: AppColors.dividerColor,
-            width: 1,
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _messageController,
-              decoration: InputDecoration(
-                hintText: AppStrings.typeMessage,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: const BorderSide(color: AppColors.dividerColor),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: const BorderSide(color: AppColors.dividerColor),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: const BorderSide(color: AppColors.primary, width: 2),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                filled: true,
-                fillColor: AppColors.background,
-              ),
-              maxLines: null,
-              textInputAction: TextInputAction.send,
-              onSubmitted: (_) => _sendMessage(),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: IconButton(
-              onPressed: _sendMessage,
-              icon: const Icon(
-                Icons.send,
-                color: AppColors.onPrimary,
+                  const SizedBox(width: 12),
+                  Text(
+                    '생각 중...',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -543,6 +510,7 @@ class _AiChatPageState extends State<AiChatPage> {
       );
       _messageController.clear();
       _isTyping = true;
+      if (_remainingTurns > 0) _remainingTurns--;
     });
 
     _scrollToBottom();
@@ -580,7 +548,7 @@ class _AiChatPageState extends State<AiChatPage> {
         );
       });
     }
-
+    
     _scrollToBottom();
   }
 
@@ -605,33 +573,32 @@ class _AiChatPageState extends State<AiChatPage> {
           'message': userMessage,
           'context': context,
         }),
-      );
-      
+      ).timeout(const Duration(seconds: 30));
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return data['reply'] ?? '응답을 받을 수 없습니다.';
+        return data['response'] ?? 'AI 응답을 받을 수 없습니다.';
       } else {
-        throw Exception('API Error: ${response.statusCode}');
+        throw Exception('HTTP ${response.statusCode}');
       }
     } catch (e) {
-      throw Exception('Failed to call AI API: $e');
+      print('❌ AI API 호출 실패: $e');
+      rethrow;
     }
   }
 
   String _generateAiResponse(String userMessage) {
-    // 간단한 AI 응답 시뮬레이션
-    if (userMessage.contains('안녕') || userMessage.contains('하이')) {
-      return '안녕하세요! 어떤 책에 대해 이야기해보고 싶으신가요? 📚';
-    } else if (userMessage.contains('책') || userMessage.contains('소설')) {
-      return '흥미로운 선택이네요! 그 책에서 가장 인상 깊었던 부분은 무엇인가요? '
-             '또한 주인공의 행동이나 선택에 대해 어떻게 생각하시는지 궁금합니다.';
-    } else if (userMessage.contains('감정') || userMessage.contains('느낌')) {
-      return '책을 읽으며 느끼신 감정이 정말 소중해요. 그런 감정이 생긴 구체적인 장면이나 '
-             '문장이 있다면 공유해주세요. 함께 더 깊이 이야기해볼 수 있을 것 같아요!';
-    } else {
-      return '정말 좋은 관점이네요! 더 자세히 말씀해주시면, 그 부분에 대해 다양한 각도로 '
-             '분석해볼 수 있을 것 같아요. 혹시 다른 등장인물들의 입장에서는 어떻게 보일까요?';
-    }
+    // AI 서비스 실패 시 사용할 간단한 응답들
+    final responses = [
+      '그 부분에 대해 더 자세히 말해보실 수 있나요? 어떤 감정이 들었는지 궁금해요.',
+      '정말 흥미로운 관점이네요! 그 장면에서 어떤 생각이 들었나요?',
+      '책을 읽으면서 가장 인상 깊었던 부분은 무엇이었나요?',
+      '작가의 메시지에 대해 어떻게 생각하시나요?',
+      '이 책이 당신에게 어떤 의미로 다가왔는지 궁금해요.',
+    ];
+    
+    final random = DateTime.now().millisecondsSinceEpoch % responses.length;
+    return responses[random];
   }
 
   void _scrollToBottom() {
@@ -664,72 +631,39 @@ class _AiChatPageState extends State<AiChatPage> {
   }
 
   void _showSaveReviewDialog() {
+    final chatHistory = _messages.map((msg) => 
+      '${msg.isUser ? "사용자" : "AI"}: ${msg.text}'
+    ).join('\n\n');
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('발제문으로 저장'),
-        content: const Text('현재 대화 내용을 바탕으로 발제문을 생성하시겠습니까?'),
+        content: const Text('지금까지의 대화 내용을 바탕으로 발제문을 작성하시겠습니까?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text(AppStrings.cancel),
+            child: const Text('취소'),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
-              _generateReview();
+              
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (context) => ReviewCreationPage(
+                    bookTitle: widget.bookTitle,
+                    bookAuthor: widget.bookAuthor,
+                    chatHistory: chatHistory,
+                  ),
+                ),
+              );
             },
-            child: const Text('생성하기'),
+            child: const Text('저장'),
           ),
         ],
       ),
     );
-  }
-
-  void _generateReview() {
-    // 대화 기록을 문자열로 변환
-    final chatHistory = _messages
-        .map((msg) => '${msg.isUser ? '사용자' : 'AI'}: ${msg.text}')
-        .join('\n\n');
-
-    // 책 제목/저자는 검색(선택) 값에 절대 우선권 부여
-    String? selectedTitle = widget.bookTitle;
-    String? selectedAuthor = widget.bookAuthor;
-
-    // 금지 값 필터링
-    bool _isBanned(String? v) {
-      if (v == null) return true;
-      final t = v.trim();
-      return t.isEmpty || t == '안녕하세요' || t == '책';
-    }
-
-    if (_isBanned(selectedTitle)) {
-      selectedTitle = null; // 의미 없는 기본값은 전달하지 않음
-    }
-    if (_isBanned(selectedAuthor)) {
-      selectedAuthor = null;
-    }
-
-    // 로깅: 어떤 값이 전달되는지 추적
-    print('📚 [AiChatPage] Navigate to ReviewCreationPage with: '
-        'title="${selectedTitle ?? '(none)'}", author="${selectedAuthor ?? '(none)'}"');
-
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => ReviewCreationPage(
-          chatHistory: chatHistory,
-          bookTitle: selectedTitle,
-          bookAuthor: selectedAuthor,
-        ),
-      ),
-    );
-  }
-
-  String _formatTime(DateTime dateTime) {
-    return '${dateTime.hour.toString().padLeft(2, '0')}:'
-           '${dateTime.minute.toString().padLeft(2, '0')}';
   }
 }
 
