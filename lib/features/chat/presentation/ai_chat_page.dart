@@ -525,7 +525,7 @@ class _AiChatPageState extends State<AiChatPage> {
         const Duration(seconds: 10),
         onTimeout: () => throw Exception('API 타임아웃'),
       );
-      print('🤖 AI API 성공: ${aiResponse.substring(0, 50)}...');
+      print('🤖 AI API 성공: ${aiResponse.length > 50 ? aiResponse.substring(0, 50) + '...' : aiResponse}');
       
       setState(() {
         _isTyping = false;
