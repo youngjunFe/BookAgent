@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/theme/elevation_levels.dart';
 import '../../chat/presentation/ai_chat_page.dart';
+import '../models/book_search_result.dart';
+import 'book_detail_page.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -279,14 +281,10 @@ class _BookSearchPageState extends State<BookSearchPage> {
   }
 
   void _selectBook(BookSearchResult book) {
-    // 책 선택 후 AI 대화 페이지로 이동
-    Navigator.of(context).pushReplacement(
+    // 책 선택 후 책 상세 확인 페이지로 이동
+    Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => AiChatPage(
-          initialContext: '선택한 책: ${book.title} (${book.author})\n\n이 책에 대해 대화해보세요!',
-          bookTitle: book.title,
-          bookAuthor: book.author,
-        ),
+        builder: (context) => BookDetailPage(book: book),
       ),
     );
   }
@@ -550,31 +548,4 @@ class _BookSearchPageState extends State<BookSearchPage> {
   }
 }
 
-class BookSearchResult {
-  final String title;
-  final String author;
-  final String publisher;
-  final String image;
-  final String description;
-  final String isbn;
 
-  BookSearchResult({
-    required this.title,
-    required this.author,
-    required this.publisher,
-    required this.image,
-    required this.description,
-    required this.isbn,
-  });
-
-  factory BookSearchResult.fromJson(Map<String, dynamic> json) {
-    return BookSearchResult(
-      title: json['title'] ?? '',
-      author: json['author'] ?? '',
-      publisher: json['publisher'] ?? '',
-      image: json['image'] ?? '',
-      description: json['description'] ?? '',
-      isbn: json['isbn'] ?? '',
-    );
-  }
-}
