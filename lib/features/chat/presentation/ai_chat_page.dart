@@ -33,7 +33,7 @@ class _AiChatPageState extends State<AiChatPage> {
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
   bool _isTyping = false;
-  int _remainingTurns = 10;
+  int _remainingTurns = 15;
 
   @override
   void initState() {
@@ -226,72 +226,136 @@ class _AiChatPageState extends State<AiChatPage> {
     );
   }
 
-  // 진행률 바
+  // 진행률 바 (스크린샷 디자인)
   Widget _buildProgressBar() {
-    // 대화 진행도에 따른 동적 메시지
-    String getProgressMessage() {
-      if (_messages.length <= 2) {
-        return '감상을 나누다보면 감동도 들어져요';
-      } else if (_messages.length <= 4) {
-        return '감상이 뭐이고 있었!';
-      } else if (_messages.length <= 6) {
-        return '더 깊은 이야기를 나눠보아요';
-      } else {
-        return '마음의 문이 열리고 있어요';
-      }
-    }
+    final completedTurns = 15 - _remainingTurns;
+    final progressPercent = completedTurns / 15;
+    final canGenerateReview = completedTurns >= 10;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Column(
         children: [
-          // 텍스트와 남은 횟수
+          // 상단 텍스트와 버튼들
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                getProgressMessage(),
+                '감상이 쌓이고 있어요!',
                 style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w500,
+                  fontSize: 16,
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${_remainingTurns}번 남음',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w500,
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: Text(
+                      '${_remainingTurns}번 남음',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  // 발제문 생성 가능 시 표시
+                  if (canGenerateReview)
+                    GestureDetector(
+                      onTap: () {
+                        // 발제문 생성 페이지로 이동
+                        final chatHistory = _messages.map((msg) => 
+                          '${msg.isUser ? "사용자" : "AI"}: ${msg.text}'
+                        ).join('\n\n');
+                        
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(
+                            builder: (context) => ReviewCreationPage(
+                              bookTitle: widget.bookTitle,
+                              bookAuthor: widget.bookAuthor,
+                              chatHistory: chatHistory,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.description,
+                          color: AppColors.primary,
+                          size: 18,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           // 진행률 바
-          Container(
-            height: 6,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(3),
-            ),
-            child: FractionallySizedBox(
-              alignment: Alignment.centerLeft,
-              widthFactor: (10 - _remainingTurns) / 10,
-              child: Container(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final barWidth = constraints.maxWidth;
+              final milestonePosition = (10 / 15) * barWidth;
+              
+              return Container(
+                height: 8,
                 decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(3),
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(4),
                 ),
-              ),
-            ),
+                child: Stack(
+                  children: [
+                    // 진행률 표시
+                    FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: progressPercent,
+                      child: Container(
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ),
+                    // 발제문 생성 가능 지점 마커 (10번째)
+                    Positioned(
+                      left: milestonePosition - 4,
+                      top: 0,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: canGenerateReview ? AppColors.success : Colors.grey[400],
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 1),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
         ],
       ),
