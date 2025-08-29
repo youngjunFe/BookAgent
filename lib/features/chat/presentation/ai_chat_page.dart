@@ -228,34 +228,40 @@ class _AiChatPageState extends State<AiChatPage> {
 
   // 진행률 바
   Widget _buildProgressBar() {
+    // 대화 진행도에 따른 동적 메시지
+    String getProgressMessage() {
+      if (_messages.length <= 2) {
+        return '감상을 나누다보면 감동도 들어져요';
+      } else if (_messages.length <= 4) {
+        return '감상이 뭐이고 있었!';
+      } else if (_messages.length <= 6) {
+        return '더 깊은 이야기를 나눠보아요';
+      } else {
+        return '마음의 문이 열리고 있어요';
+      }
+    }
+
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Column(
         children: [
-          // 텍스트와 버튼
+          // 텍스트와 남은 횟수
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '감상을 나누다보면 감동도',
+                getProgressMessage(),
                 style: TextStyle(
                   fontSize: 14,
                   color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
-              const Spacer(),
-              Text(
-                '들어져요',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(width: 12),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   '${_remainingTurns}번 남음',
@@ -268,13 +274,13 @@ class _AiChatPageState extends State<AiChatPage> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           // 진행률 바
           Container(
-            height: 4,
+            height: 6,
             decoration: BoxDecoration(
               color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(3),
             ),
             child: FractionallySizedBox(
               alignment: Alignment.centerLeft,
@@ -282,7 +288,7 @@ class _AiChatPageState extends State<AiChatPage> {
               child: Container(
                 decoration: BoxDecoration(
                   color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(3),
                 ),
               ),
             ),
@@ -295,12 +301,12 @@ class _AiChatPageState extends State<AiChatPage> {
   // 사용자 정보
   Widget _buildUserInfo() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       child: Row(
         children: [
           Container(
-            width: 32,
-            height: 32,
+            width: 28,
+            height: 28,
             decoration: BoxDecoration(
               color: Colors.grey[300],
               shape: BoxShape.circle,
@@ -308,14 +314,14 @@ class _AiChatPageState extends State<AiChatPage> {
             child: Icon(
               Icons.person,
               color: Colors.grey[600],
-              size: 16,
+              size: 14,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Text(
             '치웃',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 14,
               fontWeight: FontWeight.w500,
               color: AppColors.textPrimary,
             ),
@@ -325,24 +331,33 @@ class _AiChatPageState extends State<AiChatPage> {
     );
   }
 
-  // 메시지 입력창
+  // 메시지 입력창 (디자이너 스타일)
   Widget _buildMessageInput() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: Colors.grey[200]!,
+            width: 1,
+          ),
+        ),
+      ),
       child: Row(
         children: [
           Expanded(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
+                color: Colors.grey[50],
+                borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: Colors.grey[300]!),
               ),
               child: TextField(
                 controller: _messageController,
                 decoration: InputDecoration(
-                  hintText: '치웃과 감상을 나누어보세요.',
+                  hintText: '치웃과 감상을 나누어보세요',
                   hintStyle: TextStyle(
                     color: Colors.grey[500],
                     fontSize: 14,
@@ -357,10 +372,10 @@ class _AiChatPageState extends State<AiChatPage> {
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           Container(
-            width: 48,
-            height: 48,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
               color: AppColors.primary,
               shape: BoxShape.circle,
@@ -370,7 +385,7 @@ class _AiChatPageState extends State<AiChatPage> {
               icon: const Icon(
                 Icons.keyboard_arrow_up,
                 color: Colors.white,
-                size: 24,
+                size: 20,
               ),
             ),
           ),
@@ -379,17 +394,18 @@ class _AiChatPageState extends State<AiChatPage> {
     );
   }
 
-  // 메시지 버블
+  // 메시지 버블 (디자이너 스타일)
   Widget _buildMessageBubble(ChatMessage message) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!message.isUser) ...[
             Container(
-              width: 32,
-              height: 32,
+              width: 28,
+              height: 28,
               decoration: BoxDecoration(
                 color: AppColors.primary.withOpacity(0.1),
                 shape: BoxShape.circle,
@@ -397,24 +413,24 @@ class _AiChatPageState extends State<AiChatPage> {
               child: Icon(
                 Icons.auto_awesome,
                 color: AppColors.primary,
-                size: 16,
+                size: 14,
               ),
             ),
             const SizedBox(width: 12),
           ],
           Expanded(
             child: Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: message.isUser ? AppColors.primary : Colors.grey[200],
-                borderRadius: BorderRadius.circular(16),
+                color: message.isUser ? AppColors.primary : Colors.grey[100],
+                borderRadius: BorderRadius.circular(18),
               ),
               child: Text(
                 message.text,
                 style: TextStyle(
                   fontSize: 14,
                   color: message.isUser ? Colors.white : AppColors.textPrimary,
-                  height: 1.4,
+                  height: 1.5,
                 ),
               ),
             ),
@@ -422,8 +438,8 @@ class _AiChatPageState extends State<AiChatPage> {
           if (message.isUser) ...[
             const SizedBox(width: 12),
             Container(
-              width: 32,
-              height: 32,
+              width: 28,
+              height: 28,
               decoration: BoxDecoration(
                 color: Colors.grey[300],
                 shape: BoxShape.circle,
@@ -431,7 +447,7 @@ class _AiChatPageState extends State<AiChatPage> {
               child: Icon(
                 Icons.person,
                 color: Colors.grey[600],
-                size: 16,
+                size: 14,
               ),
             ),
           ],
@@ -440,16 +456,16 @@ class _AiChatPageState extends State<AiChatPage> {
     );
   }
 
-  // 타이핑 인디케이터
+  // 타이핑 인디케이터 (디자이너 스타일)
   Widget _buildTypingIndicator() {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 20, left: 20, right: 20),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 32,
-            height: 32,
+            width: 28,
+            height: 28,
             decoration: BoxDecoration(
               color: AppColors.primary.withOpacity(0.1),
               shape: BoxShape.circle,
@@ -457,41 +473,47 @@ class _AiChatPageState extends State<AiChatPage> {
             child: Icon(
               Icons.auto_awesome,
               color: AppColors.primary,
-              size: 16,
+              size: 14,
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(16),
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(18),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    '생각 중...',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
+                  // 단순한 점 3개 애니메이션
+                  _buildDotAnimation(0),
+                  const SizedBox(width: 4),
+                  _buildDotAnimation(1),
+                  const SizedBox(width: 4),
+                  _buildDotAnimation(2),
                 ],
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // 점 애니메이션
+  Widget _buildDotAnimation(int index) {
+    return AnimatedContainer(
+      duration: Duration(milliseconds: 300 + (index * 100)),
+      curve: Curves.easeInOut,
+      child: Container(
+        width: 6,
+        height: 6,
+        decoration: BoxDecoration(
+          color: AppColors.textSecondary.withOpacity(0.6),
+          shape: BoxShape.circle,
+        ),
       ),
     );
   }
