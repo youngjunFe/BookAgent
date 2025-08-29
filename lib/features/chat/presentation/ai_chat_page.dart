@@ -483,20 +483,69 @@ class _AiChatPageState extends State<AiChatPage> {
             const SizedBox(width: 12),
           ],
           Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: message.isUser ? AppColors.primary : Colors.grey[100],
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Text(
-                message.text,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: message.isUser ? Colors.white : AppColors.textPrimary,
-                  height: 1.5,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: message.isUser ? AppColors.primary : Colors.grey[100],
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Text(
+                    message.text,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: message.isUser ? Colors.white : AppColors.textPrimary,
+                      height: 1.5,
+                    ),
+                  ),
                 ),
-              ),
+                // 액션 버튼들 (15번째 대화 완료 시)
+                if (!message.isUser && message.showActionButtons) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      TextButton(
+                        onPressed: () => _showDeletionWarningDialog(),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            side: BorderSide(color: Colors.grey[300]!),
+                          ),
+                        ),
+                        child: Text(
+                          '싫어요',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton(
+                        onPressed: _createReviewFromChat,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                        child: Text(
+                          '지금 만들기',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
             ),
           ),
           if (message.isUser) ...[
@@ -600,6 +649,22 @@ class _AiChatPageState extends State<AiChatPage> {
     });
 
     _scrollToBottom();
+    
+    // 10번째 대화 완료 시 팝업 표시
+    if (_remainingTurns == 5) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _show10thTurnDialog();
+      });
+    }
+    
+    // 15번째 대화 완료 시 AI 완료 메시지
+    if (_remainingTurns == 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _add15thCompletionMessage();
+      });
+      return; // AI 응답 대신 완료 메시지만 표시
+    }
+    
     _simulateAiResponse(text);
   }
 
@@ -764,6 +829,199 @@ class _AiChatPageState extends State<AiChatPage> {
     return generalResponses[DateTime.now().millisecondsSinceEpoch % generalResponses.length];
   }
 
+  // 10번째 대화 완료 시 팝업 (첫번째 이미지)
+  void _show10thTurnDialog() {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.5),
+      builder: (context) => Dialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '감동문 생성 가능',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '이제 대화 내용을 정리해 감동문을 만들 수 있어요. 바로 만들어 볼까요?',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text(
+                        '싫어요',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        _createReviewFromChat();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        '만들기',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 15번째 대화 완료 시 AI 메시지 (두번째 이미지)
+  void _add15thCompletionMessage() {
+    setState(() {
+      _isTyping = false;
+      _messages.add(
+        ChatMessage(
+          text: '즐거운 대화였어요. 감상이 쌓아서 이제 감동문을 만들 수 있어요.\n지금 바로 만들어 드릴까요?',
+          isUser: false,
+          timestamp: DateTime.now(),
+          showActionButtons: true, // 특별한 플래그로 버튼 표시
+        ),
+      );
+    });
+    _scrollToBottom();
+  }
+
+  // 발제문 생성으로 이동
+  void _createReviewFromChat() {
+    final chatHistory = _messages.map((msg) => 
+      '${msg.isUser ? "사용자" : "AI"}: ${msg.text}'
+    ).join('\n\n');
+    
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => ReviewCreationPage(
+          bookTitle: widget.bookTitle,
+          bookAuthor: widget.bookAuthor,
+          chatHistory: chatHistory,
+        ),
+      ),
+    );
+  }
+
+  // 대화 삭제 확인 다이얼로그 (세번째 이미지)
+  void _showDeletionWarningDialog() {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.5),
+      builder: (context) => Dialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '대화가 삭제돼요',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '지금 감상문을 만들지 않고 대화를 종료하면 감상의 기록이 사라져요.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text(
+                        '괜찮아요',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        _createReviewFromChat();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        '지금 감상문 만들기',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -834,10 +1092,12 @@ class ChatMessage {
   final String text;
   final bool isUser;
   final DateTime timestamp;
+  final bool showActionButtons;
 
   ChatMessage({
     required this.text,
     required this.isUser,
     required this.timestamp,
+    this.showActionButtons = false,
   });
 }
