@@ -86,7 +86,7 @@ class _AiChatPageState extends State<AiChatPage> {
           ChatMessage(
             text: '안녕하세요! 저는 독서 도우미 AI입니다 📚\n\n'
                 '${widget.bookTitle}을 읽으셨다니..! ( \' - \' ) /\n'
-                '$bookSummary 하던데, 지금 무슨 감정을 느끼고 있나요?',
+                '$bookSummary 라고 하던데, 지금 무슨 감정을 느끼고 있나요?',
             isUser: false,
             timestamp: DateTime.now(),
           ),
@@ -102,7 +102,7 @@ class _AiChatPageState extends State<AiChatPage> {
           ChatMessage(
             text: '안녕하세요! 저는 독서 도우미 AI입니다 📚\n\n'
                 '${widget.bookTitle}을 읽으셨다니..! ( \' - \' ) /\n'
-                '정말 흥미로운 작품 하던데, 지금 무슨 감정을 느끼고 있나요?',
+                '정말 흥미로운 작품 라고 하던데, 지금 무슨 감정을 느끼고 있나요?',
             isUser: false,
             timestamp: DateTime.now(),
           ),
