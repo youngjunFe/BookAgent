@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:convert';
+import 'dart:ui' as ui;
+import 'dart:typed_data';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_colors.dart';
 import '../models/review.dart';
@@ -9,6 +13,9 @@ import '../../chat/presentation/ai_chat_page.dart';
 import '../services/review_ai_service.dart';
 import '../../../shared/widgets/main_navigation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+// 웹에서만 사용 가능한 import
+import 'dart:html' as html;
 
 class ReviewCreationPage extends StatefulWidget {
   final String? chatHistory;
@@ -32,6 +39,7 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
   String? _bookTitle;
   String? _bookAuthor;
   int _selectedBackgroundIndex = 0;
+  final GlobalKey _repaintKey = GlobalKey();
 
   // 배경색 옵션들
   final List<Color> _backgroundColors = [
@@ -212,50 +220,53 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
 
   // 감동문 콘텐츠 카드
   Widget _buildContentCard() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: _backgroundColors[_selectedBackgroundIndex],
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 메인 콘텐츠
-          if (_isGenerating)
-            _buildLoadingState()
-          else if (_generatedContent != null)
-            _buildGeneratedContent()
-          else
-            _buildEmptyState(),
-          
-          const SizedBox(height: 32),
-          
-          // 하단 정보
-          Row(
-            children: [
-              Text(
-                _getCurrentDate(),
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w500,
-                ),
+    return RepaintBoundary(
+      key: _repaintKey,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: _backgroundColors[_selectedBackgroundIndex],
+          borderRadius: BorderRadius.circular(16),
               ),
-              const Spacer(),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '${_bookAuthor ?? '작가'}의 ${_bookTitle ?? '책'}을 읽고',
-            style: TextStyle(
-              fontSize: 12,
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w500,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+            // 메인 콘텐츠
+            if (_isGenerating)
+              _buildLoadingState()
+            else if (_generatedContent != null)
+              _buildGeneratedContent()
+            else
+              _buildEmptyState(),
+            
+            const SizedBox(height: 32),
+            
+            // 하단 정보
+                  Row(
+                    children: [
+                      Text(
+                  _getCurrentDate(),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const Spacer(),
+              ],
             ),
-          ),
-        ],
+            const SizedBox(height: 4),
+                  Text(
+              '${_bookAuthor ?? '작가'}의 ${_bookTitle ?? '책'}을 읽고',
+              style: TextStyle(
+                fontSize: 12,
+                      color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -265,24 +276,24 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
     return Container(
       height: 300,
       child: Center(
-        child: Column(
+                            child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+                              children: [
             CircularProgressIndicator(
               color: AppColors.primary,
               strokeWidth: 3,
             ),
             const SizedBox(height: 16),
-            Text(
+                                  Text(
               '감동문을 생성하고 있어요...',
               style: TextStyle(
                 fontSize: 16,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      ),
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
     );
   }
 
@@ -333,7 +344,7 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
-        children: [
+      children: [
           // 수정 & 배경 선택 버튼들
           Row(
             children: [
@@ -369,13 +380,13 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
                 ),
               ),
             ],
-          ),
-          
-          const SizedBox(height: 16),
-          
+        ),
+        
+        const SizedBox(height: 16),
+        
           // 저장하기 메인 버튼
-          SizedBox(
-            width: double.infinity,
+        SizedBox(
+          width: double.infinity,
             height: 52,
             child: ElevatedButton(
               onPressed: _generatedContent != null ? _saveReview : null,
@@ -414,10 +425,10 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
                 fontSize: 14,
                 color: AppColors.primary,
                 fontWeight: FontWeight.w500,
-              ),
             ),
           ),
-        ],
+        ),
+      ],
       ),
     );
   }
@@ -458,9 +469,9 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
       ),
       builder: (context) => Container(
         padding: const EdgeInsets.all(24),
-        child: Column(
+      child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: [
+        children: [
             // 상단 핸들
             Container(
               width: 40,
@@ -471,11 +482,11 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
               ),
             ),
             const SizedBox(height: 20),
-            Text(
+          Text(
               '배경 이미지 선택',
               style: TextStyle(
                 fontSize: 18,
-                fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,
               ),
             ),
@@ -527,13 +538,13 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
             child: Row(
-              children: [
-                Container(
+      children: [
+        Container(
                   width: 48,
                   height: 48,
-                  decoration: BoxDecoration(
+          decoration: BoxDecoration(
                     color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     icon,
@@ -579,10 +590,10 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
         child: Column(
           children: [
             // 상단 핸들
-            Container(
+        Container(
               width: 40,
               height: 4,
-              decoration: BoxDecoration(
+          decoration: BoxDecoration(
                 color: Colors.grey[300],
                 borderRadius: BorderRadius.circular(2),
               ),
@@ -590,8 +601,8 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
             const SizedBox(height: 20),
             
             // 헤더
-            Row(
-              children: [
+              Row(
+                children: [
                 IconButton(
                   onPressed: () => Navigator.of(context).pop(),
                   icon: Icon(Icons.arrow_back_ios, size: 20),
@@ -615,18 +626,18 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
                       fontSize: 16,
                       color: AppColors.primary,
                       fontWeight: FontWeight.w600,
-                    ),
                   ),
                 ),
-              ],
-            ),
-            
-            const SizedBox(height: 24),
-            
+              ),
+            ],
+        ),
+
+        const SizedBox(height: 24),
+
             // 기본 이미지와 갤러리 옵션
-            Row(
-              children: [
-                Expanded(
+        Row(
+          children: [
+            Expanded(
                   child: _buildImageTypeButton(
                     title: '기본 이미지',
                     isSelected: true,
@@ -743,19 +754,59 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
   }
 
   // 이미지로 공유
-  void _shareAsImage() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('이미지 공유 기능을 준비 중입니다.'),
-        backgroundColor: AppColors.primary,
-      ),
-    );
+  Future<void> _shareAsImage() async {
+    try {
+      // RepaintBoundary로 위젯을 이미지로 캡처
+      RenderRepaintBoundary boundary = _repaintKey.currentContext!
+          .findRenderObject() as RenderRepaintBoundary;
+      
+      ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      Uint8List pngBytes = byteData!.buffer.asUint8List();
+
+      // 웹에서 이미지 다운로드
+      if (kIsWeb) {
+        final blob = html.Blob([pngBytes]);
+        final url = html.Url.createObjectUrlFromBlob(blob);
+        final anchor = html.document.createElement('a') as html.AnchorElement
+          ..href = url
+          ..style.display = 'none'
+          ..download = '감동문_${_bookTitle ?? '책'}_${_getCurrentDate()}.png';
+        html.document.body!.children.add(anchor);
+        anchor.click();
+        html.document.body!.children.remove(anchor);
+        html.Url.revokeObjectUrl(url);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('감동문 이미지가 다운로드되었습니다!'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      } else {
+        // 모바일에서는 추후 share_plus 패키지 사용
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('모바일 공유 기능을 준비 중입니다.'),
+            backgroundColor: AppColors.primary,
+          ),
+        );
+      }
+    } catch (e) {
+      print('이미지 공유 실패: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('이미지 생성에 실패했습니다.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
   // 감동문 저장
   Future<void> _saveReview() async {
     if (_generatedContent == null) return;
-
+    
     try {
       final repository = ReviewRepository();
       final review = Review(
@@ -772,7 +823,7 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
       );
 
       await repository.create(review);
-
+      
       // 임시 저장 데이터 삭제
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('temp_review');
@@ -786,7 +837,7 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
           backgroundColor: AppColors.success,
         ),
       );
-
+      
       // 메인 페이지로 이동
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => const MainNavigation()),
