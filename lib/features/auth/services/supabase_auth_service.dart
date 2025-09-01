@@ -348,18 +348,45 @@ class SupabaseAuthService {
 
   // 사용 가능한 닉네임인지 확인
   Future<bool> isNicknameAvailable(String nickname) async {
+    final user = currentUser;
+    if (user == null) {
+      debugPrint('❌ [isNicknameAvailable] 사용자가 로그인되어 있지 않음');
+      return false;
+    }
+
+    debugPrint('🔍 [isNicknameAvailable] 닉네임 사용 가능 여부 확인: $nickname');
+    debugPrint('👤 [isNicknameAvailable] 현재 사용자 ID: ${user.id}');
+
     // 기본 유효성 검사
     final nicknameService = NicknameGeneratorService();
     if (!nicknameService.isValidNickname(nickname)) {
+      debugPrint('❌ [isNicknameAvailable] 유효하지 않은 닉네임 형식');
       return false;
     }
 
     if (nicknameService.containsInappropriateContent(nickname)) {
+      debugPrint('❌ [isNicknameAvailable] 부적절한 내용 포함');
       return false;
     }
 
-    // 중복 체크
-    return !(await checkNicknameExists(nickname));
+    // 중복 체크 (현재 사용자 제외)
+    try {
+      final existingUser = await _client
+          .from('profiles')
+          .select('id')
+          .eq('nickname', nickname)
+          .neq('id', user.id) // 현재 사용자는 제외
+          .maybeSingle();
+
+      final isAvailable = existingUser == null;
+      debugPrint('✅ [isNicknameAvailable] 중복 체크 결과: $isAvailable');
+      debugPrint('📋 [isNicknameAvailable] 기존 사용자: $existingUser');
+      
+      return isAvailable;
+    } catch (e) {
+      debugPrint('❌ [isNicknameAvailable] 중복 체크 에러: $e');
+      return false; // 에러 발생시 안전하게 사용 불가로 처리
+    }
   }
 
   // 새로운 OAuth 사용자를 위한 닉네임 생성 및 설정
