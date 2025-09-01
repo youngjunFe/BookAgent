@@ -1,4 +1,6 @@
 import 'dart:math';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class NicknameGeneratorService {
   static final NicknameGeneratorService _instance = NicknameGeneratorService._internal();
@@ -53,7 +55,43 @@ class NicknameGeneratorService {
     '도와주는', '나누는', '선물하는', '축하하는', '감사하는', '사랑하는', '아껴주는', '보살피는'
   ];
   
-  /// 랜덤 닉네임 생성 (여러 패턴)
+  /// 외부 API를 통한 한국어 닉네임 생성 (1순위)
+  Future<String?> generateNicknameFromAPI() async {
+    try {
+      print('🌐 [generateNicknameFromAPI] 외부 API 닉네임 생성 시작');
+      
+      final response = await http.post(
+        Uri.parse('https://www.rivestsoft.com/nickname/getRandomNickname.ajax'),
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'User-Agent': 'BookReviewApp/1.0',
+        },
+        body: {
+          'lang': 'ko',
+        },
+      ).timeout(Duration(seconds: 5)); // 5초 타임아웃
+
+      print('🌐 [generateNicknameFromAPI] API 응답 상태: ${response.statusCode}');
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final nickname = data['data'] as String?;
+        
+        if (nickname != null && nickname.isNotEmpty) {
+          print('✅ [generateNicknameFromAPI] API 닉네임 생성 성공: $nickname');
+          return nickname.trim();
+        }
+      }
+      
+      print('⚠️ [generateNicknameFromAPI] API 응답 파싱 실패');
+      return null;
+    } catch (e) {
+      print('❌ [generateNicknameFromAPI] API 호출 실패: $e');
+      return null;
+    }
+  }
+
+  /// 랜덤 닉네임 생성 (로컬 백업, 여러 패턴)
   String generateRandomNickname() {
     final patterns = [
       () => '${_adjectives[_random.nextInt(_adjectives.length)]}${_animals[_random.nextInt(_animals.length)]}',
@@ -65,6 +103,27 @@ class NicknameGeneratorService {
     
     final selectedPattern = patterns[_random.nextInt(patterns.length)];
     return selectedPattern();
+  }
+
+  /// API 우선, 실패시 로컬 생성 (하이브리드 방식)
+  Future<String> generateBestNickname() async {
+    try {
+      // 1순위: 외부 API 시도
+      final apiNickname = await generateNicknameFromAPI();
+      if (apiNickname != null && apiNickname.length >= 2 && apiNickname.length <= 20) {
+        print('🎉 [generateBestNickname] API 닉네임 사용: $apiNickname');
+        return apiNickname;
+      }
+      
+      print('⚠️ [generateBestNickname] API 실패, 로컬 생성으로 대체');
+    } catch (e) {
+      print('❌ [generateBestNickname] API 오류, 로컬 생성으로 대체: $e');
+    }
+    
+    // 2순위: 로컬 생성
+    final localNickname = generateRandomNickname();
+    print('✅ [generateBestNickname] 로컬 닉네임 사용: $localNickname');
+    return localNickname;
   }
   
   /// 여러 개의 닉네임 후보 생성
@@ -79,18 +138,31 @@ class NicknameGeneratorService {
     return nicknames.toList();
   }
   
-  /// 닉네임 중복 체크와 함께 유니크한 닉네임 생성
+  /// API 우선 + 중복 체크와 함께 유니크한 닉네임 생성  
   Future<String> generateUniqueNickname({
     required Future<bool> Function(String nickname) checkDuplicate,
     int maxAttempts = 10,
   }) async {
+    print('🎯 [generateUniqueNickname] 유니크 닉네임 생성 시작');
+    
     for (int i = 0; i < maxAttempts; i++) {
-      String nickname = generateRandomNickname();
+      String nickname;
+      
+      // 첫 번째 시도에서는 API 사용, 이후는 로컬 생성
+      if (i == 0) {
+        nickname = await generateBestNickname(); // API 우선 방식
+      } else {
+        nickname = generateRandomNickname(); // 로컬 생성
+      }
+      
+      print('🔍 [generateUniqueNickname] 시도 ${i + 1}: $nickname');
       
       // 중복 체크
       bool isDuplicate = await checkDuplicate(nickname);
+      print('📋 [generateUniqueNickname] 중복 여부: $isDuplicate');
       
       if (!isDuplicate) {
+        print('🎉 [generateUniqueNickname] 유니크 닉네임 생성 완료: $nickname');
         return nickname;
       }
       
@@ -101,6 +173,7 @@ class NicknameGeneratorService {
         
         isDuplicate = await checkDuplicate(nickname);
         if (!isDuplicate) {
+          print('🎉 [generateUniqueNickname] 숫자 추가로 유니크 닉네임 생성: $nickname');
           return nickname;
         }
       }
@@ -108,7 +181,9 @@ class NicknameGeneratorService {
     
     // 최후의 수단: 타임스탬프 추가
     final timestamp = DateTime.now().millisecondsSinceEpoch % 10000;
-    return '${generateRandomNickname()}$timestamp';
+    final fallbackNickname = '${generateRandomNickname()}$timestamp';
+    print('⚠️ [generateUniqueNickname] 최후의 수단 사용: $fallbackNickname');
+    return fallbackNickname;
   }
   
   /// 특정 키워드 기반 닉네임 생성
