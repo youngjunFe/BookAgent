@@ -6,6 +6,7 @@ import '../../features/home/presentation/home_page.dart';
 import '../../features/library/presentation/library_page.dart';
 import '../../features/auth/services/supabase_auth_service.dart';
 import '../../features/auth/presentation/login_page.dart';
+import '../../features/auth/presentation/nickname_test_page.dart';
 
 class MainNavigation extends StatefulWidget {
   final int initialIndex;
@@ -414,6 +415,19 @@ class _MyPageState extends State<MyPage> {
                   title: AppStrings.about,
                   onTap: () {
                     // TODO: 앱 정보 페이지
+                  },
+                ),
+                // 임시 테스트 메뉴 (개발용)
+                _MenuItem(
+                  icon: Icons.bug_report,
+                  title: '닉네임 API 테스트',
+                  textColor: Colors.purple,
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const NicknameTestPage(),
+                      ),
+                    );
                   },
                 ),
                 _MenuItem(
