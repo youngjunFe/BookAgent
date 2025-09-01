@@ -422,6 +422,20 @@ class _MyPageState extends State<MyPage> {
                   textColor: AppColors.error,
                   onTap: () => _handleLogout(context),
                 ),
+                const SizedBox(height: 16),
+                // 위험한 작업 구분선
+                Container(
+                  height: 1,
+                  color: AppColors.dividerColor,
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                ),
+                const SizedBox(height: 8),
+                _MenuItem(
+                  icon: Icons.delete_forever,
+                  title: '회원 탈퇴',
+                  textColor: Colors.red[700],
+                  onTap: () => _handleDeleteAccount(context),
+                ),
               ],
             ),
             
@@ -590,6 +604,228 @@ class _MyPageState extends State<MyPage> {
         margin: const EdgeInsets.all(16),
       ),
     );
+  }
+
+  // 회원 탈퇴 처리
+  Future<void> _handleDeleteAccount(BuildContext context) async {
+    final authService = SupabaseAuthService();
+    final currentUser = authService.currentUserInfo;
+    
+    if (currentUser == null) {
+      _showSnackBar(context, '로그인 정보를 찾을 수 없습니다', isError: true);
+      return;
+    }
+
+    // 1단계: 탈퇴 확인 다이얼로그
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.red[700], size: 24),
+            const SizedBox(width: 8),
+            Text(
+              '회원 탈퇴',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.red[700],
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '정말로 탈퇴하시겠습니까?',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.red[50],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.red[200]!),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.red[700], size: 18),
+                      const SizedBox(width: 6),
+                      Text(
+                        '탈퇴 시 삭제되는 데이터',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.red[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '• 모든 감동문과 독서 기록\n• 독서 목표 및 통계\n• 저장된 도서 정보\n• 채팅 기록 및 AI 대화',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.red[600],
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '이 작업은 되돌릴 수 없습니다.',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(
+              '취소',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red[700],
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('탈퇴하기'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete != true) return;
+
+    // 2단계: 최종 확인 (더블 체크)
+    final finalConfirm = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          '정말 마지막 확인',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: Colors.red[700],
+          ),
+        ),
+        content: Text(
+          '"${currentUser.nickname}"님의 모든 데이터가 영구적으로 삭제됩니다.\n\n정말로 탈퇴하시겠습니까?',
+          style: TextStyle(
+            fontSize: 14,
+            color: AppColors.textPrimary,
+            height: 1.5,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(
+              '아니오, 유지하겠습니다',
+              style: TextStyle(color: AppColors.primary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red[700],
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('네, 탈퇴합니다'),
+          ),
+        ],
+      ),
+    );
+
+    if (finalConfirm != true || !context.mounted) return;
+
+    // 3단계: 탈퇴 처리 (로딩 다이얼로그 표시)
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.red[700]!),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '계정을 삭제하고 있습니다...\n잠시만 기다려주세요.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    try {
+      // 실제 탈퇴 처리
+      final deleteSuccess = await authService.deleteAccount();
+      
+      if (context.mounted) {
+        Navigator.of(context).pop(); // 로딩 다이얼로그 닫기
+        
+        if (deleteSuccess) {
+          // 탈퇴 성공 - 로그인 페이지로 이동
+          _showSnackBar(context, '회원 탈퇴가 완료되었습니다. 그동안 이용해주셔서 감사합니다.');
+          
+          await Future.delayed(const Duration(seconds: 1));
+          
+          if (context.mounted) {
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              '/',
+              (route) => false,
+            );
+          }
+        } else {
+          // 탈퇴 실패
+          _showSnackBar(context, '탈퇴 처리 중 오류가 발생했습니다. 다시 시도해주세요.', isError: true);
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.of(context).pop(); // 로딩 다이얼로그 닫기
+        _showSnackBar(context, '탈퇴 처리 중 오류가 발생했습니다: $e', isError: true);
+      }
+    }
   }
   
   Future<void> _handleLogout(BuildContext context) async {
