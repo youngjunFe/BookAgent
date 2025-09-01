@@ -272,9 +272,14 @@ class _MainNavigationState extends State<MainNavigation> {
 }
 
 // 임시 마이페이지 (추후 별도 파일로 분리)
-class MyPage extends StatelessWidget {
+class MyPage extends StatefulWidget {
   const MyPage({super.key});
 
+  @override
+  State<MyPage> createState() => _MyPageState();
+}
+
+class _MyPageState extends State<MyPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -318,13 +323,50 @@ class MyPage extends StatelessWidget {
                       final user = snapshot.data;
                       return Column(
                         children: [
-                          Text(
-                            user?.name ?? '사용자',
-                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
+                          // 닉네임 (메인 표시)
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  user?.nickname ?? '닉네임 없음',
+                                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              GestureDetector(
+                                onTap: () => _showNicknameEditDialog(context, user),
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withOpacity(0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.edit,
+                                    size: 16,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
+                          const SizedBox(height: 8),
+                          // 실명 (보조 표시)
+                          if (user?.name != null && user?.name != user?.nickname)
+                            Text(
+                              '(${user?.name})',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AppColors.textSecondary,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
                           const SizedBox(height: 4),
+                          // 이메일
                           Text(
                             user?.email ?? '',
                             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -332,6 +374,7 @@ class MyPage extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 8),
+                          // 로그인 제공자
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                             decoration: BoxDecoration(
@@ -398,8 +441,155 @@ class MyPage extends StatelessWidget {
   }
   
   Future<dynamic> _getUserInfo() async {
-    // SupabaseAuthService에서 현재 사용자 정보 가져오기
-    return SupabaseAuthService().currentUser;
+    // SupabaseAuthService에서 현재 사용자 정보 가져오기 (UserInfo 객체)
+    return SupabaseAuthService().currentUserInfo;
+  }
+
+  // 닉네임 편집 다이얼로그
+  Future<void> _showNicknameEditDialog(BuildContext context, dynamic user) async {
+    final TextEditingController controller = TextEditingController();
+    controller.text = user?.nickname ?? '';
+    
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          bool isLoading = false;
+          
+          return AlertDialog(
+            backgroundColor: AppColors.surface,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                Icon(Icons.edit, color: AppColors.primary, size: 20),
+                const SizedBox(width: 8),
+                const Text('닉네임 변경'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: controller,
+                  maxLength: 20,
+                  decoration: InputDecoration(
+                    hintText: '새로운 닉네임을 입력하세요',
+                    hintStyle: TextStyle(color: AppColors.textHint),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppColors.dividerColor),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppColors.primary, width: 2),
+                    ),
+                    prefixIcon: Icon(Icons.person_outline, color: AppColors.textSecondary),
+                    counterStyle: TextStyle(color: AppColors.textHint),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '• 2-20자 사이로 입력해주세요\n• 한글, 영문, 숫자만 사용 가능합니다\n• 다른 사용자와 중복될 수 없습니다',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: isLoading ? null : () => Navigator.of(context).pop(),
+                child: Text(
+                  AppStrings.cancel,
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: isLoading ? null : () async {
+                  final newNickname = controller.text.trim();
+                  
+                  if (newNickname.isEmpty) {
+                    _showSnackBar(context, '닉네임을 입력해주세요', isError: true);
+                    return;
+                  }
+                  
+                  if (newNickname == user?.nickname) {
+                    Navigator.of(context).pop();
+                    return;
+                  }
+                  
+                  setState(() => isLoading = true);
+                  
+                  try {
+                    final authService = SupabaseAuthService();
+                    
+                    // 사용 가능한 닉네임인지 확인
+                    final isAvailable = await authService.isNicknameAvailable(newNickname);
+                    
+                    if (!isAvailable) {
+                      _showSnackBar(context, '이미 사용 중인 닉네임이거나 사용할 수 없는 닉네임입니다', isError: true);
+                      setState(() => isLoading = false);
+                      return;
+                    }
+                    
+                    // 닉네임 업데이트
+                    final success = await authService.updateNickname(newNickname);
+                    
+                    if (success) {
+                      Navigator.of(context).pop(newNickname);
+                      _showSnackBar(context, '닉네임이 변경되었습니다! 🎉');
+                    } else {
+                      _showSnackBar(context, '닉네임 변경에 실패했습니다', isError: true);
+                    }
+                  } catch (e) {
+                    _showSnackBar(context, '오류가 발생했습니다: $e', isError: true);
+                  }
+                  
+                  setState(() => isLoading = false);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                child: isLoading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Text('변경하기'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    
+    // 닉네임이 변경된 경우 UI 새로고침
+    if (result != null && context.mounted) {
+      setState(() {}); // MyPage 위젯을 다시 빌드하여 새로운 닉네임을 표시
+    }
+  }
+  
+  void _showSnackBar(BuildContext context, String message, {bool isError = false}) {
+    if (!context.mounted) return;
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? AppColors.error : AppColors.success,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
   }
   
   Future<void> _handleLogout(BuildContext context) async {

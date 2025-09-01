@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/supabase/supabase_client_provider.dart';
+import '../../../core/services/nickname_generator_service.dart';
 
 class SupabaseAuthService {
   static final SupabaseAuthService _instance = SupabaseAuthService._internal();
@@ -23,6 +24,7 @@ class SupabaseAuthService {
     return UserInfo(
       id: user.id,
       name: user.userMetadata?['full_name'] ?? user.email?.split('@')[0] ?? 'User',
+      nickname: user.userMetadata?['nickname'] ?? user.userMetadata?['full_name'] ?? user.email?.split('@')[0] ?? 'User',
       email: user.email ?? '',
       photoUrl: user.userMetadata?['avatar_url'],
       provider: user.appMetadata['provider'] ?? 'email',
@@ -62,12 +64,24 @@ class SupabaseAuthService {
   // 이메일 회원가입
   Future<AuthResult> signUpWithEmail(String email, String password) async {
     try {
+      // 1. 먼저 랜덤 닉네임 생성
+      final nicknameService = NicknameGeneratorService();
+      final uniqueNickname = await nicknameService.generateUniqueNickname(
+        checkDuplicate: checkNicknameExists,
+      );
+
+      // 2. 회원가입 진행
       final response = await _client.auth.signUp(
         email: email,
         password: password,
+        data: {
+          'nickname': uniqueNickname,
+          'full_name': uniqueNickname, // 기본 이름도 닉네임으로 설정
+        }
       );
 
       if (response.user != null) {
+        debugPrint('🎉 회원가입 성공! 자동 생성된 닉네임: $uniqueNickname');
         return AuthResult.success(_convertToUserInfo(response.user!));
       } else {
         return AuthResult.error('회원가입에 실패했습니다.');
@@ -99,6 +113,7 @@ class SupabaseAuthService {
         final user = currentUser;
         if (user != null) {
           debugPrint('🔵 웹 로그인 성공: ${user.email}');
+          await _ensureUserHasNickname(user); // 닉네임 확인 및 생성
           return AuthResult.success(_convertToUserInfo(user));
         } else {
           debugPrint('🔵 웹 로그인 대기 중 (리다이렉트 필요)');
@@ -106,6 +121,7 @@ class SupabaseAuthService {
           return AuthResult.success(UserInfo(
             id: 'pending',
             name: 'Google User',
+            nickname: 'Google User',
             email: 'pending@google.com',
             provider: 'google',
           ));
@@ -117,6 +133,7 @@ class SupabaseAuthService {
       final user = currentUser;
       if (user != null) {
         debugPrint('🔵 모바일 로그인 성공: ${user.email}');
+        await _ensureUserHasNickname(user); // 닉네임 확인 및 생성
         return AuthResult.success(_convertToUserInfo(user));
       } else {
         debugPrint('🔵 모바일 로그인 실패: 사용자 정보 없음');
@@ -160,6 +177,7 @@ class SupabaseAuthService {
         return AuthResult.success(UserInfo(
           id: 'pending_kakao',
           name: 'Kakao User',
+          nickname: 'Kakao User',
           email: 'pending@kakao.com',
           provider: 'kakao',
         ));
@@ -170,6 +188,7 @@ class SupabaseAuthService {
       final user = currentUser;
       if (user != null) {
         debugPrint('🟡 카카오 모바일 로그인 성공: ${user.email}');
+        await _ensureUserHasNickname(user); // 닉네임 확인 및 생성
         return AuthResult.success(_convertToUserInfo(user));
       } else {
         debugPrint('🟡 카카오 모바일 로그인 실패: 사용자 정보 없음');
@@ -193,6 +212,121 @@ class SupabaseAuthService {
     }
   }
 
+  // 닉네임 중복 체크
+  Future<bool> checkNicknameExists(String nickname) async {
+    try {
+      final result = await _client
+          .from('profiles')
+          .select('id')
+          .eq('nickname', nickname)
+          .maybeSingle();
+      
+      return result != null;
+    } catch (e) {
+      debugPrint('닉네임 중복 체크 에러: $e');
+      return true; // 에러 발생시 안전하게 중복으로 간주
+    }
+  }
+
+  // 닉네임 업데이트
+  Future<bool> updateNickname(String newNickname) async {
+    final user = currentUser;
+    if (user == null) return false;
+
+    try {
+      // 1. 중복 체크 (다른 사용자가 사용 중인지)
+      final existingUser = await _client
+          .from('profiles')
+          .select('id')
+          .eq('nickname', newNickname)
+          .neq('id', user.id)
+          .maybeSingle();
+
+      if (existingUser != null) {
+        return false; // 이미 다른 사용자가 사용 중
+      }
+
+      // 2. 닉네임 업데이트 (profiles 테이블)
+      await _client
+          .from('profiles')
+          .update({'nickname': newNickname, 'updated_at': DateTime.now().toIso8601String()})
+          .eq('id', user.id);
+
+      // 3. 사용자 메타데이터도 업데이트
+      await _client.auth.updateUser(
+        UserAttributes(
+          data: {
+            ...user.userMetadata ?? {},
+            'nickname': newNickname,
+          }
+        )
+      );
+
+      return true;
+    } catch (e) {
+      debugPrint('닉네임 업데이트 에러: $e');
+      return false;
+    }
+  }
+
+  // 사용 가능한 닉네임인지 확인
+  Future<bool> isNicknameAvailable(String nickname) async {
+    // 기본 유효성 검사
+    final nicknameService = NicknameGeneratorService();
+    if (!nicknameService.isValidNickname(nickname)) {
+      return false;
+    }
+
+    if (nicknameService.containsInappropriateContent(nickname)) {
+      return false;
+    }
+
+    // 중복 체크
+    return !(await checkNicknameExists(nickname));
+  }
+
+  // 새로운 OAuth 사용자를 위한 닉네임 생성 및 설정
+  Future<void> _ensureUserHasNickname(User user) async {
+    try {
+      // profiles 테이블에서 현재 사용자 정보 조회
+      final profile = await _client
+          .from('profiles')
+          .select('nickname')
+          .eq('id', user.id)
+          .maybeSingle();
+
+      // 닉네임이 없는 경우에만 생성
+      if (profile == null || profile['nickname'] == null || (profile['nickname'] as String).isEmpty) {
+        debugPrint('🎯 OAuth 사용자 닉네임 생성 중...');
+        
+        final nicknameService = NicknameGeneratorService();
+        final uniqueNickname = await nicknameService.generateUniqueNickname(
+          checkDuplicate: checkNicknameExists,
+        );
+
+        // profiles 테이블 업데이트
+        await _client
+            .from('profiles')
+            .update({'nickname': uniqueNickname})
+            .eq('id', user.id);
+
+        // 사용자 메타데이터 업데이트
+        await _client.auth.updateUser(
+          UserAttributes(
+            data: {
+              ...user.userMetadata ?? {},
+              'nickname': uniqueNickname,
+            }
+          )
+        );
+
+        debugPrint('🎉 OAuth 사용자 닉네임 생성 완료: $uniqueNickname');
+      }
+    } catch (e) {
+      debugPrint('OAuth 사용자 닉네임 설정 에러: $e');
+    }
+  }
+
   // User를 UserInfo로 변환
   UserInfo _convertToUserInfo(User user) {
     return UserInfo(
@@ -201,6 +335,11 @@ class SupabaseAuthService {
             user.userMetadata?['name'] ?? 
             user.email?.split('@')[0] ?? 
             'User',
+      nickname: user.userMetadata?['nickname'] ?? 
+                user.userMetadata?['full_name'] ?? 
+                user.userMetadata?['name'] ?? 
+                user.email?.split('@')[0] ?? 
+                'User',
       email: user.email ?? '',
       photoUrl: user.userMetadata?['avatar_url'] ?? user.userMetadata?['picture'],
       provider: user.appMetadata['provider'] ?? 'email',
@@ -216,6 +355,7 @@ class SupabaseAuthService {
 class UserInfo {
   final String id;
   final String name;
+  final String nickname;
   final String email;
   final String? photoUrl;
   final String provider;
@@ -223,6 +363,7 @@ class UserInfo {
   UserInfo({
     required this.id,
     required this.name,
+    required this.nickname,
     required this.email,
     this.photoUrl,
     required this.provider,
@@ -230,7 +371,7 @@ class UserInfo {
 
   @override
   String toString() {
-    return 'UserInfo(id: $id, name: $name, email: $email, provider: $provider)';
+    return 'UserInfo(id: $id, name: $name, nickname: $nickname, email: $email, provider: $provider)';
   }
 }
 

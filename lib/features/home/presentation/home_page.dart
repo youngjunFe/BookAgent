@@ -7,6 +7,7 @@ import '../../chat/presentation/ai_chat_page.dart';
 import '../../chat/presentation/character_selection_page.dart';
 import '../../reading_goals/presentation/reading_goals_page.dart';
 import '../../book_search/presentation/book_search_page.dart';
+import '../../auth/services/supabase_auth_service.dart';
 
 
 class HomePage extends StatelessWidget {
@@ -78,14 +79,22 @@ class _HomeViewState extends State<HomeView> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: Text(
-                  '사용자님, 상쾌한 아침이에요.\n처음과 오늘 첫 감동을 나눠보세요.',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                    height: 1.4,
-                  ),
+                child: FutureBuilder(
+                  future: SupabaseAuthService().currentUserInfo,
+                  builder: (context, snapshot) {
+                    final user = snapshot.data;
+                    final nickname = user?.nickname ?? '독서가';
+                    
+                    return Text(
+                      '$nickname님, 상쾌한 아침이에요.\n오늘도 첫 감동을 나눠보세요.',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                        height: 1.4,
+                      ),
+                    );
+                  },
                 ),
               ),
             ),

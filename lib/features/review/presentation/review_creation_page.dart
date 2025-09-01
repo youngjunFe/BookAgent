@@ -13,6 +13,8 @@ import '../../chat/presentation/ai_chat_page.dart';
 import '../services/review_ai_service.dart';
 import '../../../shared/widgets/main_navigation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../auth/services/supabase_auth_service.dart';
+import '../../auth/presentation/login_page.dart';
 
 // 웹에서만 사용 가능한 import
 import 'dart:html' as html;
@@ -100,6 +102,43 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
     }
   }
 
+  // 임시 저장 기능
+  Future<void> _saveTempReview() async {
+    if (_generatedContent == null || _generatedContent!.trim().isEmpty) {
+      return;
+    }
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('temp_review', _generatedContent!);
+      if (_bookTitle != null) {
+        await prefs.setString('temp_book_title', _bookTitle!);
+      }
+      if (_bookAuthor != null) {
+        await prefs.setString('temp_book_author', _bookAuthor!);
+      }
+      if (widget.chatHistory != null) {
+        await prefs.setString('temp_chat_history', widget.chatHistory!);
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('감동문이 임시 저장되었습니다'),
+          backgroundColor: AppColors.success,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      print('임시 저장 실패: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('임시 저장에 실패했습니다'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
   Future<void> _generateReview() async {
     if (widget.chatHistory == null) return;
 
@@ -180,19 +219,33 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
       child: Row(
         children: [
           // 임시 저장 버튼
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.grey[300]!),
-            ),
-            child: Text(
-              '임시 저장',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w500,
+          GestureDetector(
+            onTap: _saveTempReview,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.save_outlined,
+                    size: 16,
+                    color: AppColors.textSecondary,
+                  ),
+                  SizedBox(width: 4),
+                  Text(
+                    '임시 저장',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -368,7 +421,7 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
                 child: OutlinedButton.icon(
                   onPressed: _showBackgroundSelector,
                   icon: Icon(Icons.palette, size: 16),
-                  label: Text('배경 설택'),
+                  label: Text('배경 선택'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.textSecondary,
                     side: BorderSide(color: Colors.grey[300]!),
@@ -437,9 +490,12 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
   void _editContent() {
     if (_generatedContent == null) return;
     
+    final authService = SupabaseAuthService();
+    final currentUser = authService.currentUserInfo;
+    
     final review = Review(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      userId: 'temp_user',
+      userId: currentUser?.id ?? 'temp_user', // 실제 사용자 ID 사용
       title: '${_bookAuthor ?? '작가'}의 ${_bookTitle ?? '책'}을 읽고',
       content: _generatedContent!,
       bookTitle: _bookTitle ?? '책',
@@ -807,11 +863,70 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
   Future<void> _saveReview() async {
     if (_generatedContent == null) return;
     
+    // 로그인 상태 체크
+    final authService = SupabaseAuthService();
+    if (!authService.isLoggedIn) {
+      // 로그인하지 않은 경우 임시 저장 후 로그인 페이지로 이동
+      await _saveTempReview();
+      
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Text(
+              '로그인이 필요해요',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            content: Text(
+              '감동문을 저장하려면 로그인이 필요합니다.\n현재 내용은 임시 저장되었으니 안심하세요!',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+                height: 1.5,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(
+                  '취소',
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const LoginPage()),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                child: Text('로그인'),
+              ),
+            ],
+          ),
+        );
+      }
+      return;
+    }
+    
     try {
       final repository = ReviewRepository();
+      final currentUser = authService.currentUserInfo;
+      
       final review = Review(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        userId: 'temp_user',
+        userId: currentUser?.id ?? 'temp_user', // 실제 사용자 ID 사용
         title: '${_bookAuthor ?? '작가'}의 ${_bookTitle ?? '책'}을 읽고',
         content: _generatedContent!,
         bookTitle: _bookTitle ?? '책',
