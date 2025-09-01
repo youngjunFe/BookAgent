@@ -392,6 +392,8 @@ class SupabaseAuthService {
   // 새로운 OAuth 사용자를 위한 닉네임 생성 및 설정
   Future<void> _ensureUserHasNickname(User user) async {
     try {
+      debugPrint('🎯 [_ensureUserHasNickname] 사용자 닉네임 확인 중: ${user.email}');
+      
       // profiles 테이블에서 현재 사용자 정보 조회
       final profile = await _client
           .from('profiles')
@@ -399,20 +401,54 @@ class SupabaseAuthService {
           .eq('id', user.id)
           .maybeSingle();
 
-      // 닉네임이 없는 경우에만 생성
-      if (profile == null || profile['nickname'] == null || (profile['nickname'] as String).isEmpty) {
-        debugPrint('🎯 OAuth 사용자 닉네임 생성 중...');
+      final currentNickname = profile?['nickname'] as String?;
+      debugPrint('📋 [_ensureUserHasNickname] 현재 닉네임: $currentNickname');
+
+      // OAuth 사용자는 항상 예쁜 한국어 닉네임으로 교체
+      final provider = user.appMetadata['provider'] ?? 'email';
+      final isOAuthUser = provider != 'email';
+      
+      final shouldGenerateNewNickname = profile == null || 
+          currentNickname == null || 
+          currentNickname.isEmpty ||
+          isOAuthUser || // 🎯 OAuth 사용자는 무조건 한국어 닉네임으로!
+          currentNickname == user.email?.split('@')[0] ||
+          currentNickname == user.userMetadata?['name'] ||
+          currentNickname == user.userMetadata?['full_name'] ||
+          currentNickname.contains('@') ||
+          currentNickname.length < 3;
+      
+      debugPrint('🔍 [_ensureUserHasNickname] OAuth 사용자: $isOAuthUser ($provider)');
+      debugPrint('🔍 [_ensureUserHasNickname] 새 닉네임 생성 필요: $shouldGenerateNewNickname');
+
+      if (shouldGenerateNewNickname) {
+        debugPrint('🎨 [_ensureUserHasNickname] 예쁜 한국어 닉네임 생성 중...');
         
         final nicknameService = NicknameGeneratorService();
         final uniqueNickname = await nicknameService.generateUniqueNickname(
           checkDuplicate: checkNicknameExists,
         );
 
-        // profiles 테이블 업데이트
-        await _client
-            .from('profiles')
-            .update({'nickname': uniqueNickname})
-            .eq('id', user.id);
+        debugPrint('✨ [_ensureUserHasNickname] 생성된 닉네임: $uniqueNickname');
+
+        // profiles 테이블이 있으면 업데이트
+        try {
+          await _client
+              .from('profiles')
+              .upsert({
+                'id': user.id,
+                'email': user.email,
+                'full_name': user.userMetadata?['full_name'] ?? user.userMetadata?['name'] ?? user.email?.split('@')[0] ?? '사용자',
+                'avatar_url': user.userMetadata?['avatar_url'] ?? user.userMetadata?['picture'],
+                'provider': user.appMetadata['provider'] ?? 'email',
+                'nickname': uniqueNickname,
+                'updated_at': DateTime.now().toIso8601String(),
+              });
+          
+          debugPrint('✅ [_ensureUserHasNickname] profiles 테이블 업데이트 완료');
+        } catch (profileError) {
+          debugPrint('⚠️ [_ensureUserHasNickname] profiles 업데이트 실패 (메타데이터만 업데이트): $profileError');
+        }
 
         // 사용자 메타데이터 업데이트
         await _client.auth.updateUser(
@@ -420,14 +456,17 @@ class SupabaseAuthService {
             data: {
               ...user.userMetadata ?? {},
               'nickname': uniqueNickname,
+              'full_name': uniqueNickname, // 메인 이름도 예쁜 닉네임으로
             }
           )
         );
 
-        debugPrint('🎉 OAuth 사용자 닉네임 생성 완료: $uniqueNickname');
+        debugPrint('🎉 [_ensureUserHasNickname] 한국어 닉네임 생성 완료: $currentNickname → $uniqueNickname');
+      } else {
+        debugPrint('✅ [_ensureUserHasNickname] 기존 닉네임 유지: $currentNickname');
       }
     } catch (e) {
-      debugPrint('OAuth 사용자 닉네임 설정 에러: $e');
+      debugPrint('❌ [_ensureUserHasNickname] OAuth 사용자 닉네임 설정 에러: $e');
     }
   }
 

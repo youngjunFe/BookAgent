@@ -233,27 +233,46 @@ CREATE TRIGGER on_auth_user_created_ultra_safe
 -- =============================================================================
 
 -- auth.users에는 있지만 profiles에는 없는 사용자들 처리
-INSERT INTO public.profiles (id, email, full_name, provider, nickname, created_at, updated_at)
-SELECT 
-    u.id,
-    COALESCE(u.email, ''),
-    COALESCE(
-        u.raw_user_meta_data->>'full_name',
-        u.raw_user_meta_data->>'name',
-        CASE WHEN u.email IS NOT NULL THEN split_part(u.email, '@', 1) ELSE '사용자' END
-    ),
-    COALESCE(u.raw_app_meta_data->>'provider', 'email'),
-    -- 간단한 닉네임 (중복 시 자동으로 숫자 추가됨)
-    COALESCE(
-        split_part(u.email, '@', 1),
-        'user'
-    ) || substring(u.id::TEXT, 1, 4),
-    COALESCE(u.created_at, NOW()),
-    COALESCE(u.updated_at, NOW())
-FROM auth.users u
-WHERE u.id NOT IN (SELECT COALESCE(id, '00000000-0000-0000-0000-000000000000'::uuid) FROM public.profiles)
-ON CONFLICT (email) DO NOTHING
-ON CONFLICT (nickname) DO NOTHING;
+-- 안전한 방식으로 누락된 프로필 추가
+DO $$
+DECLARE
+    missing_user RECORD;
+    safe_nickname TEXT;
+    safe_email TEXT;
+BEGIN
+    FOR missing_user IN 
+        SELECT * FROM auth.users u 
+        WHERE u.id NOT IN (SELECT COALESCE(id, '00000000-0000-0000-0000-000000000000'::uuid) FROM public.profiles)
+    LOOP
+        BEGIN
+            safe_email := COALESCE(missing_user.email, '');
+            safe_nickname := COALESCE(split_part(safe_email, '@', 1), 'user') || substring(missing_user.id::TEXT, 1, 4);
+            
+            -- 안전한 삽입 (중복 체크 포함)
+            INSERT INTO public.profiles (id, email, full_name, provider, nickname, created_at, updated_at)
+            VALUES (
+                missing_user.id,
+                safe_email,
+                COALESCE(
+                    missing_user.raw_user_meta_data->>'full_name',
+                    missing_user.raw_user_meta_data->>'name',
+                    CASE WHEN safe_email != '' THEN split_part(safe_email, '@', 1) ELSE '사용자' END
+                ),
+                COALESCE(missing_user.raw_app_meta_data->>'provider', 'email'),
+                safe_nickname,
+                COALESCE(missing_user.created_at, NOW()),
+                COALESCE(missing_user.updated_at, NOW())
+            );
+            
+            RAISE NOTICE '✅ 누락 사용자 프로필 생성: % (닉네임: %)', safe_email, safe_nickname;
+            
+        EXCEPTION WHEN unique_violation THEN
+            RAISE NOTICE '⚠️ 중복으로 인한 스키핑: %', safe_email;
+        WHEN OTHERS THEN
+            RAISE NOTICE '❌ 프로필 생성 실패: % - %', safe_email, SQLERRM;
+        END;
+    END LOOP;
+END $$;
 
 -- =============================================================================
 -- 6. 최종 상태 보고
