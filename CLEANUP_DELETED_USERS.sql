@@ -120,7 +120,11 @@ CREATE UNIQUE INDEX profiles_nickname_unique_idx
 ON public.profiles(nickname) 
 WHERE nickname IS NOT NULL AND nickname != '';
 
-RAISE NOTICE '✅ 이메일 및 닉네임 중복 방지 인덱스 생성 완료';
+-- 성공 메시지
+DO $$
+BEGIN
+    RAISE NOTICE '✅ 이메일 및 닉네임 중복 방지 인덱스 생성 완료';
+END $$;
 
 -- =============================================================================
 -- 4. 더 안전한 사용자 생성 트리거 (중복 처리 강화)
