@@ -1,3 +1,4 @@
+
 -- 닉네임 기능 추가 SQL 스크립트
 -- Supabase SQL Editor에서 실행하세요
 
@@ -84,7 +85,8 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 7. 닉네임 업데이트 RLS 정책 추가
-CREATE POLICY IF NOT EXISTS "Users can update own nickname" ON public.profiles
+DROP POLICY IF EXISTS "Users can update own nickname" ON public.profiles;
+CREATE POLICY "Users can update own nickname" ON public.profiles
   FOR UPDATE USING (auth.uid() = id)
   WITH CHECK (auth.uid() = id);
 
