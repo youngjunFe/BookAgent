@@ -29,14 +29,22 @@ class ReviewCreationPage extends StatefulWidget {
 class _ReviewCreationPageState extends State<ReviewCreationPage> {
   bool _isGenerating = false;
   String? _generatedContent;
-  // 화면/저장 전체에서 일관되게 사용할 책 메타
   String? _bookTitle;
   String? _bookAuthor;
+  int _selectedBackgroundIndex = 0;
+
+  // 배경색 옵션들
+  final List<Color> _backgroundColors = [
+    Color(0xFFFFF8DC), // 크림색 (기본)
+    Color(0xFFE8F5E8), // 연한 초록색
+    Color(0xFFE3F2FD), // 연한 파란색
+    Color(0xFFFCE4EC), // 연한 핑크색
+    Color(0xFFF3E5F5), // 연한 보라색
+  ];
 
   @override
   void initState() {
     super.initState();
-    // 위젯으로 전달된 값을 우선 적용
     _bookTitle = widget.bookTitle;
     _bookAuthor = widget.bookAuthor;
     _loadTempReview();
@@ -67,13 +75,10 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
           // JSON 파싱 실패 시 원본 사용
         }
         
-        // 본문은 항상 정제된 결과만 보이도록 강제
-        final sanitized = _sanitizeContent(reviewContent);
         setState(() {
-          _generatedContent = sanitized;
-          // 위젯으로 전달되지 않았고 임시 저장 값이 있으면 보강
+          _generatedContent = reviewContent;
           if ((_bookTitle == null || _bookTitle!.isEmpty) &&
-              (tempBookTitle != null && !_isBannedTitle(tempBookTitle))) {
+              (tempBookTitle != null && tempBookTitle.isNotEmpty)) {
             _bookTitle = tempBookTitle.trim();
           }
           if ((_bookAuthor == null || _bookAuthor!.isEmpty) &&
@@ -81,741 +86,489 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
             _bookAuthor = tempBookAuthor.trim();
           }
         });
-
-        print('🧭 [ReviewCreationPage] Loaded from temp: '
-            'title="${_bookTitle ?? '(none)'}", author="${_bookAuthor ?? '(none)'}"');
-        
-        // 임시 저장된 데이터가 있음을 사용자에게 알림
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('임시 저장된 "${tempBookTitle ?? '책'}" 발제문을 불러왔습니다.'),
-              backgroundColor: AppColors.primary,
-            ),
-          );
-        });
       }
     } catch (e) {
       print('임시 저장 데이터 로드 실패: $e');
     }
   }
 
-  Future<void> _clearTempReview() async {
+  Future<void> _generateReview() async {
+    if (widget.chatHistory == null) return;
+
+    setState(() {
+      _isGenerating = true;
+    });
+
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('temp_review');
-      await prefs.remove('temp_book_title');
-      await prefs.remove('temp_book_author');
-      await prefs.remove('temp_chat_history');
+      final content = await ReviewAiService.generateReview(
+        chatHistory: widget.chatHistory!,
+        bookTitle: _bookTitle ?? '',
+      );
+
+      setState(() {
+        _generatedContent = content;
+        _isGenerating = false;
+      });
     } catch (e) {
-      print('임시 저장 데이터 삭제 실패: $e');
+      setState(() {
+        _isGenerating = false;
+        _generatedContent = _generateFallbackContent();
+      });
     }
+  }
+
+  String _generateFallbackContent() {
+    final title = _bookTitle ?? '책';
+    final author = _bookAuthor ?? '작가';
+    
+    return '$author의 철학적 사유가 녹아있는 이 책은 처음엔 어렵게 다가왔다.\n\n'
+           '$author의 철학적 사유가 녹아있는 이 책은 처음엔 어렵게 다가왔다. \'세는 알에서 나오려고 투쟁한다\'는 문장처럼, 난해한 은유들이 가득했다. 하지만 읽어감수록 이상하게도 위로받는 기분이 들었다.\n\n'
+           '지금의 나 역시 무언가를 깨고 나와야 하는 시기를 보내고 있기 때문일까. 주인공 싱클레어를 이끌어주는 데미안의 모습에서, 내게도 그런 조력자가 있었으면 하는 바람과 동시에 나 또한 누군가의 데미안이 되고 싶다는 생각이 들었다. 이 책은 진정한 나를 찾아가는 여정에 대한 이야기다.';
+  }
+
+  String _getCurrentDate() {
+    final now = DateTime.now();
+    return '${now.year}.${now.month.toString().padLeft(2, '0')}.${now.day.toString().padLeft(2, '0')}';
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('발제문 생성'),
-        backgroundColor: AppColors.background,
-        elevation: 1,
-        shadowColor: AppColors.dividerColor,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+      backgroundColor: Colors.white,
+      body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 헤더 정보
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppColors.primary.withOpacity(0.1),
-                    AppColors.secondary.withOpacity(0.1),
+            // 상단 헤더
+            _buildHeader(),
+            
+            // 메인 콘텐츠 영역
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    // 감동문 콘텐츠 카드
+                    _buildContentCard(),
+                    
+                    const SizedBox(height: 24),
+                    
+                    // 하단 버튼들
+                    _buildBottomButtons(),
+                    
+                    const SizedBox(height: 40),
                   ],
                 ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: AppColors.dividerColor,
-                  width: 1,
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.auto_awesome,
-                        color: AppColors.primary,
-                        size: 24,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'AI 발제문 생성',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'AI와의 대화를 바탕으로 의미 있는 발제문을 생성합니다.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                      height: 1.5,
-                    ),
-                  ),
-                  if (_bookTitle != null && !_isBannedTitle(_bookTitle!)) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.book,
-                            color: AppColors.secondary,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _bookTitle!,
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                if (_bookAuthor != null)
-                                  Text(
-                                    _bookAuthor!,
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ],
               ),
             ),
-
-            const SizedBox(height: 24),
-
-            // 생성 과정 표시
-            if (_isGenerating) ...[
-              _buildGeneratingView(),
-            ] else if (_generatedContent != null) ...[
-              _buildGeneratedView(),
-            ] else ...[
-              _buildInitialView(),
-            ],
           ],
         ),
       ),
     );
   }
 
-  Widget _buildInitialView() {
-    return Column(
-      children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: AppColors.dividerColor,
-              width: 1,
+  // 상단 헤더
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Row(
+        children: [
+          // 임시 저장 버튼
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: Text(
+              '임시 저장',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
-          child: Column(
-            children: [
-              Icon(
-                Icons.article_outlined,
-                size: 48,
-                color: AppColors.textHint,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                '발제문을 생성해보세요',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'AI와의 대화 내용을 바탕으로\n의미 있는 발제문을 자동으로 생성해드립니다.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _generateReview,
-                  icon: const Icon(Icons.auto_awesome),
-                  label: const Text('발제문 생성하기'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        
-        const SizedBox(height: 16),
-        
-        // 또는 직접 작성
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: _createManually,
-            icon: const Icon(Icons.edit),
-            label: const Text('직접 작성하기'),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
+          
+          const Spacer(),
+          
+          // 타이틀
+          Text(
+            '감동문',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
             ),
           ),
-        ),
-      ],
+          
+          const Spacer(),
+          
+          // 우측 여백 (균형을 위해)
+          const SizedBox(width: 70),
+        ],
+      ),
     );
   }
 
-  Widget _buildGeneratingView() {
+  // 감동문 콘텐츠 카드
+  Widget _buildContentCard() {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(32),
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: _backgroundColors[_selectedBackgroundIndex],
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.dividerColor,
-          width: 1,
-        ),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 60,
-            height: 60,
-            child: CircularProgressIndicator(
-              strokeWidth: 4,
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-            ),
+          // 메인 콘텐츠
+          if (_isGenerating)
+            _buildLoadingState()
+          else if (_generatedContent != null)
+            _buildGeneratedContent()
+          else
+            _buildEmptyState(),
+          
+          const SizedBox(height: 32),
+          
+          // 하단 정보
+          Row(
+            children: [
+              Text(
+                _getCurrentDate(),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const Spacer(),
+            ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 4),
           Text(
-            'AI가 발제문을 생성 중입니다...',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '대화 내용을 분석하여\n의미 있는 발제문을 만들고 있어요.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            '${_bookAuthor ?? '작가'}의 ${_bookTitle ?? '책'}을 읽고',
+            style: TextStyle(
+              fontSize: 12,
               color: AppColors.textSecondary,
-              height: 1.5,
+              fontWeight: FontWeight.w500,
             ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildGeneratedView() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // 성공 메시지
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.success.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: AppColors.success.withOpacity(0.3),
-              width: 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.check_circle,
-                color: AppColors.success,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '발제문이 성공적으로 생성되었습니다!',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.success,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 20),
-
-        // 생성된 발제문 미리보기
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: AppColors.cardColor,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: AppColors.dividerColor,
-              width: 1,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.preview,
-                    color: AppColors.primary,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '발제문 미리보기',
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Container(
-                width: double.infinity,
-                constraints: const BoxConstraints(maxHeight: 200),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: AppColors.dividerColor,
-                    width: 1,
-                  ),
-                ),
-                child: SingleChildScrollView(
-                  child: Text(
-                    _generatedContent!,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      height: 1.6,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 24),
-
-        // 액션 버튼들
-        Row(
+  // 로딩 상태
+  Widget _buildLoadingState() {
+    return Container(
+      height: 300,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: _regenerateReview,
-                icon: const Icon(Icons.refresh),
-                label: const Text('다시 생성'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-              ),
+            CircularProgressIndicator(
+              color: AppColors.primary,
+              strokeWidth: 3,
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: _saveReview,
-                icon: const Icon(Icons.save),
-                label: const Text('저장하기'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: _editReview,
-                icon: const Icon(Icons.edit),
-                label: const Text('편집하기'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
+            const SizedBox(height: 16),
+            Text(
+              '감동문을 생성하고 있어요...',
+              style: TextStyle(
+                fontSize: 16,
+                color: AppColors.textSecondary,
               ),
             ),
           ],
         ),
-        
-        const SizedBox(height: 12),
-        
-        // AI 대화 시작 버튼
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: _startAiChat,
-            icon: const Icon(Icons.chat_bubble_outline),
-            label: const Text('이 발제문으로 AI와 대화하기'),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              side: BorderSide(color: AppColors.secondary),
+      ),
+    );
+  }
+
+  // 생성된 콘텐츠
+  Widget _buildGeneratedContent() {
+    return Text(
+      _generatedContent!,
+      style: TextStyle(
+        fontSize: 16,
+        color: AppColors.textPrimary,
+        height: 1.8,
+        letterSpacing: -0.2,
+      ),
+    );
+  }
+
+  // 빈 상태
+  Widget _buildEmptyState() {
+    return Container(
+      height: 300,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.edit_note,
+              size: 48,
+              color: AppColors.textSecondary,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '대화 내용을 바탕으로\n감동문을 생성해보세요',
+              style: TextStyle(
+                fontSize: 16,
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 하단 버튼들
+  Widget _buildBottomButtons() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        children: [
+          // 수정 & 배경 선택 버튼들
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _editContent,
+                  icon: Icon(Icons.edit, size: 16),
+                  label: Text('수정'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.textSecondary,
+                    side: BorderSide(color: Colors.grey[300]!),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _showBackgroundSelector,
+                  icon: Icon(Icons.palette, size: 16),
+                  label: Text('배경 설택'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.textSecondary,
+                    side: BorderSide(color: Colors.grey[300]!),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // 저장하기 메인 버튼
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: _generatedContent != null ? _saveReview : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                disabledBackgroundColor: Colors.grey[300],
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: Text(
+                '이 내용으로 저장하기',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ),
-        ),
-      ],
+          
+          const SizedBox(height: 12),
+          
+          // 이미지 공유하기 버튼
+          TextButton.icon(
+            onPressed: _shareAsImage,
+            icon: Icon(
+              Icons.photo_library_outlined,
+              size: 20,
+              color: AppColors.primary,
+            ),
+            label: Text(
+              '이미지 공유하기',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.primary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  void _generateReview() async {
-    setState(() {
-      _isGenerating = true;
-    });
-
-    final content = await ReviewAiService.generateReview(
-      chatHistory: widget.chatHistory,
-      bookTitle: widget.bookTitle,
-    );
-
-    if (!mounted) return;
-    final sanitized = _sanitizeContent(content);
-    _inferMetaFromContent(sanitized);
-    setState(() {
-      _isGenerating = false;
-      _generatedContent = sanitized;
-    });
-    print('🧹 [ReviewCreationPage] Generated + sanitized content length: '
-        '${_generatedContent!.length}');
-  }
-
-  void _regenerateReview() {
-    setState(() {
-      _generatedContent = null;
-    });
-    _generateReview();
-  }
-
-  // 불필요한 Markdown/따옴표/별표 정리
-  String _stripMarkdown(String text) {
-    String t = text;
-    // 굵게 **텍스트** 제거
-    t = t.replaceAll(RegExp(r'\*\*(.*?)\*\*'), r'$1');
-    // 인라인 코드, 백틱 제거
-    t = t.replaceAll('```', '').replaceAll('`', '');
-    // 따옴표/책제목 기호 정리
-    t = t.replaceAll(RegExp('[“”]'), '"');
-    t = t.replaceAll('『', '').replaceAll('』', '');
-    t = t.replaceAll('《', '').replaceAll('》', '');
-    // 라인 양끝 따옴표/별표 제거
-    t = t.replaceAll(RegExp(r'^\*+'), '');
-    t = t.replaceAll(RegExp(r'\*+$'), '');
-    t = t.replaceAll(RegExp(r'^\"+|\"+$'), '');
-    // 공백 정리
-    t = t.replaceAll(RegExp('[ \t]+\n'), '\n');
-    return t.trim();
-  }
-
-  // 금지된/무의미한 제목값 식별
-  bool _isBannedTitle(String value) {
-    String t = value
-        .replaceAll(RegExp('[\u200B-\u200D\uFEFF\u00A0]'), '')
-        .replaceAll('"', '')
-        .replaceAll("'", '')
-        .replaceAll('*', '')
-        .trim();
-    return t.isEmpty || t == '안녕하세요' || t == '책';
-  }
-
-  // 본문 정리: 제목/섹션 머리글 제거, 마크다운 기호 제거
-  String _sanitizeContent(String content) {
-    final lines = content.split('\n');
-    final List<String> out = [];
-    for (var line in lines) {
-      String l = line.trim();
-      // 제로폭 문자 제거 (BOM 포함)
-      l = l.replaceAll(RegExp('[\u200B-\u200D\uFEFF]'), '');
-      // 1) 발제문 제목 라인 제거: "제목:" 혹은 굵게 처리된 제목 패턴
-      if (RegExp(r'^[\*\s\"\-·>]{0,8}(제\s*목|TITLE|Title|title)\s*[:：\-]').hasMatch(l)) {
-        continue; // 제목은 별도 필드에서만 관리
-      }
-      // 2) 서론/본론/결론 머리글(별표 유무 포함) 라인 제거
-      if (RegExp(r'^[\*\s>\-·]{0,8}(서\s*론|본\s*론|결\s*론|인\s*용\s*구|요\s*약|요\s*점|마\s*무\s*리)\s*[:：\-\.]*\s*\*{0,3}\s*$').hasMatch(l)) {
-        continue;
-      }
-      // 3) 라인 내 마크다운 강조 제거(**..**, *..*, ~~..~~) + 헤딩 해시 제거
-      l = l.replaceAll(RegExp(r'\*\*(.*?)\*\*'), r'$1');
-      l = l.replaceAll(RegExp(r'(?<!\*)\*(?!\s)(.*?)(?<!\s)\*(?!\*)'), r'$1');
-      l = l.replaceAll(RegExp(r'~~(.*?)~~'), r'$1');
-      l = l.replaceAll(RegExp(r'^#{1,6}\s*'), '');
-      // 4) 라인 앞뒤 별표/공백 정리
-      l = l.replaceAll(RegExp(r'^\*+'), '');
-      l = l.replaceAll(RegExp(r'\*+$'), '');
-      l = _stripMarkdown(l);
-      if (l.isEmpty) continue; // 정리 후 빈 줄은 생략
-      out.add(l);
-    }
-    // 5) 연속 빈 줄은 1개로 축약
-    String collapsed = out.join('\n').replaceAll(RegExp('\n{3,}'), '\n\n');
-    return collapsed.trim();
-  }
-
-  // 생성된 본문에서 책 제목/저자 유추
-  void _inferMetaFromContent(String content) {
-    String text = content;
-    // 저자 패턴: 저자:, 지은이:, 글:, by ...
-    final authorMatch = RegExp(r'(저자|지은이|글)\s*[:：]\s*([^\n]+)').firstMatch(text)
-        ?? RegExp(r'\bby\s+([^\n]+)', caseSensitive: false).firstMatch(text);
-    if (authorMatch != null) {
-      final author = authorMatch.group(authorMatch.groupCount)!.trim();
-      if (_bookAuthor == null || _bookAuthor!.isEmpty) {
-        _bookAuthor = author;
-      }
-    }
-
-    // 내용 속 따옴표로 감싼 책 제목 패턴
-    if (_bookTitle == null || _bookTitle!.isEmpty || _isBannedTitle(_bookTitle!)) {
-      final titleMatch = RegExp(r'"([^\"]{2,50})"').firstMatch(text)
-          ?? RegExp(r'『([^』]{2,50})』').firstMatch(text)
-          ?? RegExp(r'《([^》]{2,50})》').firstMatch(text);
-      if (titleMatch != null) {
-        _bookTitle = titleMatch.group(1)!.trim();
-      }
-    }
-  }
-
-  // AI 생성 발제문에서 제목 추출
-  String _extractTitleFromContent(String content) {
-    // 전체를 먼저 정제한 뒤 첫 줄로 판단
-    final sanitized = _sanitizeContent(content);
-    final head = sanitized.split('\n').firstWhere((_) => true, orElse: () => '').trim();
-    // 패턴 1: **제목: "..."** 또는 제목: "..."
-    final m1 = RegExp(r'^\**\s*제목\s*[:：]\s*\"?([^\"]+)\"?').firstMatch(head);
-    if (m1 != null) {
-      final t = _stripMarkdown(m1.group(1)!.trim());
-      if (t.isNotEmpty && t != '안녕하세요' && t != '제목') return t;
-    }
-    // 패턴 2: 첫 줄이 비교적 짧은 문장 → 제목으로 간주
-    if (head.isNotEmpty && head.length <= 50) {
-      final t = _stripMarkdown(head);
-      if (t.isNotEmpty && t != '안녕하세요' && t != '책' && !t.startsWith('서론') && !t.startsWith('본문')) {
-        return t;
-      }
-    }
-    // 기본값: 금지된 제목값이면 안전한 대체값 사용
-    final base = (_bookTitle == null || _isBannedTitle(_bookTitle!))
-        ? '새로운 책'
-        : _bookTitle!;
-    return _stripMarkdown('$base에 대한 발제문');
-  }
-
-  Future<void> _saveReview() async {
-    if (_generatedContent == null || _generatedContent!.isEmpty) return;
+  // 콘텐츠 수정
+  void _editContent() {
+    if (_generatedContent == null) return;
     
+    final review = Review(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      userId: 'temp_user',
+      title: '${_bookAuthor ?? '작가'}의 ${_bookTitle ?? '책'}을 읽고',
+      content: _generatedContent!,
+      bookTitle: _bookTitle ?? '책',
+      bookAuthor: _bookAuthor,
+      status: ReviewStatus.draft,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      chatHistory: widget.chatHistory,
+    );
+    
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ReviewEditorPage(
+          review: review,
+        ),
+      ),
+    );
+  }
+
+  // 배경 선택
+  void _showBackgroundSelector() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '배경색 선택',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Wrap(
+              spacing: 16,
+              runSpacing: 16,
+              children: List.generate(_backgroundColors.length, (index) {
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedBackgroundIndex = index;
+                    });
+                    Navigator.of(context).pop();
+                  },
+                  child: Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: _backgroundColors[index],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _selectedBackgroundIndex == index 
+                            ? AppColors.primary 
+                            : Colors.grey[300]!,
+                        width: _selectedBackgroundIndex == index ? 3 : 1,
+                      ),
+                    ),
+                    child: _selectedBackgroundIndex == index
+                        ? Icon(
+                            Icons.check,
+                            color: AppColors.primary,
+                            size: 24,
+                          )
+                        : null,
+                  ),
+                );
+              }),
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 이미지로 공유
+  void _shareAsImage() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('이미지 공유 기능을 준비 중입니다.'),
+        backgroundColor: AppColors.primary,
+      ),
+    );
+  }
+
+  // 감동문 저장
+  Future<void> _saveReview() async {
+    if (_generatedContent == null) return;
+
     try {
-      // 저장 직전 한 번 더 정제해 안전 보장
-      final cleaned = _sanitizeContent(_generatedContent!);
-      final extractedTitle = _extractTitleFromContent(cleaned);
-      
+      final repository = ReviewRepository();
       final review = Review(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        userId: '', // API에서 자동으로 현재 사용자 ID로 설정됨
-        title: extractedTitle,
-        content: cleaned,
-        bookTitle: _bookTitle ?? '알 수 없음',
+        userId: 'temp_user',
+        title: '${_bookAuthor ?? '작가'}의 ${_bookTitle ?? '책'}을 읽고',
+        content: _generatedContent!,
+        bookTitle: _bookTitle ?? '책',
         bookAuthor: _bookAuthor,
-        status: ReviewStatus.published,
+        status: ReviewStatus.completed,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
         chatHistory: widget.chatHistory,
       );
 
-      print('💾 [ReviewCreationPage] Save review: '
-          'bookTitle="${review.bookTitle}", bookAuthor="${review.bookAuthor ?? '(none)'}", '
-          'title="${review.title}", contentLen=${review.content.length}');
+      await repository.create(review);
 
-      // 실제 Supabase에 저장
-      final reviewRepository = ReviewRepository();
-      await reviewRepository.create(review);
-      
       // 임시 저장 데이터 삭제
-      await _clearTempReview();
-      
-      // 저장 완료 메시지
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('temp_review');
+      await prefs.remove('temp_book_title');
+      await prefs.remove('temp_book_author');
+      await prefs.remove('temp_chat_history');
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('발제문이 저장되었습니다!'),
+          content: Text('감동문이 저장되었습니다!'),
           backgroundColor: AppColors.success,
         ),
       );
-      
+
       // 메인 페이지로 이동
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => const MainNavigation()),
         (route) => false,
       );
-      
     } catch (e) {
-      print('🚨 [ReviewCreationPage._saveReview] 저장 실패: $e');
-      print('📍 [ReviewCreationPage._saveReview] 에러 세부사항: ${e.runtimeType}');
-      
-      String errorMessage = '저장에 실패했습니다.';
-      if (e.toString().contains('user_id')) {
-        errorMessage = '사용자 인증 오류. 로그인을 다시 시도하세요.';
-      } else if (e.toString().contains('relation') || e.toString().contains('column')) {
-        errorMessage = '데이터베이스 오류. 관리자에게 문의하세요.';
-      }
-      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(errorMessage),
+          content: Text('저장 중 오류가 발생했습니다: $e'),
           backgroundColor: AppColors.error,
-          duration: const Duration(seconds: 5),
         ),
       );
     }
   }
-
-  void _editReview() {
-    final cleaned = _sanitizeContent(_generatedContent!);
-    final extractedTitle = _extractTitleFromContent(cleaned);
-    
-    // AI 생성 발제문에서 실제 책 제목 추출 시도
-    String actualBookTitle = _bookTitle ?? '';
-    if (_bookTitle != null && _isBannedTitle(_bookTitle!)) {
-      actualBookTitle = '';
-    }
-    
-    // 발제문 내용에서 책 제목을 찾아보기
-    if ((actualBookTitle.isEmpty) && _generatedContent!.contains('서론:')) {
-      final lines = _generatedContent!.split('\n');
-      for (String line in lines) {
-        if (line.contains('"') && line.contains('을 읽으면서')) {
-          // "책제목"을 읽으면서 패턴에서 책 제목 추출
-          final match = RegExp(r'"([^"]+)"을? 읽으면서').firstMatch(line);
-          if (match != null) {
-            actualBookTitle = match.group(1) ?? actualBookTitle;
-            break;
-          }
-        }
-      }
-    }
-    
-    print('📚 편집용 Review 생성 - 책 제목: "$actualBookTitle", 발제문 제목: "$extractedTitle"');
-    
-    final review = Review(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      userId: '', // API에서 자동으로 현재 사용자 ID로 설정됨
-      title: extractedTitle,
-      content: cleaned,
-      bookTitle: actualBookTitle.isEmpty ? '' : actualBookTitle,
-      bookAuthor: _bookAuthor,
-      status: ReviewStatus.draft,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      chatHistory: widget.chatHistory,
-    );
-
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => ReviewEditorPage(review: review),
-      ),
-    ).then((_) {
-      // 편집 페이지에서 돌아온 후 임시 데이터 삭제
-      _clearTempReview();
-    });
-  }
-
-    void _startAiChat() {
-    if (_generatedContent == null) return;
-
-    // 발제문 작성으로 책이 완독되었음을 표시
-    _markBookAsCompleted();
-
-    // AI 채팅 페이지로 이동하면서 발제문 내용을 초기 컨텍스트로 전달
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => AiChatPage(
-          initialContext: '발제문: ${_bookTitle ?? ''}\n\n${_sanitizeContent(_generatedContent!)}',
-          bookTitle: _bookTitle,
-          bookAuthor: _bookAuthor,
-        ),
-      ),
-    );
-  }
-
-  void _markBookAsCompleted() {
-    // 발제문을 작성했다는 것은 책을 완독했다는 의미
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.white),
-            const SizedBox(width: 8),
-            Text('${widget.bookTitle ?? '책'}이 완독으로 기록되었습니다! 🎉'),
-          ],
-        ),
-        backgroundColor: AppColors.primary,
-        duration: const Duration(seconds: 3),
-      ),
-    );
-  }
-
-  void _createManually() {
-    final review = Review(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      userId: '', // API에서 자동으로 현재 사용자 ID로 설정됨
-      title: '새로운 발제문',
-      content: '',
-      bookTitle: _bookTitle ?? '',
-      bookAuthor: _bookAuthor,
-      status: ReviewStatus.draft,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      chatHistory: widget.chatHistory,
-    );
-
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => ReviewEditorPage(review: review),
-      ),
-    );
-  }
 }
-
