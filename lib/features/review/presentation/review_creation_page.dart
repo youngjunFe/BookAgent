@@ -448,7 +448,7 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
     );
   }
 
-  // 배경 선택
+  // 배경 선택 (1단계: 기본 이미지 vs 갤러리)
   void _showBackgroundSelector() {
     showModalBottomSheet(
       context: context,
@@ -461,53 +461,283 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // 상단 핸들
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
             Text(
-              '배경색 선택',
+              '배경 이미지 선택',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 20),
-            Wrap(
-              spacing: 16,
-              runSpacing: 16,
-              children: List.generate(_backgroundColors.length, (index) {
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedBackgroundIndex = index;
-                    });
-                    Navigator.of(context).pop();
-                  },
-                  child: Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      color: _backgroundColors[index],
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: _selectedBackgroundIndex == index 
-                            ? AppColors.primary 
-                            : Colors.grey[300]!,
-                        width: _selectedBackgroundIndex == index ? 3 : 1,
-                      ),
-                    ),
-                    child: _selectedBackgroundIndex == index
-                        ? Icon(
-                            Icons.check,
-                            color: AppColors.primary,
-                            size: 24,
-                          )
-                        : null,
-                  ),
-                );
-              }),
+            const SizedBox(height: 32),
+            
+            // 기본 이미지 버튼
+            _buildBackgroundOptionButton(
+              title: '기본 이미지',
+              icon: Icons.image,
+              onTap: () {
+                Navigator.of(context).pop();
+                _showDefaultImagesSelector();
+              },
             ),
-            const SizedBox(height: 20),
+            
+            const SizedBox(height: 16),
+            
+            // 갤러리 버튼
+            _buildBackgroundOptionButton(
+              title: '갤러리',
+              icon: Icons.photo_library,
+              onTap: () {
+                Navigator.of(context).pop();
+                _showGalleryPicker();
+              },
+            ),
+            
+            const SizedBox(height: 32),
           ],
         ),
+      ),
+    );
+  }
+
+  // 배경 선택 옵션 버튼
+  Widget _buildBackgroundOptionButton({
+    required String title,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      width: double.infinity,
+      child: Material(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: AppColors.primary,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const Spacer(),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  color: AppColors.textSecondary,
+                  size: 16,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 기본 이미지들 선택 (2단계)
+  void _showDefaultImagesSelector() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        height: MediaQuery.of(context).size.height * 0.7,
+        child: Column(
+          children: [
+            // 상단 핸들
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            
+            // 헤더
+            Row(
+              children: [
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: Icon(Icons.arrow_back_ios, size: 20),
+                ),
+                Expanded(
+                  child: Text(
+                    '배경 이미지 선택',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(
+                    '선택',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 24),
+            
+            // 기본 이미지와 갤러리 옵션
+            Row(
+              children: [
+                Expanded(
+                  child: _buildImageTypeButton(
+                    title: '기본 이미지',
+                    isSelected: true,
+                    onTap: () {},
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildImageTypeButton(
+                    title: '갤러리',
+                    isSelected: false,
+                    onTap: _showGalleryPicker,
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 24),
+            
+            // 기본 이미지 그리드
+            Expanded(
+              child: GridView.builder(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 1.2,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                ),
+                itemCount: _backgroundColors.length,
+                itemBuilder: (context, index) {
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedBackgroundIndex = index;
+                      });
+                      Navigator.of(context).pop();
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: _backgroundColors[index],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _selectedBackgroundIndex == index 
+                              ? AppColors.primary 
+                              : Colors.grey[300]!,
+                          width: _selectedBackgroundIndex == index ? 3 : 1,
+                        ),
+                      ),
+                      child: _selectedBackgroundIndex == index
+                          ? Container(
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                Icons.check_circle,
+                                color: Colors.white,
+                                size: 32,
+                              ),
+                            )
+                          : null,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 이미지 타입 선택 버튼
+  Widget _buildImageTypeButton({
+    required String title,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      height: 44,
+      child: Material(
+        color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.grey[100],
+        borderRadius: BorderRadius.circular(22),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(22),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Center(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 갤러리에서 이미지 선택
+  void _showGalleryPicker() {
+    // TODO: image_picker 패키지를 사용한 갤러리 연결
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('갤러리 연결 기능을 준비 중입니다.'),
+        backgroundColor: AppColors.primary,
       ),
     );
   }
