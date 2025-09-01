@@ -215,26 +215,61 @@ class SupabaseAuthService {
   // 닉네임 중복 체크
   Future<bool> checkNicknameExists(String nickname) async {
     try {
+      debugPrint('🔍 [checkNicknameExists] 닉네임 중복 체크: $nickname');
+      
       final result = await _client
           .from('profiles')
           .select('id')
           .eq('nickname', nickname)
           .maybeSingle();
       
-      return result != null;
+      final exists = result != null;
+      debugPrint('📋 [checkNicknameExists] 중복 체크 결과: $exists (결과: $result)');
+      return exists;
     } catch (e) {
-      debugPrint('닉네임 중복 체크 에러: $e');
-      return true; // 에러 발생시 안전하게 중복으로 간주
+      debugPrint('❌ [checkNicknameExists] 닉네임 중복 체크 에러: $e');
+      debugPrint('🔍 [checkNicknameExists] 에러 타입: ${e.runtimeType}');
+      
+      // profiles 테이블이 없는 경우 (테이블 미생성)
+      if (e.toString().contains('relation "public.profiles" does not exist') || 
+          e.toString().contains('does not exist')) {
+        debugPrint('⚠️ [checkNicknameExists] profiles 테이블이 없습니다. ADD_NICKNAME_FEATURE.sql을 실행해주세요!');
+        return false; // 테이블이 없으면 중복이 아님으로 처리
+      }
+      
+      // 권한 문제인 경우
+      if (e.toString().contains('permission denied') || e.toString().contains('RLS')) {
+        debugPrint('⚠️ [checkNicknameExists] RLS 권한 문제가 있습니다.');
+      }
+      
+      return true; // 기타 에러 발생시 안전하게 중복으로 간주
     }
   }
 
   // 닉네임 업데이트
   Future<bool> updateNickname(String newNickname) async {
     final user = currentUser;
-    if (user == null) return false;
+    if (user == null) {
+      debugPrint('❌ [updateNickname] 사용자가 로그인되어 있지 않음');
+      return false;
+    }
+
+    debugPrint('🔄 [updateNickname] 닉네임 업데이트 시작: $newNickname');
+    debugPrint('👤 [updateNickname] 사용자 ID: ${user.id}');
 
     try {
-      // 1. 중복 체크 (다른 사용자가 사용 중인지)
+      // 1. profiles 테이블 존재 확인 및 현재 사용자 프로필 체크
+      debugPrint('🔍 [updateNickname] 현재 사용자 프로필 조회 중...');
+      final currentProfile = await _client
+          .from('profiles')
+          .select('nickname')
+          .eq('id', user.id)
+          .maybeSingle();
+      
+      debugPrint('📋 [updateNickname] 현재 프로필: $currentProfile');
+
+      // 2. 중복 체크 (다른 사용자가 사용 중인지)
+      debugPrint('🔍 [updateNickname] 중복 닉네임 체크 중...');
       final existingUser = await _client
           .from('profiles')
           .select('id')
@@ -243,16 +278,23 @@ class SupabaseAuthService {
           .maybeSingle();
 
       if (existingUser != null) {
-        return false; // 이미 다른 사용자가 사용 중
+        debugPrint('❌ [updateNickname] 중복된 닉네임: ${existingUser['id']}가 이미 사용 중');
+        return false;
       }
 
-      // 2. 닉네임 업데이트 (profiles 테이블)
+      debugPrint('✅ [updateNickname] 닉네임 중복 없음, 업데이트 진행');
+
+      // 3. 닉네임 업데이트 (profiles 테이블)
+      debugPrint('🔄 [updateNickname] profiles 테이블 업데이트 중...');
       await _client
           .from('profiles')
           .update({'nickname': newNickname, 'updated_at': DateTime.now().toIso8601String()})
           .eq('id', user.id);
 
-      // 3. 사용자 메타데이터도 업데이트
+      debugPrint('✅ [updateNickname] profiles 테이블 업데이트 완료');
+
+      // 4. 사용자 메타데이터도 업데이트
+      debugPrint('🔄 [updateNickname] 사용자 메타데이터 업데이트 중...');
       await _client.auth.updateUser(
         UserAttributes(
           data: {
@@ -262,9 +304,44 @@ class SupabaseAuthService {
         )
       );
 
+      debugPrint('🎉 [updateNickname] 닉네임 업데이트 성공: $newNickname');
       return true;
     } catch (e) {
-      debugPrint('닉네임 업데이트 에러: $e');
+      debugPrint('❌ [updateNickname] 닉네임 업데이트 에러: $e');
+      debugPrint('🔍 [updateNickname] 에러 타입: ${e.runtimeType}');
+      debugPrint('📄 [updateNickname] 에러 상세: ${e.toString()}');
+      
+      // profiles 테이블이 없는 경우
+      if (e.toString().contains('relation "public.profiles" does not exist') || 
+          e.toString().contains('does not exist')) {
+        debugPrint('⚠️ [updateNickname] profiles 테이블이 없습니다!');
+        debugPrint('🔧 [updateNickname] 메타데이터만 업데이트하여 임시 처리합니다.');
+        
+        try {
+          // profiles 테이블이 없으면 메타데이터만 업데이트
+          await _client.auth.updateUser(
+            UserAttributes(
+              data: {
+                ...user.userMetadata ?? {},
+                'nickname': newNickname,
+              }
+            )
+          );
+          
+          debugPrint('✅ [updateNickname] 메타데이터 업데이트 성공 (임시 처리)');
+          debugPrint('⚠️ [updateNickname] 완전한 기능을 위해 ADD_NICKNAME_FEATURE.sql을 실행해주세요!');
+          return true;
+        } catch (metadataError) {
+          debugPrint('❌ [updateNickname] 메타데이터 업데이트도 실패: $metadataError');
+          return false;
+        }
+      }
+      
+      // 권한 문제인 경우
+      if (e.toString().contains('permission denied') || e.toString().contains('RLS')) {
+        debugPrint('⚠️ [updateNickname] RLS 권한 문제입니다. Supabase 정책을 확인해주세요.');
+      }
+      
       return false;
     }
   }
