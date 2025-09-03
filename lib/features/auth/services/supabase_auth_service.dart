@@ -76,25 +76,39 @@ class SupabaseAuthService {
     }
   }
 
-  // 탈퇴한 계정인지 확인 (보안 중요!)
+  // 탈퇴한 계정인지 확인 (메타데이터 기반)
   Future<bool> isDeletedAccount() async {
     final user = currentUser;
     if (user == null) return false;
 
     try {
       debugPrint('🔒 [isDeletedAccount] 탈퇴 계정 여부 확인: ${user.email}');
+      debugPrint('📋 [isDeletedAccount] 메타데이터 확인: ${user.userMetadata}');
       
-      final profile = await _client
-          .from('profiles')
-          .select('provider, email')
-          .eq('id', user.id)
-          .maybeSingle();
+      // 메타데이터에서 탈퇴 상태 확인
+      final accountStatus = user.userMetadata?['account_status'];
+      final isDeletedByMetadata = accountStatus == 'deleted';
+      
+      // 추가로 profiles 테이블도 확인 (더블 체크)
+      bool isDeletedByProfile = false;
+      try {
+        final profile = await _client
+            .from('profiles')
+            .select('provider')
+            .eq('id', user.id)
+            .maybeSingle();
 
-      // profiles에 없거나 provider가 'deleted'면 탈퇴한 계정
-      final isDeleted = profile == null || profile['provider'] == 'deleted';
+        isDeletedByProfile = profile == null || profile['provider'] == 'deleted';
+      } catch (profileError) {
+        debugPrint('⚠️ [isDeletedAccount] profiles 확인 실패: $profileError');
+        isDeletedByProfile = false; // 에러시 false로 처리
+      }
       
-      debugPrint('📋 [isDeletedAccount] 프로필 상태: $profile');
-      debugPrint('🔒 [isDeletedAccount] 탈퇴 계정 여부: $isDeleted');
+      final isDeleted = isDeletedByMetadata || isDeletedByProfile;
+      
+      debugPrint('📋 [isDeletedAccount] 메타데이터 탈퇴: $isDeletedByMetadata');
+      debugPrint('📋 [isDeletedAccount] 프로필 탈퇴: $isDeletedByProfile'); 
+      debugPrint('🔒 [isDeletedAccount] 최종 탈퇴 여부: $isDeleted');
       
       return isDeleted;
     } catch (e) {
@@ -341,7 +355,7 @@ class SupabaseAuthService {
     }
   }
 
-  // 회원 탈퇴 (Authentication 계정까지 완전 삭제)
+  // 실용적인 회원 탈퇴 (업계 표준 방식)
   Future<bool> deleteAccount() async {
     final user = currentUser;
     if (user == null) {
@@ -349,69 +363,62 @@ class SupabaseAuthService {
       return false;
     }
 
-    debugPrint('🗑️ [deleteAccount] 완전한 계정 삭제 시작: ${user.email}');
+    debugPrint('🗑️ [deleteAccount] 실용적인 탈퇴 처리 시작: ${user.email}');
     debugPrint('👤 [deleteAccount] 사용자 ID: ${user.id}');
 
     try {
-      // 🔥 Edge Function을 통한 완전한 계정 삭제
-      debugPrint('🚀 [deleteAccount] Edge Function 호출 중...');
+      // 1단계: 모든 사용자 데이터 삭제
+      debugPrint('🗑️ [deleteAccount] 사용자 데이터 완전 삭제 중...');
       
-      final response = await _client.functions.invoke('delete-user', 
-        body: {
-          'user_id': user.id,
+      // 관련 테이블 데이터 삭제
+      final tables = ['reviews', 'reading_goals', 'ebooks', 'achievements'];
+      for (final table in tables) {
+        try {
+          await _client.from(table).delete().eq('user_id', user.id);
+          debugPrint('✅ [deleteAccount] $table 데이터 삭제 완료');
+        } catch (e) {
+          debugPrint('⚠️ [deleteAccount] $table 삭제 실패 (테이블 없음?): $e');
         }
+      }
+
+      // profiles 테이블 삭제
+      await _client.from('profiles').delete().eq('id', user.id);
+      debugPrint('✅ [deleteAccount] profiles 삭제 완료');
+
+      // 2단계: 메타데이터를 탈퇴 상태로 영구 표시 (재로그인 방지)
+      debugPrint('🔒 [deleteAccount] 계정을 탈퇴 상태로 표시 중...');
+      
+      await _client.auth.updateUser(
+        UserAttributes(
+          data: {
+            'account_status': 'deleted',
+            'deleted_at': DateTime.now().toIso8601String(),
+            'nickname': '탈퇴한사용자',
+            'full_name': '탈퇴한사용자',
+            'name': '탈퇴한사용자',
+            'original_email': user.email, // 기록용
+          }
+        )
       );
       
-      debugPrint('📋 [deleteAccount] Edge Function 응답: ${response.data}');
-      debugPrint('📋 [deleteAccount] Edge Function 전체 응답: $response');
-      
-      if (response.data?['success'] == true) {
-        debugPrint('🎉 [deleteAccount] Edge Function을 통한 완전 삭제 성공!');
-        debugPrint('✅ [deleteAccount] Authentication 계정까지 완전 삭제됨');
-        
-        // 성공시 즉시 로그아웃 (이미 계정이 삭제됨)
-        try {
-          await _client.auth.signOut();
-        } catch (e) {
-          debugPrint('ℹ️ [deleteAccount] 로그아웃 불필요 (계정 이미 삭제됨)');
-        }
-        
-        return true;
-      } else {
-        debugPrint('⚠️ [deleteAccount] Edge Function 실패, 폴백 방식 사용');
-      }
-      
-    } catch (edgeFunctionError) {
-      debugPrint('❌ [deleteAccount] Edge Function 호출 실패: $edgeFunctionError');
-      debugPrint('🔄 [deleteAccount] 폴백: 데이터만 삭제하는 방식 사용');
-    }
+      debugPrint('✅ [deleteAccount] 계정 탈퇴 상태 표시 완료');
 
-    // Edge Function 실패시 폴백: 기존 방식 (데이터 삭제 + 로그아웃)
-    try {
-      debugPrint('🗑️ [deleteAccount] 폴백: 사용자 데이터 삭제 중...');
-      
-      // profiles 테이블에서 사용자 데이터 삭제
-      await _client
-          .from('profiles')
-          .delete()
-          .eq('id', user.id);
-      
-      debugPrint('✅ [deleteAccount] 폴백: profiles 삭제 완료');
-
-      // 로그아웃 처리
-      debugPrint('🔄 [deleteAccount] 폴백: 로그아웃 처리 중...');
+      // 3단계: 로그아웃
       await _client.auth.signOut();
-      debugPrint('✅ [deleteAccount] 폴백: 로그아웃 완료');
+      debugPrint('✅ [deleteAccount] 로그아웃 완료');
       
-      debugPrint('⚠️ [deleteAccount] 폴백 성공 (Authentication 계정은 수동 삭제 필요)');
+      debugPrint('🎉 [deleteAccount] 실용적인 탈퇴 처리 완료!');
+      debugPrint('ℹ️ [deleteAccount] 재로그인시 탈퇴 상태 감지하여 접근 차단됨');
+      
       return true;
 
-    } catch (fallbackError) {
-      debugPrint('❌ [deleteAccount] 폴백도 실패: $fallbackError');
+    } catch (e) {
+      debugPrint('❌ [deleteAccount] 탈퇴 처리 에러: $e');
       
-      // 최후의 수단: 로그아웃만
+      // 에러 발생시에도 최소한 로그아웃은 처리
       try {
         await _client.auth.signOut();
+        debugPrint('✅ [deleteAccount] 에러 후 로그아웃 완료');
         return true;
       } catch (logoutError) {
         debugPrint('❌ [deleteAccount] 로그아웃도 실패: $logoutError');
