@@ -58,7 +58,7 @@ class SupabaseAuthService {
     }
   }
 
-  // 안전한 사용자 정보 가져오기 (탈퇴 계정 처리 포함)
+  // 안전한 사용자 정보 가져오기 (재가입 처리 포함)
   Future<UserInfo?> getSafeCurrentUserInfo() async {
     final user = currentUser;
     if (user == null) return null;
@@ -66,16 +66,19 @@ class SupabaseAuthService {
     // 탈퇴한 계정인지 확인
     final isDeleted = await isDeletedAccount();
     if (isDeleted) {
-      debugPrint('🚨 [getSafeCurrentUserInfo] 탈퇴한 계정으로 로그인 시도 감지!');
-      debugPrint('🔄 [getSafeCurrentUserInfo] 자동 로그아웃 처리...');
+      debugPrint('🔄 [getSafeCurrentUserInfo] 탈퇴 계정의 재가입 감지!');
+      debugPrint('🎯 [getSafeCurrentUserInfo] 새로운 사용자로 재설정 중...');
       
-      // 탈퇴한 계정이면 강제 로그아웃
+      // 강제 로그아웃 대신 새로운 프로필 생성
       try {
-        await signOut();
-        return null;
+        await ensureUserHasNickname(user);
+        debugPrint('✅ [getSafeCurrentUserInfo] 재가입 처리 완료 - 새로운 닉네임 부여됨');
+        
+        // 업데이트된 사용자 정보 반환
+        return currentUserInfo;
       } catch (e) {
-        debugPrint('❌ [getSafeCurrentUserInfo] 강제 로그아웃 실패: $e');
-        return null;
+        debugPrint('❌ [getSafeCurrentUserInfo] 재가입 처리 실패: $e');
+        return currentUserInfo; // 실패해도 기본 정보는 반환
       }
     }
 
@@ -167,7 +170,7 @@ class SupabaseAuthService {
           debugPrint('🔍 [signInWithGoogle] 사용자 메타데이터: ${user.userMetadata}');
           debugPrint('🔍 [signInWithGoogle] 닉네임 확인 전 사용자 정보: ${_convertToUserInfo(user)}');
           
-          await _ensureUserHasNickname(user); // 닉네임 확인 및 생성
+          await ensureUserHasNickname(user); // 닉네임 확인 및 생성
           
           // 업데이트된 사용자 정보 다시 가져오기
           final updatedUser = currentUser;
@@ -192,7 +195,7 @@ class SupabaseAuthService {
       final user = currentUser;
       if (user != null) {
         debugPrint('🔵 모바일 로그인 성공: ${user.email}');
-        await _ensureUserHasNickname(user); // 닉네임 확인 및 생성
+        await ensureUserHasNickname(user); // 닉네임 확인 및 생성
         return AuthResult.success(_convertToUserInfo(user));
       } else {
         debugPrint('🔵 모바일 로그인 실패: 사용자 정보 없음');
@@ -250,7 +253,7 @@ class SupabaseAuthService {
         debugPrint('🔍 [signInWithKakao] 사용자 메타데이터: ${user.userMetadata}');
         debugPrint('🔍 [signInWithKakao] 닉네임 확인 전 사용자 정보: ${_convertToUserInfo(user)}');
         
-        await _ensureUserHasNickname(user); // 닉네임 확인 및 생성
+        await ensureUserHasNickname(user); // 닉네임 확인 및 생성
         
         // 업데이트된 사용자 정보 다시 가져오기
         final updatedUser = currentUser;
@@ -563,10 +566,12 @@ class SupabaseAuthService {
     }
   }
 
-  // 새로운 OAuth 사용자를 위한 닉네임 생성 및 설정
-  Future<void> _ensureUserHasNickname(User user) async {
+  // 새로운 OAuth 사용자를 위한 닉네임 생성 및 설정 (public)
+  Future<void> ensureUserHasNickname([User? providedUser]) async {
+    final user = providedUser ?? currentUser;
+    if (user == null) return;
     try {
-      debugPrint('🎯 [_ensureUserHasNickname] 사용자 닉네임 확인 중: ${user.email}');
+      debugPrint('🎯 [ensureUserHasNickname] 사용자 닉네임 확인 중: ${user.email}');
       
       // profiles 테이블에서 현재 사용자 정보 조회
       final profile = await _client
@@ -576,19 +581,19 @@ class SupabaseAuthService {
           .maybeSingle();
 
       final currentNickname = profile?['nickname'] as String?;
-      debugPrint('📋 [_ensureUserHasNickname] 현재 닉네임: $currentNickname');
+      debugPrint('📋 [ensureUserHasNickname] 현재 닉네임: $currentNickname');
 
       // 안전한 닉네임 관리: 한 번만 교체, 이후 유지
       final provider = user.appMetadata['provider'] ?? 'email';
       final isOAuthUser = provider != 'email';
       
-      debugPrint('🔍 [_ensureUserHasNickname] 사용자 제공자: $provider');
-      debugPrint('🔍 [_ensureUserHasNickname] OAuth 사용자 여부: $isOAuthUser');
+      debugPrint('🔍 [ensureUserHasNickname] 사용자 제공자: $provider');
+      debugPrint('🔍 [ensureUserHasNickname] OAuth 사용자 여부: $isOAuthUser');
       
       // 🎯 탈퇴한 사용자 재가입 감지: profiles 없으면 = 탈퇴 후 재가입
       final isDeletedUserReturning = profile == null; // profiles에 없음 = 탈퇴한 사용자
       
-      debugPrint('🔍 [_ensureUserHasNickname] 탈퇴 후 재가입 여부: $isDeletedUserReturning');
+      debugPrint('🔍 [ensureUserHasNickname] 탈퇴 후 재가입 여부: $isDeletedUserReturning');
       
       // 새 닉네임 생성 조건 (스마트하게 판단)
       final shouldGenerateNewNickname = 
@@ -600,16 +605,16 @@ class SupabaseAuthService {
           // 3. 너무 짧은 임시 닉네임
           currentNickname.length < 2;
       
-      debugPrint('🔍 [_ensureUserHasNickname] 새 닉네임 생성 필요: $shouldGenerateNewNickname');
-      debugPrint('🔍 [_ensureUserHasNickname] 현재 닉네임: "$currentNickname" (길이: ${currentNickname?.length})');
+      debugPrint('🔍 [ensureUserHasNickname] 새 닉네임 생성 필요: $shouldGenerateNewNickname');
+      debugPrint('🔍 [ensureUserHasNickname] 현재 닉네임: "$currentNickname" (길이: ${currentNickname?.length})');
       
       if (!shouldGenerateNewNickname) {
-        debugPrint('✅ [_ensureUserHasNickname] 기존 닉네임 유지: "$currentNickname"');
+        debugPrint('✅ [ensureUserHasNickname] 기존 닉네임 유지: "$currentNickname"');
         return; // 기존 닉네임 유지하고 함수 종료
       }
 
       // 새 닉네임 생성 필요한 경우
-      debugPrint('🎨 [_ensureUserHasNickname] 예쁜 한국어 닉네임 생성 중... (로컬 생성 사용)');
+      debugPrint('🎨 [ensureUserHasNickname] 예쁜 한국어 닉네임 생성 중... (로컬 생성 사용)');
       
       final nicknameService = NicknameGeneratorService();
       // 🎯 로컬 생성만 사용 (더 안정적)
@@ -625,7 +630,7 @@ class SupabaseAuthService {
         uniqueNickname = '${nicknameService.generateRandomNickname()}$i';
       }
 
-      debugPrint('✨ [_ensureUserHasNickname] 생성된 로컬 닉네임: $uniqueNickname');
+      debugPrint('✨ [ensureUserHasNickname] 생성된 로컬 닉네임: $uniqueNickname');
 
       // profiles 테이블에 안전하게 저장 (1회성)
       try {
@@ -642,9 +647,9 @@ class SupabaseAuthService {
               'updated_at': DateTime.now().toIso8601String(),
             });
         
-        debugPrint('✅ [_ensureUserHasNickname] profiles 테이블 업데이트 완료 (1회성)');
+        debugPrint('✅ [ensureUserHasNickname] profiles 테이블 업데이트 완료 (1회성)');
       } catch (profileError) {
-        debugPrint('⚠️ [_ensureUserHasNickname] profiles 업데이트 실패: $profileError');
+        debugPrint('⚠️ [ensureUserHasNickname] profiles 업데이트 실패: $profileError');
       }
 
       // 사용자 메타데이터도 업데이트 (1회성)
@@ -658,15 +663,15 @@ class SupabaseAuthService {
           )
         );
         
-        debugPrint('✅ [_ensureUserHasNickname] 메타데이터 업데이트 완료');
+        debugPrint('✅ [ensureUserHasNickname] 메타데이터 업데이트 완료');
       } catch (metaError) {
-        debugPrint('⚠️ [_ensureUserHasNickname] 메타데이터 업데이트 실패: $metaError');
+        debugPrint('⚠️ [ensureUserHasNickname] 메타데이터 업데이트 실패: $metaError');
       }
 
-      debugPrint('🎉 [_ensureUserHasNickname] 한국어 닉네임 1회성 설정 완료: "$currentNickname" → "$uniqueNickname"');
-      debugPrint('🔒 [_ensureUserHasNickname] 다음 로그인부터는 이 닉네임이 유지됩니다');
+      debugPrint('🎉 [ensureUserHasNickname] 한국어 닉네임 1회성 설정 완료: "$currentNickname" → "$uniqueNickname"');
+      debugPrint('🔒 [ensureUserHasNickname] 다음 로그인부터는 이 닉네임이 유지됩니다');
     } catch (e) {
-      debugPrint('❌ [_ensureUserHasNickname] OAuth 사용자 닉네임 설정 에러: $e');
+      debugPrint('❌ [ensureUserHasNickname] OAuth 사용자 닉네임 설정 에러: $e');
     }
   }
 

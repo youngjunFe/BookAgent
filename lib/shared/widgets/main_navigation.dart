@@ -45,14 +45,16 @@ class _MainNavigationState extends State<MainNavigation> {
       
       print('📋 [MainNavigation] 기본 로그인 상태: $isLoggedIn');
       
-      // 🔒 추가 보안: 탈퇴한 계정인지 확인
+      // 🔄 재가입 처리: 탈퇴한 계정이면 새로운 사용자로 재설정
       bool finalLoginStatus = isLoggedIn;
       if (isLoggedIn) {
         final isDeleted = await authService.isDeletedAccount();
         if (isDeleted) {
-          print('🚨 [MainNavigation] 탈퇴한 계정 로그인 감지 - 강제 로그아웃');
-          await authService.signOut();
-          finalLoginStatus = false;
+          print('🔄 [MainNavigation] 탈퇴 계정의 재가입 감지 - 새로운 사용자로 재설정');
+          
+          // 강제 로그아웃 대신 새로운 프로필로 재생성
+          await authService.ensureUserHasNickname();
+          print('✅ [MainNavigation] 재가입 처리 완료 - 새로운 닉네임 부여');
         }
       }
       
@@ -63,9 +65,9 @@ class _MainNavigationState extends State<MainNavigation> {
         _isAuthChecked = true;
       });
       
-      // 🚨🚨🚨 비로그인 사용자나 탈퇴 계정은 즉시 로그인 페이지로 리다이렉트
+      // 🚨 비로그인 사용자만 로그인 페이지로 리다이렉트 (탈퇴 계정은 재가입 허용)
       if (!finalLoginStatus && mounted) {
-        print('🚨 [MainNavigation] 비인증/탈퇴 사용자 감지 - 로그인 페이지로 강제 리디렉션');
+        print('🚨 [MainNavigation] 비인증 사용자 감지 - 로그인 페이지로 리디렉션');
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const LoginPage()),
         );
