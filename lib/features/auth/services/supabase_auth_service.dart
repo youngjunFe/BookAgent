@@ -16,11 +16,12 @@ class SupabaseAuthService {
   // 로그인 상태 확인
   bool get isLoggedIn => currentUser != null;
 
-  // 사용자 정보를 UserInfo 형태로 변환 (탈퇴한 계정 체크 포함)
+  // 사용자 정보를 UserInfo 형태로 변환 (profiles 테이블 우선)
   UserInfo? get currentUserInfo {
     final user = currentUser;
     if (user == null) return null;
     
+    // ⚠️ 임시: 메타데이터 기반 (profiles 연동 함수는 따로 제공)
     return UserInfo(
       id: user.id,
       name: user.userMetadata?['full_name'] ?? user.email?.split('@')[0] ?? 'User',
@@ -29,6 +30,42 @@ class SupabaseAuthService {
       photoUrl: user.userMetadata?['avatar_url'],
       provider: user.appMetadata['provider'] ?? 'email',
     );
+  }
+
+  // 🔗 profiles 테이블 기반 사용자 정보 (정확한 현재 상태)
+  Future<UserInfo?> getProfileBasedUserInfo() async {
+    final user = currentUser;
+    if (user == null) return null;
+
+    try {
+      debugPrint('🔗 [getProfileBasedUserInfo] profiles 테이블에서 사용자 정보 조회: ${user.email}');
+      
+      final profile = await _client
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle();
+
+      debugPrint('📋 [getProfileBasedUserInfo] profiles 데이터: $profile');
+
+      if (profile != null && profile['provider'] != 'deleted') {
+        // profiles 테이블의 실제 데이터 사용
+        return UserInfo(
+          id: user.id,
+          name: profile['full_name'] ?? user.email?.split('@')[0] ?? 'User',
+          nickname: profile['nickname'] ?? 'User',
+          email: profile['email'] ?? user.email ?? '',
+          photoUrl: profile['avatar_url'],
+          provider: profile['provider'] ?? 'email',
+        );
+      } else {
+        debugPrint('⚠️ [getProfileBasedUserInfo] 프로필 없거나 삭제됨 - 메타데이터 사용');
+        return currentUserInfo; // 메타데이터 기반으로 폴백
+      }
+    } catch (e) {
+      debugPrint('❌ [getProfileBasedUserInfo] profiles 조회 실패: $e');
+      return currentUserInfo; // 에러시 메타데이터 기반으로 폴백
+    }
   }
 
   // 탈퇴한 계정인지 확인 (보안 중요!)
@@ -58,30 +95,44 @@ class SupabaseAuthService {
     }
   }
 
-  // 안전한 사용자 정보 가져오기 (재가입 처리 포함)
+  // 🔗 안전한 사용자 정보 가져오기 (profiles 테이블 우선 + 재가입 처리)
   Future<UserInfo?> getSafeCurrentUserInfo() async {
     final user = currentUser;
     if (user == null) return null;
 
-    // 탈퇴한 계정인지 확인
+    debugPrint('🔗 [getSafeCurrentUserInfo] 사용자 정보 조회 시작: ${user.email}');
+
+    // 1단계: profiles 테이블에서 실제 현재 상태 확인
+    final profileBasedInfo = await getProfileBasedUserInfo();
+    
+    // 2단계: 탈퇴 계정이면 재가입 처리
     final isDeleted = await isDeletedAccount();
     if (isDeleted) {
-      debugPrint('🔄 [getSafeCurrentUserInfo] 탈퇴 계정의 재가입 감지!');
-      debugPrint('🎯 [getSafeCurrentUserInfo] 새로운 사용자로 재설정 중...');
+      debugPrint('🔄 [getSafeCurrentUserInfo] 탈퇴 계정 재가입 감지 - 새로운 닉네임 생성!');
       
-      // 강제 로그아웃 대신 새로운 프로필 생성
       try {
         await ensureUserHasNickname(user);
-        debugPrint('✅ [getSafeCurrentUserInfo] 재가입 처리 완료 - 새로운 닉네임 부여됨');
+        debugPrint('✅ [getSafeCurrentUserInfo] 재가입 처리 완료');
         
-        // 업데이트된 사용자 정보 반환
-        return currentUserInfo;
+        // 다시 profiles에서 업데이트된 정보 가져오기
+        final updatedInfo = await getProfileBasedUserInfo();
+        if (updatedInfo != null) {
+          debugPrint('🎉 [getSafeCurrentUserInfo] 새 프로필 기반 정보: ${updatedInfo.nickname}');
+          return updatedInfo;
+        }
       } catch (e) {
         debugPrint('❌ [getSafeCurrentUserInfo] 재가입 처리 실패: $e');
-        return currentUserInfo; // 실패해도 기본 정보는 반환
       }
     }
 
+    // 3단계: profiles 테이블 데이터 우선 반환
+    if (profileBasedInfo != null) {
+      debugPrint('🔗 [getSafeCurrentUserInfo] profiles 기반 정보 사용: ${profileBasedInfo.nickname}');
+      return profileBasedInfo;
+    }
+
+    // 4단계: 폴백 - 메타데이터 기반
+    debugPrint('⚠️ [getSafeCurrentUserInfo] profiles 없음, 메타데이터 기반 사용');
     return currentUserInfo;
   }
 
@@ -749,3 +800,4 @@ class AuthResult {
     return AuthResult._(isSuccess: false, isCancelled: true);
   }
 }
+
