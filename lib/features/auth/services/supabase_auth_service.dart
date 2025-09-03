@@ -16,99 +16,40 @@ class SupabaseAuthService {
   // 로그인 상태 확인
   bool get isLoggedIn => currentUser != null;
 
-  // 🔄 강화된 사용자 정보 (메타데이터 즉시 반영)
+  // 사용자 정보를 UserInfo 형태로 변환 (탈퇴한 계정 체크 포함)
   UserInfo? get currentUserInfo {
     final user = currentUser;
     if (user == null) return null;
     
-    debugPrint('📱 [currentUserInfo] 메타데이터 조회: ${user.userMetadata}');
-    
     return UserInfo(
       id: user.id,
-      name: user.userMetadata?['full_name'] ?? 
-            user.userMetadata?['display_name'] ?? 
-            user.userMetadata?['name'] ?? 
-            user.email?.split('@')[0] ?? 'User',
-      nickname: user.userMetadata?['nickname'] ?? 
-                user.userMetadata?['display_name'] ??
-                user.userMetadata?['full_name'] ?? 
-                user.userMetadata?['name'] ?? 
-                user.email?.split('@')[0] ?? 'User',
+      name: user.userMetadata?['full_name'] ?? user.email?.split('@')[0] ?? 'User',
+      nickname: user.userMetadata?['nickname'] ?? user.userMetadata?['full_name'] ?? user.email?.split('@')[0] ?? 'User',
       email: user.email ?? '',
       photoUrl: user.userMetadata?['avatar_url'],
       provider: user.appMetadata['provider'] ?? 'email',
     );
   }
 
-  // 🔗 profiles 테이블 기반 사용자 정보 (정확한 현재 상태)
-  Future<UserInfo?> getProfileBasedUserInfo() async {
-    final user = currentUser;
-    if (user == null) return null;
-
-    try {
-      debugPrint('🔗 [getProfileBasedUserInfo] profiles 테이블에서 사용자 정보 조회: ${user.email}');
-      
-      final profile = await _client
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .maybeSingle();
-
-      debugPrint('📋 [getProfileBasedUserInfo] profiles 데이터: $profile');
-
-      if (profile != null && profile['provider'] != 'deleted') {
-        // profiles 테이블의 실제 데이터 사용
-        return UserInfo(
-          id: user.id,
-          name: profile['full_name'] ?? user.email?.split('@')[0] ?? 'User',
-          nickname: profile['nickname'] ?? 'User',
-          email: profile['email'] ?? user.email ?? '',
-          photoUrl: profile['avatar_url'],
-          provider: profile['provider'] ?? 'email',
-        );
-      } else {
-        debugPrint('⚠️ [getProfileBasedUserInfo] 프로필 없거나 삭제됨 - 메타데이터 사용');
-        return currentUserInfo; // 메타데이터 기반으로 폴백
-      }
-    } catch (e) {
-      debugPrint('❌ [getProfileBasedUserInfo] profiles 조회 실패: $e');
-      return currentUserInfo; // 에러시 메타데이터 기반으로 폴백
-    }
-  }
-
-  // 탈퇴한 계정인지 확인 (메타데이터 기반)
+  // 탈퇴한 계정인지 확인 (보안 중요!)
   Future<bool> isDeletedAccount() async {
     final user = currentUser;
     if (user == null) return false;
 
     try {
       debugPrint('🔒 [isDeletedAccount] 탈퇴 계정 여부 확인: ${user.email}');
-      debugPrint('📋 [isDeletedAccount] 메타데이터 확인: ${user.userMetadata}');
       
-      // 메타데이터에서 탈퇴 상태 확인
-      final accountStatus = user.userMetadata?['account_status'];
-      final isDeletedByMetadata = accountStatus == 'deleted';
-      
-      // 추가로 profiles 테이블도 확인 (더블 체크)
-      bool isDeletedByProfile = false;
-      try {
-        final profile = await _client
-            .from('profiles')
-            .select('provider')
-            .eq('id', user.id)
-            .maybeSingle();
+      final profile = await _client
+          .from('profiles')
+          .select('provider, email')
+          .eq('id', user.id)
+          .maybeSingle();
 
-        isDeletedByProfile = profile == null || profile['provider'] == 'deleted';
-      } catch (profileError) {
-        debugPrint('⚠️ [isDeletedAccount] profiles 확인 실패: $profileError');
-        isDeletedByProfile = false; // 에러시 false로 처리
-      }
+      // profiles에 없거나 provider가 'deleted'면 탈퇴한 계정
+      final isDeleted = profile == null || profile['provider'] == 'deleted';
       
-      final isDeleted = isDeletedByMetadata || isDeletedByProfile;
-      
-      debugPrint('📋 [isDeletedAccount] 메타데이터 탈퇴: $isDeletedByMetadata');
-      debugPrint('📋 [isDeletedAccount] 프로필 탈퇴: $isDeletedByProfile'); 
-      debugPrint('🔒 [isDeletedAccount] 최종 탈퇴 여부: $isDeleted');
+      debugPrint('📋 [isDeletedAccount] 프로필 상태: $profile');
+      debugPrint('🔒 [isDeletedAccount] 탈퇴 계정 여부: $isDeleted');
       
       return isDeleted;
     } catch (e) {
@@ -117,44 +58,27 @@ class SupabaseAuthService {
     }
   }
 
-  // 🔗 안전한 사용자 정보 가져오기 (profiles 테이블 우선 + 재가입 처리)
+  // 안전한 사용자 정보 가져오기 (탈퇴 계정 처리 포함)
   Future<UserInfo?> getSafeCurrentUserInfo() async {
     final user = currentUser;
     if (user == null) return null;
 
-    debugPrint('🔗 [getSafeCurrentUserInfo] 사용자 정보 조회 시작: ${user.email}');
-
-    // 1단계: profiles 테이블에서 실제 현재 상태 확인
-    final profileBasedInfo = await getProfileBasedUserInfo();
-    
-    // 2단계: 탈퇴 계정이면 재가입 처리
+    // 탈퇴한 계정인지 확인
     final isDeleted = await isDeletedAccount();
     if (isDeleted) {
-      debugPrint('🔄 [getSafeCurrentUserInfo] 탈퇴 계정 재가입 감지 - 새로운 닉네임 생성!');
+      debugPrint('🚨 [getSafeCurrentUserInfo] 탈퇴한 계정으로 로그인 시도 감지!');
+      debugPrint('🔄 [getSafeCurrentUserInfo] 자동 로그아웃 처리...');
       
+      // 탈퇴한 계정이면 강제 로그아웃
       try {
-        await ensureUserHasNickname(user);
-        debugPrint('✅ [getSafeCurrentUserInfo] 재가입 처리 완료');
-        
-        // 다시 profiles에서 업데이트된 정보 가져오기
-        final updatedInfo = await getProfileBasedUserInfo();
-        if (updatedInfo != null) {
-          debugPrint('🎉 [getSafeCurrentUserInfo] 새 프로필 기반 정보: ${updatedInfo.nickname}');
-          return updatedInfo;
-        }
+        await signOut();
+        return null;
       } catch (e) {
-        debugPrint('❌ [getSafeCurrentUserInfo] 재가입 처리 실패: $e');
+        debugPrint('❌ [getSafeCurrentUserInfo] 강제 로그아웃 실패: $e');
+        return null;
       }
     }
 
-    // 3단계: profiles 테이블 데이터 우선 반환
-    if (profileBasedInfo != null) {
-      debugPrint('🔗 [getSafeCurrentUserInfo] profiles 기반 정보 사용: ${profileBasedInfo.nickname}');
-      return profileBasedInfo;
-    }
-
-    // 4단계: 폴백 - 메타데이터 기반
-    debugPrint('⚠️ [getSafeCurrentUserInfo] profiles 없음, 메타데이터 기반 사용');
     return currentUserInfo;
   }
 
@@ -243,7 +167,7 @@ class SupabaseAuthService {
           debugPrint('🔍 [signInWithGoogle] 사용자 메타데이터: ${user.userMetadata}');
           debugPrint('🔍 [signInWithGoogle] 닉네임 확인 전 사용자 정보: ${_convertToUserInfo(user)}');
           
-          await ensureUserHasNickname(user); // 닉네임 확인 및 생성
+          await _ensureUserHasNickname(user); // 닉네임 확인 및 생성
           
           // 업데이트된 사용자 정보 다시 가져오기
           final updatedUser = currentUser;
@@ -268,7 +192,7 @@ class SupabaseAuthService {
       final user = currentUser;
       if (user != null) {
         debugPrint('🔵 모바일 로그인 성공: ${user.email}');
-        await ensureUserHasNickname(user); // 닉네임 확인 및 생성
+        await _ensureUserHasNickname(user); // 닉네임 확인 및 생성
         return AuthResult.success(_convertToUserInfo(user));
       } else {
         debugPrint('🔵 모바일 로그인 실패: 사용자 정보 없음');
@@ -326,7 +250,7 @@ class SupabaseAuthService {
         debugPrint('🔍 [signInWithKakao] 사용자 메타데이터: ${user.userMetadata}');
         debugPrint('🔍 [signInWithKakao] 닉네임 확인 전 사용자 정보: ${_convertToUserInfo(user)}');
         
-        await ensureUserHasNickname(user); // 닉네임 확인 및 생성
+        await _ensureUserHasNickname(user); // 닉네임 확인 및 생성
         
         // 업데이트된 사용자 정보 다시 가져오기
         final updatedUser = currentUser;
@@ -355,7 +279,7 @@ class SupabaseAuthService {
     }
   }
 
-  // 실용적인 회원 탈퇴 (업계 표준 방식)
+  // 회원 탈퇴 (간단하고 확실한 버전)
   Future<bool> deleteAccount() async {
     final user = currentUser;
     if (user == null) {
@@ -363,63 +287,98 @@ class SupabaseAuthService {
       return false;
     }
 
-    debugPrint('🗑️ [deleteAccount] 실용적인 탈퇴 처리 시작: ${user.email}');
+    debugPrint('🗑️ [deleteAccount] 간단한 탈퇴 처리 시작: ${user.email}');
     debugPrint('👤 [deleteAccount] 사용자 ID: ${user.id}');
 
     try {
-      // 1단계: 모든 사용자 데이터 삭제
-      debugPrint('🗑️ [deleteAccount] 사용자 데이터 완전 삭제 중...');
+      // 🎯 핵심만 간단하게: profiles 데이터 삭제 + 로그아웃
       
-      // 관련 테이블 데이터 삭제
-      final tables = ['reviews', 'reading_goals', 'ebooks', 'achievements'];
-      for (final table in tables) {
+      // 1. profiles 테이블에서 사용자 데이터 삭제 (강화된 방법)
+      debugPrint('🗑️ [deleteAccount] 사용자 프로필 삭제 중...');
+      
+      // 먼저 현재 프로필 존재 확인
+      final existingProfile = await _client
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle();
+      
+      debugPrint('📋 [deleteAccount] 삭제 전 프로필 확인: $existingProfile');
+      
+      if (existingProfile != null) {
+        // 여러 방법으로 삭제 시도
         try {
-          await _client.from(table).delete().eq('user_id', user.id);
-          debugPrint('✅ [deleteAccount] $table 데이터 삭제 완료');
-        } catch (e) {
-          debugPrint('⚠️ [deleteAccount] $table 삭제 실패 (테이블 없음?): $e');
+          // 방법 1: 일반 DELETE
+          final deleteResult = await _client
+              .from('profiles')
+              .delete()
+              .eq('id', user.id);
+          
+          debugPrint('📋 [deleteAccount] DELETE 결과: $deleteResult');
+          
+          // 삭제 후 확인
+          final checkAfterDelete = await _client
+              .from('profiles')
+              .select('id')
+              .eq('id', user.id)
+              .maybeSingle();
+          
+          if (checkAfterDelete == null) {
+            debugPrint('✅ [deleteAccount] 프로필 삭제 성공 확인!');
+          } else {
+            debugPrint('⚠️ [deleteAccount] 프로필이 여전히 존재함, 다른 방법 시도...');
+            
+            // 방법 2: UPDATE로 데이터 무력화
+            await _client
+                .from('profiles')
+                .update({
+                  'email': 'deleted_${user.id}@deleted.com',
+                  'nickname': 'deleted_${user.id.substring(0, 8)}',
+                  'full_name': '탈퇴된계정',
+                  'provider': 'deleted',
+                  'updated_at': DateTime.now().toIso8601String(),
+                })
+                .eq('id', user.id);
+            
+            debugPrint('✅ [deleteAccount] 프로필 비활성화 완료');
+          }
+          
+        } catch (deleteError) {
+          debugPrint('❌ [deleteAccount] 일반 삭제 실패: $deleteError');
+          
+          // 방법 3: RPC 함수 사용 (강제)
+          try {
+            await _client.rpc('force_delete_user_profile', params: {
+              'user_id': user.id
+            });
+            debugPrint('✅ [deleteAccount] RPC를 통한 강제 삭제 완료');
+          } catch (rpcError) {
+            debugPrint('⚠️ [deleteAccount] RPC 삭제도 실패: $rpcError');
+          }
         }
+      } else {
+        debugPrint('ℹ️ [deleteAccount] 프로필이 이미 없음 (이미 삭제된 상태)');
       }
 
-      // profiles 테이블 삭제
-      await _client.from('profiles').delete().eq('id', user.id);
-      debugPrint('✅ [deleteAccount] profiles 삭제 완료');
-
-      // 2단계: 메타데이터를 탈퇴 상태로 영구 표시 (재로그인 방지)
-      debugPrint('🔒 [deleteAccount] 계정을 탈퇴 상태로 표시 중...');
-      
-      await _client.auth.updateUser(
-        UserAttributes(
-          data: {
-            'account_status': 'deleted',
-            'deleted_at': DateTime.now().toIso8601String(),
-            'nickname': '탈퇴한사용자',
-            'full_name': '탈퇴한사용자',
-            'name': '탈퇴한사용자',
-            'original_email': user.email, // 기록용
-          }
-        )
-      );
-      
-      debugPrint('✅ [deleteAccount] 계정 탈퇴 상태 표시 완료');
-
-      // 3단계: 로그아웃
+      // 2. 로그아웃 처리
+      debugPrint('🔄 [deleteAccount] 로그아웃 처리 중...');
       await _client.auth.signOut();
       debugPrint('✅ [deleteAccount] 로그아웃 완료');
       
-      debugPrint('🎉 [deleteAccount] 실용적인 탈퇴 처리 완료!');
-      debugPrint('ℹ️ [deleteAccount] 재로그인시 탈퇴 상태 감지하여 접근 차단됨');
-      
+      debugPrint('🎉 [deleteAccount] 탈퇴 처리 성공!');
       return true;
 
     } catch (e) {
       debugPrint('❌ [deleteAccount] 탈퇴 처리 에러: $e');
+      debugPrint('🔍 [deleteAccount] 에러 타입: ${e.runtimeType}');
+      debugPrint('📄 [deleteAccount] 에러 상세: ${e.toString()}');
       
-      // 에러 발생시에도 최소한 로그아웃은 처리
+      // 에러가 발생해도 로그아웃은 시도
       try {
+        debugPrint('🔄 [deleteAccount] 에러 발생, 로그아웃만 시도...');
         await _client.auth.signOut();
-        debugPrint('✅ [deleteAccount] 에러 후 로그아웃 완료');
-        return true;
+        debugPrint('✅ [deleteAccount] 로그아웃 완료 (에러 후)');
+        return true; // 로그아웃은 성공했으므로 true
       } catch (logoutError) {
         debugPrint('❌ [deleteAccount] 로그아웃도 실패: $logoutError');
         return false;
@@ -604,12 +563,10 @@ class SupabaseAuthService {
     }
   }
 
-  // 새로운 OAuth 사용자를 위한 닉네임 생성 및 설정 (public)
-  Future<void> ensureUserHasNickname([User? providedUser]) async {
-    final user = providedUser ?? currentUser;
-    if (user == null) return;
+  // 새로운 OAuth 사용자를 위한 닉네임 생성 및 설정
+  Future<void> _ensureUserHasNickname(User user) async {
     try {
-      debugPrint('🎯 [ensureUserHasNickname] 사용자 닉네임 확인 중: ${user.email}');
+      debugPrint('🎯 [_ensureUserHasNickname] 사용자 닉네임 확인 중: ${user.email}');
       
       // profiles 테이블에서 현재 사용자 정보 조회
       final profile = await _client
@@ -619,42 +576,40 @@ class SupabaseAuthService {
           .maybeSingle();
 
       final currentNickname = profile?['nickname'] as String?;
-      debugPrint('📋 [ensureUserHasNickname] 현재 닉네임: $currentNickname');
+      debugPrint('📋 [_ensureUserHasNickname] 현재 닉네임: $currentNickname');
 
       // 안전한 닉네임 관리: 한 번만 교체, 이후 유지
       final provider = user.appMetadata['provider'] ?? 'email';
       final isOAuthUser = provider != 'email';
       
-      debugPrint('🔍 [ensureUserHasNickname] 사용자 제공자: $provider');
-      debugPrint('🔍 [ensureUserHasNickname] OAuth 사용자 여부: $isOAuthUser');
+      debugPrint('🔍 [_ensureUserHasNickname] 사용자 제공자: $provider');
+      debugPrint('🔍 [_ensureUserHasNickname] OAuth 사용자 여부: $isOAuthUser');
       
-      // 🎯 탈퇴한 사용자 재가입 감지 (더 정확한 방법)
-      final isDeletedUserReturning = profile == null || 
-          (profile['provider'] == 'deleted') ||
-          (profile['email'] != null && profile['email'].toString().startsWith('deleted_'));
+      // 🎯 탈퇴한 사용자 재가입 감지: profiles 없으면 = 탈퇴 후 재가입
+      final isDeletedUserReturning = profile == null; // profiles에 없음 = 탈퇴한 사용자
       
-      debugPrint('🔍 [ensureUserHasNickname] 탈퇴 후 재가입 여부: $isDeletedUserReturning');
-      debugPrint('🔍 [ensureUserHasNickname] 프로필 데이터: $profile');
+      debugPrint('🔍 [_ensureUserHasNickname] 탈퇴 후 재가입 여부: $isDeletedUserReturning');
       
-      // 🔥 강제 조건: 탈퇴한 사용자는 무조건 새 닉네임!
-      final shouldGenerateNewNickname = isDeletedUserReturning || 
+      // 새 닉네임 생성 조건 (스마트하게 판단)
+      final shouldGenerateNewNickname = 
+          // 1. 탈퇴한 사용자의 재가입 (무조건 새 닉네임!)
+          isDeletedUserReturning ||
+          // 2. 닉네임 자체가 없거나 비어있음
           currentNickname == null || 
           currentNickname.isEmpty ||
-          currentNickname.length < 2 ||
-          currentNickname.startsWith('deleted_');
+          // 3. 너무 짧은 임시 닉네임
+          currentNickname.length < 2;
       
-      debugPrint('🔥 [ensureUserHasNickname] 강제 새 닉네임 생성: $shouldGenerateNewNickname');
-      
-      debugPrint('🔍 [ensureUserHasNickname] 새 닉네임 생성 필요: $shouldGenerateNewNickname');
-      debugPrint('🔍 [ensureUserHasNickname] 현재 닉네임: "$currentNickname" (길이: ${currentNickname?.length})');
+      debugPrint('🔍 [_ensureUserHasNickname] 새 닉네임 생성 필요: $shouldGenerateNewNickname');
+      debugPrint('🔍 [_ensureUserHasNickname] 현재 닉네임: "$currentNickname" (길이: ${currentNickname?.length})');
       
       if (!shouldGenerateNewNickname) {
-        debugPrint('✅ [ensureUserHasNickname] 기존 닉네임 유지: "$currentNickname"');
+        debugPrint('✅ [_ensureUserHasNickname] 기존 닉네임 유지: "$currentNickname"');
         return; // 기존 닉네임 유지하고 함수 종료
       }
 
       // 새 닉네임 생성 필요한 경우
-      debugPrint('🎨 [ensureUserHasNickname] 예쁜 한국어 닉네임 생성 중... (로컬 생성 사용)');
+      debugPrint('🎨 [_ensureUserHasNickname] 예쁜 한국어 닉네임 생성 중... (로컬 생성 사용)');
       
       final nicknameService = NicknameGeneratorService();
       // 🎯 로컬 생성만 사용 (더 안정적)
@@ -670,7 +625,7 @@ class SupabaseAuthService {
         uniqueNickname = '${nicknameService.generateRandomNickname()}$i';
       }
 
-      debugPrint('✨ [ensureUserHasNickname] 생성된 로컬 닉네임: $uniqueNickname');
+      debugPrint('✨ [_ensureUserHasNickname] 생성된 로컬 닉네임: $uniqueNickname');
 
       // profiles 테이블에 안전하게 저장 (1회성)
       try {
@@ -687,43 +642,31 @@ class SupabaseAuthService {
               'updated_at': DateTime.now().toIso8601String(),
             });
         
-        debugPrint('✅ [ensureUserHasNickname] profiles 테이블 업데이트 완료 (1회성)');
+        debugPrint('✅ [_ensureUserHasNickname] profiles 테이블 업데이트 완료 (1회성)');
       } catch (profileError) {
-        debugPrint('⚠️ [ensureUserHasNickname] profiles 업데이트 실패: $profileError');
+        debugPrint('⚠️ [_ensureUserHasNickname] profiles 업데이트 실패: $profileError');
       }
 
-      // 🔥 메타데이터 강제 덮어쓰기 (기존 데이터 완전 교체)
+      // 사용자 메타데이터도 업데이트 (1회성)
       try {
-        debugPrint('🔥 [ensureUserHasNickname] 메타데이터 강제 덮어쓰기 중...');
-        
         await _client.auth.updateUser(
           UserAttributes(
             data: {
               'nickname': uniqueNickname,
               'full_name': uniqueNickname,
-              'name': uniqueNickname, // name도 덮어쓰기
-              'display_name': uniqueNickname, // display_name도 덮어쓰기
-              'updated_by': 'auto_nickname_generator',
-              'last_nickname_update': DateTime.now().toIso8601String(),
             }
           )
         );
         
-        debugPrint('✅ [ensureUserHasNickname] 메타데이터 강제 덮어쓰기 완료');
-        
-        // 🔄 즉시 세션 새로고침 강제
-        await Future.delayed(Duration(milliseconds: 500));
-        final refreshedUser = currentUser;
-        debugPrint('🔄 [ensureUserHasNickname] 세션 새로고침 후 메타데이터: ${refreshedUser?.userMetadata}');
-        
+        debugPrint('✅ [_ensureUserHasNickname] 메타데이터 업데이트 완료');
       } catch (metaError) {
-        debugPrint('❌ [ensureUserHasNickname] 메타데이터 강제 업데이트 실패: $metaError');
+        debugPrint('⚠️ [_ensureUserHasNickname] 메타데이터 업데이트 실패: $metaError');
       }
 
-      debugPrint('🎉 [ensureUserHasNickname] 한국어 닉네임 1회성 설정 완료: "$currentNickname" → "$uniqueNickname"');
-      debugPrint('🔒 [ensureUserHasNickname] 다음 로그인부터는 이 닉네임이 유지됩니다');
+      debugPrint('🎉 [_ensureUserHasNickname] 한국어 닉네임 1회성 설정 완료: "$currentNickname" → "$uniqueNickname"');
+      debugPrint('🔒 [_ensureUserHasNickname] 다음 로그인부터는 이 닉네임이 유지됩니다');
     } catch (e) {
-      debugPrint('❌ [ensureUserHasNickname] OAuth 사용자 닉네임 설정 에러: $e');
+      debugPrint('❌ [_ensureUserHasNickname] OAuth 사용자 닉네임 설정 에러: $e');
     }
   }
 
@@ -801,4 +744,3 @@ class AuthResult {
     return AuthResult._(isSuccess: false, isCancelled: true);
   }
 }
-

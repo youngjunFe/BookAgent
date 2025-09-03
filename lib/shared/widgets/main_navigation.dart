@@ -52,9 +52,9 @@ class _MainNavigationState extends State<MainNavigation> {
         if (isDeleted) {
           print('🔄 [MainNavigation] 탈퇴 계정의 재가입 감지 - 새로운 사용자로 재설정');
           
-          // 강제 로그아웃 대신 새로운 프로필로 재생성
-          await authService.ensureUserHasNickname();
-          print('✅ [MainNavigation] 재가입 처리 완료 - 새로운 닉네임 부여');
+          // 탈퇴한 계정은 일단 로그아웃 처리 (임시)
+          await authService.signOut();
+          print('✅ [MainNavigation] 탈퇴 계정 로그아웃 처리 완료');
         }
       }
       
@@ -346,8 +346,8 @@ class _MyPageState extends State<MyPage> {
                               Flexible(
                                 child: Text(
                                   user?.nickname ?? '닉네임 없음',
-                                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                    fontWeight: FontWeight.w600,
+                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
                                     color: AppColors.textPrimary,
                                   ),
                                   overflow: TextOverflow.ellipsis,
@@ -379,8 +379,8 @@ class _MyPageState extends State<MyPage> {
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: AppColors.textSecondary,
                                 fontStyle: FontStyle.italic,
-                              ),
                             ),
+                          ),
                           const SizedBox(height: 4),
                           // 이메일
                           Text(
@@ -569,24 +569,12 @@ class _MyPageState extends State<MyPage> {
                   try {
                     final authService = SupabaseAuthService();
                     
-                    // 사용 가능한 닉네임인지 확인
-                    final isAvailable = await authService.isNicknameAvailable(newNickname);
+                    // 임시: 닉네임 편집 기능 비활성화 
+                    _showSnackBar(context, '닉네임 편집 기능을 준비 중입니다', isError: true);
+                    setState(() => isLoading = false);
+                    return;
                     
-                    if (!isAvailable) {
-                      _showSnackBar(context, '이미 사용 중인 닉네임이거나 사용할 수 없는 닉네임입니다', isError: true);
-                      setState(() => isLoading = false);
-                      return;
-                    }
-                    
-                    // 닉네임 업데이트
-                    final success = await authService.updateNickname(newNickname);
-                    
-                    if (success) {
-                      Navigator.of(context).pop(newNickname);
-                      _showSnackBar(context, '닉네임이 변경되었습니다! 🎉');
-                    } else {
-                      _showSnackBar(context, '닉네임 변경에 실패했습니다', isError: true);
-                    }
+                    // TODO: 닉네임 업데이트 로직 재구현 필요
                   } catch (e) {
                     _showSnackBar(context, '오류가 발생했습니다: $e', isError: true);
                   }
