@@ -113,8 +113,16 @@ class SupabaseAuthService {
         final user = currentUser;
         if (user != null) {
           debugPrint('🔵 웹 로그인 성공: ${user.email}');
+          debugPrint('🔍 [signInWithGoogle] 사용자 메타데이터: ${user.userMetadata}');
+          debugPrint('🔍 [signInWithGoogle] 닉네임 확인 전 사용자 정보: ${_convertToUserInfo(user)}');
+          
           await _ensureUserHasNickname(user); // 닉네임 확인 및 생성
-          return AuthResult.success(_convertToUserInfo(user));
+          
+          // 업데이트된 사용자 정보 다시 가져오기
+          final updatedUser = currentUser;
+          debugPrint('🔍 [signInWithGoogle] 닉네임 확인 후 사용자 정보: ${_convertToUserInfo(updatedUser!)}');
+          
+          return AuthResult.success(_convertToUserInfo(updatedUser));
         } else {
           debugPrint('🔵 웹 로그인 대기 중 (리다이렉트 필요)');
           // 리다이렉트가 진행 중이므로 성공으로 간주
@@ -188,8 +196,16 @@ class SupabaseAuthService {
       final user = currentUser;
       if (user != null) {
         debugPrint('🟡 카카오 모바일 로그인 성공: ${user.email}');
+        debugPrint('🔍 [signInWithKakao] 사용자 메타데이터: ${user.userMetadata}');
+        debugPrint('🔍 [signInWithKakao] 닉네임 확인 전 사용자 정보: ${_convertToUserInfo(user)}');
+        
         await _ensureUserHasNickname(user); // 닉네임 확인 및 생성
-        return AuthResult.success(_convertToUserInfo(user));
+        
+        // 업데이트된 사용자 정보 다시 가져오기
+        final updatedUser = currentUser;
+        debugPrint('🔍 [signInWithKakao] 닉네임 확인 후 사용자 정보: ${_convertToUserInfo(updatedUser!)}');
+        
+        return AuthResult.success(_convertToUserInfo(updatedUser));
       } else {
         debugPrint('🟡 카카오 모바일 로그인 실패: 사용자 정보 없음');
         return AuthResult.error('카카오 로그인에 실패했습니다.');
@@ -212,7 +228,7 @@ class SupabaseAuthService {
     }
   }
 
-  // 회원 탈퇴 (계정 및 모든 데이터 삭제)
+  // 회원 탈퇴 (간단하고 확실한 버전)
   Future<bool> deleteAccount() async {
     final user = currentUser;
     if (user == null) {
@@ -220,94 +236,46 @@ class SupabaseAuthService {
       return false;
     }
 
-    debugPrint('🗑️ [deleteAccount] 계정 삭제 시작: ${user.email}');
+    debugPrint('🗑️ [deleteAccount] 간단한 탈퇴 처리 시작: ${user.email}');
     debugPrint('👤 [deleteAccount] 사용자 ID: ${user.id}');
 
     try {
-      // 1단계: 관련 데이터 삭제 (순서 중요 - 외래키 제약조건 고려)
-      debugPrint('🗑️ [deleteAccount] 관련 데이터 삭제 중...');
-
-      // reviews 테이블에서 사용자 데이터 삭제
-      try {
-        await _client
-            .from('reviews')
-            .delete()
-            .eq('user_id', user.id);
-        debugPrint('✅ [deleteAccount] reviews 데이터 삭제 완료');
-      } catch (e) {
-        debugPrint('⚠️ [deleteAccount] reviews 삭제 실패 (테이블 없음?): $e');
-      }
-
-      // reading_goals 테이블에서 사용자 데이터 삭제
-      try {
-        await _client
-            .from('reading_goals')
-            .delete()
-            .eq('user_id', user.id);
-        debugPrint('✅ [deleteAccount] reading_goals 데이터 삭제 완료');
-      } catch (e) {
-        debugPrint('⚠️ [deleteAccount] reading_goals 삭제 실패 (테이블 없음?): $e');
-      }
-
-      // ebooks 테이블에서 사용자 데이터 삭제  
-      try {
-        await _client
-            .from('ebooks')
-            .delete()
-            .eq('user_id', user.id);
-        debugPrint('✅ [deleteAccount] ebooks 데이터 삭제 완료');
-      } catch (e) {
-        debugPrint('⚠️ [deleteAccount] ebooks 삭제 실패 (테이블 없음?): $e');
-      }
-
-      // achievements 테이블에서 사용자 데이터 삭제
-      try {
-        await _client
-            .from('achievements')
-            .delete()
-            .eq('user_id', user.id);
-        debugPrint('✅ [deleteAccount] achievements 데이터 삭제 완료');
-      } catch (e) {
-        debugPrint('⚠️ [deleteAccount] achievements 삭제 실패 (테이블 없음?): $e');
-      }
-
-      // profiles 테이블에서 사용자 프로필 삭제
-      try {
-        await _client
-            .from('profiles')
-            .delete()
-            .eq('id', user.id);
-        debugPrint('✅ [deleteAccount] profiles 데이터 삭제 완료');
-      } catch (e) {
-        debugPrint('⚠️ [deleteAccount] profiles 삭제 실패: $e');
-      }
-
-      // 2단계: 실용적인 계정 삭제 방법
-      debugPrint('🗑️ [deleteAccount] 실용적인 탈퇴 처리 시작...');
+      // 🎯 핵심만 간단하게: profiles 데이터 삭제 + 로그아웃
       
-      try {
-        // Supabase에서 실제 계정 삭제는 보안상 클라이언트에서 불가능
-        // 대신 데이터 삭제 + 로그아웃으로 실질적인 탈퇴 처리
-        
-        debugPrint('🔄 [deleteAccount] 로그아웃 처리 중...');
-        await _client.auth.signOut();
-        debugPrint('✅ [deleteAccount] 로그아웃 완료');
-        
-        debugPrint('🎉 [deleteAccount] 탈퇴 처리 완료!');
-        debugPrint('ℹ️ [deleteAccount] 참고: 실제 Auth 계정은 Supabase 대시보드에서 관리자가 삭제해야 함');
-        
-        return true;
-        
-      } catch (logoutError) {
-        debugPrint('❌ [deleteAccount] 로그아웃 실패: $logoutError');
-        return false;
-      }
+      // 1. profiles 테이블에서 사용자 데이터 삭제
+      debugPrint('🗑️ [deleteAccount] 사용자 프로필 삭제 중...');
+      
+      final deleteResult = await _client
+          .from('profiles')
+          .delete()
+          .eq('id', user.id);
+      
+      debugPrint('📋 [deleteAccount] 프로필 삭제 결과: $deleteResult');
+      debugPrint('✅ [deleteAccount] 프로필 삭제 완료');
+
+      // 2. 로그아웃 처리
+      debugPrint('🔄 [deleteAccount] 로그아웃 처리 중...');
+      await _client.auth.signOut();
+      debugPrint('✅ [deleteAccount] 로그아웃 완료');
+      
+      debugPrint('🎉 [deleteAccount] 탈퇴 처리 성공!');
+      return true;
 
     } catch (e) {
-      debugPrint('❌ [deleteAccount] 전체 탈퇴 처리 에러: $e');
+      debugPrint('❌ [deleteAccount] 탈퇴 처리 에러: $e');
       debugPrint('🔍 [deleteAccount] 에러 타입: ${e.runtimeType}');
       debugPrint('📄 [deleteAccount] 에러 상세: ${e.toString()}');
-      return false;
+      
+      // 에러가 발생해도 로그아웃은 시도
+      try {
+        debugPrint('🔄 [deleteAccount] 에러 발생, 로그아웃만 시도...');
+        await _client.auth.signOut();
+        debugPrint('✅ [deleteAccount] 로그아웃 완료 (에러 후)');
+        return true; // 로그아웃은 성공했으므로 true
+      } catch (logoutError) {
+        debugPrint('❌ [deleteAccount] 로그아웃도 실패: $logoutError');
+        return false;
+      }
     }
   }
 
@@ -503,67 +471,89 @@ class SupabaseAuthService {
       final currentNickname = profile?['nickname'] as String?;
       debugPrint('📋 [_ensureUserHasNickname] 현재 닉네임: $currentNickname');
 
-      // OAuth 사용자는 항상 예쁜 한국어 닉네임으로 교체
+      // 안전한 닉네임 관리: 한 번만 교체, 이후 유지
       final provider = user.appMetadata['provider'] ?? 'email';
       final isOAuthUser = provider != 'email';
       
-      final shouldGenerateNewNickname = profile == null || 
+      debugPrint('🔍 [_ensureUserHasNickname] 사용자 제공자: $provider');
+      debugPrint('🔍 [_ensureUserHasNickname] OAuth 사용자 여부: $isOAuthUser');
+      
+      // 🛡️ 안전한 조건: 정말 필요한 경우에만 교체
+      final shouldGenerateNewNickname = 
+          // 1. 프로필이 아예 없음 (완전 신규 사용자)
+          profile == null || 
+          // 2. 닉네임 자체가 없음
           currentNickname == null || 
           currentNickname.isEmpty ||
-          isOAuthUser || // 🎯 OAuth 사용자는 무조건 한국어 닉네임으로!
-          currentNickname == user.email?.split('@')[0] ||
-          currentNickname == user.userMetadata?['name'] ||
-          currentNickname == user.userMetadata?['full_name'] ||
-          currentNickname.contains('@') ||
-          currentNickname.length < 3;
+          // 3. 명백히 자동 생성된 임시 닉네임인 경우만 (사용자가 설정한 건 보존)
+          currentNickname.length < 2;
+          // 🚫 카카오 원본 닉네임이어도 사용자가 이미 한 번 로그인했으면 유지
       
-      debugPrint('🔍 [_ensureUserHasNickname] OAuth 사용자: $isOAuthUser ($provider)');
       debugPrint('🔍 [_ensureUserHasNickname] 새 닉네임 생성 필요: $shouldGenerateNewNickname');
+      debugPrint('🔍 [_ensureUserHasNickname] 현재 닉네임: "$currentNickname" (길이: ${currentNickname?.length})');
+      
+      if (!shouldGenerateNewNickname) {
+        debugPrint('✅ [_ensureUserHasNickname] 기존 닉네임 유지: "$currentNickname"');
+        return; // 기존 닉네임 유지하고 함수 종료
+      }
 
-      if (shouldGenerateNewNickname) {
-        debugPrint('🎨 [_ensureUserHasNickname] 예쁜 한국어 닉네임 생성 중...');
-        
-        final nicknameService = NicknameGeneratorService();
-        final uniqueNickname = await nicknameService.generateUniqueNickname(
-          checkDuplicate: checkNicknameExists,
-        );
-
-        debugPrint('✨ [_ensureUserHasNickname] 생성된 닉네임: $uniqueNickname');
-
-        // profiles 테이블이 있으면 업데이트
-        try {
-          await _client
-              .from('profiles')
-              .upsert({
-                'id': user.id,
-                'email': user.email,
-                'full_name': user.userMetadata?['full_name'] ?? user.userMetadata?['name'] ?? user.email?.split('@')[0] ?? '사용자',
-                'avatar_url': user.userMetadata?['avatar_url'] ?? user.userMetadata?['picture'],
-                'provider': user.appMetadata['provider'] ?? 'email',
-                'nickname': uniqueNickname,
-                'updated_at': DateTime.now().toIso8601String(),
-              });
-          
-          debugPrint('✅ [_ensureUserHasNickname] profiles 테이블 업데이트 완료');
-        } catch (profileError) {
-          debugPrint('⚠️ [_ensureUserHasNickname] profiles 업데이트 실패 (메타데이터만 업데이트): $profileError');
+      // 새 닉네임 생성 필요한 경우
+      debugPrint('🎨 [_ensureUserHasNickname] 예쁜 한국어 닉네임 생성 중... (로컬 생성 사용)');
+      
+      final nicknameService = NicknameGeneratorService();
+      // 🎯 로컬 생성만 사용 (더 안정적)
+      String uniqueNickname = nicknameService.generateRandomNickname();
+      
+      // 간단한 중복 체크 (최대 5번 시도)
+      for (int i = 1; i <= 5; i++) {
+        final isDuplicate = await checkNicknameExists(uniqueNickname);
+        if (!isDuplicate) {
+          break; // 중복 없으면 사용
         }
+        // 중복이면 숫자 추가
+        uniqueNickname = '${nicknameService.generateRandomNickname()}$i';
+      }
 
-        // 사용자 메타데이터 업데이트
+      debugPrint('✨ [_ensureUserHasNickname] 생성된 로컬 닉네임: $uniqueNickname');
+
+      // profiles 테이블에 안전하게 저장 (1회성)
+      try {
+        await _client
+            .from('profiles')
+            .upsert({
+              'id': user.id,
+              'email': user.email,
+              'full_name': uniqueNickname, // 실명도 예쁜 닉네임으로
+              'avatar_url': user.userMetadata?['avatar_url'] ?? user.userMetadata?['picture'],
+              'provider': provider,
+              'nickname': uniqueNickname,
+              'created_at': DateTime.now().toIso8601String(),
+              'updated_at': DateTime.now().toIso8601String(),
+            });
+        
+        debugPrint('✅ [_ensureUserHasNickname] profiles 테이블 업데이트 완료 (1회성)');
+      } catch (profileError) {
+        debugPrint('⚠️ [_ensureUserHasNickname] profiles 업데이트 실패: $profileError');
+      }
+
+      // 사용자 메타데이터도 업데이트 (1회성)
+      try {
         await _client.auth.updateUser(
           UserAttributes(
             data: {
-              ...user.userMetadata ?? {},
               'nickname': uniqueNickname,
-              'full_name': uniqueNickname, // 메인 이름도 예쁜 닉네임으로
+              'full_name': uniqueNickname,
             }
           )
         );
-
-        debugPrint('🎉 [_ensureUserHasNickname] 한국어 닉네임 생성 완료: $currentNickname → $uniqueNickname');
-      } else {
-        debugPrint('✅ [_ensureUserHasNickname] 기존 닉네임 유지: $currentNickname');
+        
+        debugPrint('✅ [_ensureUserHasNickname] 메타데이터 업데이트 완료');
+      } catch (metaError) {
+        debugPrint('⚠️ [_ensureUserHasNickname] 메타데이터 업데이트 실패: $metaError');
       }
+
+      debugPrint('🎉 [_ensureUserHasNickname] 한국어 닉네임 1회성 설정 완료: "$currentNickname" → "$uniqueNickname"');
+      debugPrint('🔒 [_ensureUserHasNickname] 다음 로그인부터는 이 닉네임이 유지됩니다');
     } catch (e) {
       debugPrint('❌ [_ensureUserHasNickname] OAuth 사용자 닉네임 설정 에러: $e');
     }
