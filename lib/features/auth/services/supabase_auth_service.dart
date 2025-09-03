@@ -341,7 +341,7 @@ class SupabaseAuthService {
     }
   }
 
-  // 회원 탈퇴 (간단하고 확실한 버전)
+  // 회원 탈퇴 (Authentication 계정까지 완전 삭제)
   Future<bool> deleteAccount() async {
     final user = currentUser;
     if (user == null) {
@@ -349,98 +349,70 @@ class SupabaseAuthService {
       return false;
     }
 
-    debugPrint('🗑️ [deleteAccount] 간단한 탈퇴 처리 시작: ${user.email}');
+    debugPrint('🗑️ [deleteAccount] 완전한 계정 삭제 시작: ${user.email}');
     debugPrint('👤 [deleteAccount] 사용자 ID: ${user.id}');
 
     try {
-      // 🎯 핵심만 간단하게: profiles 데이터 삭제 + 로그아웃
+      // 🔥 Edge Function을 통한 완전한 계정 삭제
+      debugPrint('🚀 [deleteAccount] Edge Function 호출 중...');
       
-      // 1. profiles 테이블에서 사용자 데이터 삭제 (강화된 방법)
-      debugPrint('🗑️ [deleteAccount] 사용자 프로필 삭제 중...');
-      
-      // 먼저 현재 프로필 존재 확인
-      final existingProfile = await _client
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .maybeSingle();
-      
-      debugPrint('📋 [deleteAccount] 삭제 전 프로필 확인: $existingProfile');
-      
-      if (existingProfile != null) {
-        // 여러 방법으로 삭제 시도
-        try {
-          // 방법 1: 일반 DELETE
-          final deleteResult = await _client
-              .from('profiles')
-              .delete()
-              .eq('id', user.id);
-          
-          debugPrint('📋 [deleteAccount] DELETE 결과: $deleteResult');
-          
-          // 삭제 후 확인
-          final checkAfterDelete = await _client
-              .from('profiles')
-              .select('id')
-              .eq('id', user.id)
-              .maybeSingle();
-          
-          if (checkAfterDelete == null) {
-            debugPrint('✅ [deleteAccount] 프로필 삭제 성공 확인!');
-          } else {
-            debugPrint('⚠️ [deleteAccount] 프로필이 여전히 존재함, 다른 방법 시도...');
-            
-            // 방법 2: UPDATE로 데이터 무력화
-            await _client
-                .from('profiles')
-                .update({
-                  'email': 'deleted_${user.id}@deleted.com',
-                  'nickname': 'deleted_${user.id.substring(0, 8)}',
-                  'full_name': '탈퇴된계정',
-                  'provider': 'deleted',
-                  'updated_at': DateTime.now().toIso8601String(),
-                })
-                .eq('id', user.id);
-            
-            debugPrint('✅ [deleteAccount] 프로필 비활성화 완료');
-          }
-          
-        } catch (deleteError) {
-          debugPrint('❌ [deleteAccount] 일반 삭제 실패: $deleteError');
-          
-          // 방법 3: RPC 함수 사용 (강제)
-          try {
-            await _client.rpc('force_delete_user_profile', params: {
-              'user_id': user.id
-            });
-            debugPrint('✅ [deleteAccount] RPC를 통한 강제 삭제 완료');
-          } catch (rpcError) {
-            debugPrint('⚠️ [deleteAccount] RPC 삭제도 실패: $rpcError');
-          }
+      final response = await _client.functions.invoke('delete-user', 
+        body: {
+          'user_id': user.id,
         }
-      } else {
-        debugPrint('ℹ️ [deleteAccount] 프로필이 이미 없음 (이미 삭제된 상태)');
-      }
-
-      // 2. 로그아웃 처리
-      debugPrint('🔄 [deleteAccount] 로그아웃 처리 중...');
-      await _client.auth.signOut();
-      debugPrint('✅ [deleteAccount] 로그아웃 완료');
+      );
       
-      debugPrint('🎉 [deleteAccount] 탈퇴 처리 성공!');
+      debugPrint('📋 [deleteAccount] Edge Function 응답: ${response.data}');
+      debugPrint('📋 [deleteAccount] Edge Function 전체 응답: $response');
+      
+      if (response.data?['success'] == true) {
+        debugPrint('🎉 [deleteAccount] Edge Function을 통한 완전 삭제 성공!');
+        debugPrint('✅ [deleteAccount] Authentication 계정까지 완전 삭제됨');
+        
+        // 성공시 즉시 로그아웃 (이미 계정이 삭제됨)
+        try {
+          await _client.auth.signOut();
+        } catch (e) {
+          debugPrint('ℹ️ [deleteAccount] 로그아웃 불필요 (계정 이미 삭제됨)');
+        }
+        
+        return true;
+      } else {
+        debugPrint('⚠️ [deleteAccount] Edge Function 실패, 폴백 방식 사용');
+      }
+      
+    } catch (edgeFunctionError) {
+      debugPrint('❌ [deleteAccount] Edge Function 호출 실패: $edgeFunctionError');
+      debugPrint('🔄 [deleteAccount] 폴백: 데이터만 삭제하는 방식 사용');
+    }
+
+    // Edge Function 실패시 폴백: 기존 방식 (데이터 삭제 + 로그아웃)
+    try {
+      debugPrint('🗑️ [deleteAccount] 폴백: 사용자 데이터 삭제 중...');
+      
+      // profiles 테이블에서 사용자 데이터 삭제
+      await _client
+          .from('profiles')
+          .delete()
+          .eq('id', user.id);
+      
+      debugPrint('✅ [deleteAccount] 폴백: profiles 삭제 완료');
+
+      // 로그아웃 처리
+      debugPrint('🔄 [deleteAccount] 폴백: 로그아웃 처리 중...');
+      await _client.auth.signOut();
+      debugPrint('✅ [deleteAccount] 폴백: 로그아웃 완료');
+      
+      debugPrint('⚠️ [deleteAccount] 폴백 성공 (Authentication 계정은 수동 삭제 필요)');
       return true;
 
-    } catch (e) {
-      debugPrint('❌ [deleteAccount] 탈퇴 처리 에러: $e');
-      debugPrint('🔍 [deleteAccount] 에러 타입: ${e.runtimeType}');
-      debugPrint('📄 [deleteAccount] 에러 상세: ${e.toString()}');
+    } catch (fallbackError) {
+      debugPrint('❌ [deleteAccount] 폴백도 실패: $fallbackError');
       
-      // 에러가 발생해도 로그아웃은 시도
+      // 최후의 수단: 로그아웃만
       try {
-        debugPrint('🔄 [deleteAccount] 에러 발생, 로그아웃만 시도...');
         await _client.auth.signOut();
-        debugPrint('✅ [deleteAccount] 로그아웃 완료 (에러 후)');
-        return true; // 로그아웃은 성공했으므로 true
+        return true;
       } catch (logoutError) {
         debugPrint('❌ [deleteAccount] 로그아웃도 실패: $logoutError');
         return false;
