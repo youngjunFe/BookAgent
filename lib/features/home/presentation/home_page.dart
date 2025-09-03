@@ -80,7 +80,7 @@ class _HomeViewState extends State<HomeView> {
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: FutureBuilder<UserInfo?>(
-                  future: Future.value(SupabaseAuthService().currentUserInfo),
+                  future: SupabaseAuthService().getSafeCurrentUserInfo(),
                   builder: (context, snapshot) {
                     final user = snapshot.data;
                     final nickname = user?.nickname ?? '독서가';

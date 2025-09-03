@@ -35,7 +35,7 @@ class _MainNavigationState extends State<MainNavigation> {
     _checkAuthenticationStatus();
   }
 
-  // 🚨🚨🚨 최강 인증 체크: 앱 전체 접근 제어
+  // 🚨🚨🚨 최강 인증 체크: 앱 전체 접근 제어 + 탈퇴 계정 차단
   Future<void> _checkAuthenticationStatus() async {
     try {
       print('🔒 [MainNavigation] 인증 상태 확인 시작');
@@ -43,16 +43,29 @@ class _MainNavigationState extends State<MainNavigation> {
       final authService = SupabaseAuthService();
       final isLoggedIn = await authService.restoreLoginState();
       
-      print('📋 [MainNavigation] 로그인 상태: $isLoggedIn');
+      print('📋 [MainNavigation] 기본 로그인 상태: $isLoggedIn');
+      
+      // 🔒 추가 보안: 탈퇴한 계정인지 확인
+      bool finalLoginStatus = isLoggedIn;
+      if (isLoggedIn) {
+        final isDeleted = await authService.isDeletedAccount();
+        if (isDeleted) {
+          print('🚨 [MainNavigation] 탈퇴한 계정 로그인 감지 - 강제 로그아웃');
+          await authService.signOut();
+          finalLoginStatus = false;
+        }
+      }
+      
+      print('📋 [MainNavigation] 최종 로그인 상태: $finalLoginStatus');
       
       setState(() {
-        _isLoggedIn = isLoggedIn;
+        _isLoggedIn = finalLoginStatus;
         _isAuthChecked = true;
       });
       
-      // 🚨🚨🚨 비로그인 사용자는 즉시 로그인 페이지로 리다이렉트
-      if (!isLoggedIn && mounted) {
-        print('🚨 [MainNavigation] 비인증 사용자 감지 - 로그인 페이지로 강제 리디렉션');
+      // 🚨🚨🚨 비로그인 사용자나 탈퇴 계정은 즉시 로그인 페이지로 리다이렉트
+      if (!finalLoginStatus && mounted) {
+        print('🚨 [MainNavigation] 비인증/탈퇴 사용자 감지 - 로그인 페이지로 강제 리디렉션');
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const LoginPage()),
         );
@@ -469,8 +482,8 @@ class _MyPageState extends State<MyPage> {
   }
   
   Future<dynamic> _getUserInfo() async {
-    // SupabaseAuthService에서 현재 사용자 정보 가져오기 (UserInfo 객체)
-    return SupabaseAuthService().currentUserInfo;
+    // 🔒 보안: 탈퇴한 계정 체크 후 안전한 사용자 정보 가져오기
+    return await SupabaseAuthService().getSafeCurrentUserInfo();
   }
 
   // 닉네임 편집 다이얼로그

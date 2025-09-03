@@ -16,7 +16,7 @@ class SupabaseAuthService {
   // 로그인 상태 확인
   bool get isLoggedIn => currentUser != null;
 
-  // 사용자 정보를 UserInfo 형태로 변환
+  // 사용자 정보를 UserInfo 형태로 변환 (탈퇴한 계정 체크 포함)
   UserInfo? get currentUserInfo {
     final user = currentUser;
     if (user == null) return null;
@@ -29,6 +29,57 @@ class SupabaseAuthService {
       photoUrl: user.userMetadata?['avatar_url'],
       provider: user.appMetadata['provider'] ?? 'email',
     );
+  }
+
+  // 탈퇴한 계정인지 확인 (보안 중요!)
+  Future<bool> isDeletedAccount() async {
+    final user = currentUser;
+    if (user == null) return false;
+
+    try {
+      debugPrint('🔒 [isDeletedAccount] 탈퇴 계정 여부 확인: ${user.email}');
+      
+      final profile = await _client
+          .from('profiles')
+          .select('provider, email')
+          .eq('id', user.id)
+          .maybeSingle();
+
+      // profiles에 없거나 provider가 'deleted'면 탈퇴한 계정
+      final isDeleted = profile == null || profile['provider'] == 'deleted';
+      
+      debugPrint('📋 [isDeletedAccount] 프로필 상태: $profile');
+      debugPrint('🔒 [isDeletedAccount] 탈퇴 계정 여부: $isDeleted');
+      
+      return isDeleted;
+    } catch (e) {
+      debugPrint('❌ [isDeletedAccount] 탈퇴 계정 확인 에러: $e');
+      return false;
+    }
+  }
+
+  // 안전한 사용자 정보 가져오기 (탈퇴 계정 처리 포함)
+  Future<UserInfo?> getSafeCurrentUserInfo() async {
+    final user = currentUser;
+    if (user == null) return null;
+
+    // 탈퇴한 계정인지 확인
+    final isDeleted = await isDeletedAccount();
+    if (isDeleted) {
+      debugPrint('🚨 [getSafeCurrentUserInfo] 탈퇴한 계정으로 로그인 시도 감지!');
+      debugPrint('🔄 [getSafeCurrentUserInfo] 자동 로그아웃 처리...');
+      
+      // 탈퇴한 계정이면 강제 로그아웃
+      try {
+        await signOut();
+        return null;
+      } catch (e) {
+        debugPrint('❌ [getSafeCurrentUserInfo] 강제 로그아웃 실패: $e');
+        return null;
+      }
+    }
+
+    return currentUserInfo;
   }
 
   // 앱 시작시 로그인 상태 복원 (Supabase가 자동으로 처리)
