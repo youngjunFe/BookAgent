@@ -242,16 +242,72 @@ class SupabaseAuthService {
     try {
       // 🎯 핵심만 간단하게: profiles 데이터 삭제 + 로그아웃
       
-      // 1. profiles 테이블에서 사용자 데이터 삭제
+      // 1. profiles 테이블에서 사용자 데이터 삭제 (강화된 방법)
       debugPrint('🗑️ [deleteAccount] 사용자 프로필 삭제 중...');
       
-      final deleteResult = await _client
+      // 먼저 현재 프로필 존재 확인
+      final existingProfile = await _client
           .from('profiles')
-          .delete()
-          .eq('id', user.id);
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle();
       
-      debugPrint('📋 [deleteAccount] 프로필 삭제 결과: $deleteResult');
-      debugPrint('✅ [deleteAccount] 프로필 삭제 완료');
+      debugPrint('📋 [deleteAccount] 삭제 전 프로필 확인: $existingProfile');
+      
+      if (existingProfile != null) {
+        // 여러 방법으로 삭제 시도
+        try {
+          // 방법 1: 일반 DELETE
+          final deleteResult = await _client
+              .from('profiles')
+              .delete()
+              .eq('id', user.id);
+          
+          debugPrint('📋 [deleteAccount] DELETE 결과: $deleteResult');
+          
+          // 삭제 후 확인
+          final checkAfterDelete = await _client
+              .from('profiles')
+              .select('id')
+              .eq('id', user.id)
+              .maybeSingle();
+          
+          if (checkAfterDelete == null) {
+            debugPrint('✅ [deleteAccount] 프로필 삭제 성공 확인!');
+          } else {
+            debugPrint('⚠️ [deleteAccount] 프로필이 여전히 존재함, 다른 방법 시도...');
+            
+            // 방법 2: UPDATE로 데이터 무력화
+            await _client
+                .from('profiles')
+                .update({
+                  'email': 'deleted_${user.id}@deleted.com',
+                  'nickname': 'deleted_${user.id.substring(0, 8)}',
+                  'full_name': '탈퇴된계정',
+                  'provider': 'deleted',
+                  'updated_at': DateTime.now().toIso8601String(),
+                })
+                .eq('id', user.id);
+            
+            debugPrint('✅ [deleteAccount] 프로필 비활성화 완료');
+          }
+          
+        } catch (deleteError) {
+          debugPrint('❌ [deleteAccount] 일반 삭제 실패: $deleteError');
+          
+          // 방법 3: RPC 함수 사용 (강제)
+          try {
+            await _client.rpc('force_delete_user_profile', params: {
+              'user_id': user.id
+            });
+            debugPrint('✅ [deleteAccount] RPC를 통한 강제 삭제 완료');
+          } catch (rpcError) {
+            debugPrint('⚠️ [deleteAccount] RPC 삭제도 실패: $rpcError');
+          }
+        }
+      } else {
+        debugPrint('ℹ️ [deleteAccount] 프로필이 이미 없음 (이미 삭제된 상태)');
+      }
 
       // 2. 로그아웃 처리
       debugPrint('🔄 [deleteAccount] 로그아웃 처리 중...');
@@ -478,16 +534,20 @@ class SupabaseAuthService {
       debugPrint('🔍 [_ensureUserHasNickname] 사용자 제공자: $provider');
       debugPrint('🔍 [_ensureUserHasNickname] OAuth 사용자 여부: $isOAuthUser');
       
-      // 🛡️ 안전한 조건: 정말 필요한 경우에만 교체
+      // 🎯 탈퇴한 사용자 재가입 감지: profiles 없으면 = 탈퇴 후 재가입
+      final isDeletedUserReturning = profile == null; // profiles에 없음 = 탈퇴한 사용자
+      
+      debugPrint('🔍 [_ensureUserHasNickname] 탈퇴 후 재가입 여부: $isDeletedUserReturning');
+      
+      // 새 닉네임 생성 조건 (스마트하게 판단)
       final shouldGenerateNewNickname = 
-          // 1. 프로필이 아예 없음 (완전 신규 사용자)
-          profile == null || 
-          // 2. 닉네임 자체가 없음
+          // 1. 탈퇴한 사용자의 재가입 (무조건 새 닉네임!)
+          isDeletedUserReturning ||
+          // 2. 닉네임 자체가 없거나 비어있음
           currentNickname == null || 
           currentNickname.isEmpty ||
-          // 3. 명백히 자동 생성된 임시 닉네임인 경우만 (사용자가 설정한 건 보존)
+          // 3. 너무 짧은 임시 닉네임
           currentNickname.length < 2;
-          // 🚫 카카오 원본 닉네임이어도 사용자가 이미 한 번 로그인했으면 유지
       
       debugPrint('🔍 [_ensureUserHasNickname] 새 닉네임 생성 필요: $shouldGenerateNewNickname');
       debugPrint('🔍 [_ensureUserHasNickname] 현재 닉네임: "$currentNickname" (길이: ${currentNickname?.length})');
