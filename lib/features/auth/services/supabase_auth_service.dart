@@ -16,16 +16,24 @@ class SupabaseAuthService {
   // 로그인 상태 확인
   bool get isLoggedIn => currentUser != null;
 
-  // 사용자 정보를 UserInfo 형태로 변환 (profiles 테이블 우선)
+  // 🔄 강화된 사용자 정보 (메타데이터 즉시 반영)
   UserInfo? get currentUserInfo {
     final user = currentUser;
     if (user == null) return null;
     
-    // ⚠️ 임시: 메타데이터 기반 (profiles 연동 함수는 따로 제공)
+    debugPrint('📱 [currentUserInfo] 메타데이터 조회: ${user.userMetadata}');
+    
     return UserInfo(
       id: user.id,
-      name: user.userMetadata?['full_name'] ?? user.email?.split('@')[0] ?? 'User',
-      nickname: user.userMetadata?['nickname'] ?? user.userMetadata?['full_name'] ?? user.email?.split('@')[0] ?? 'User',
+      name: user.userMetadata?['full_name'] ?? 
+            user.userMetadata?['display_name'] ?? 
+            user.userMetadata?['name'] ?? 
+            user.email?.split('@')[0] ?? 'User',
+      nickname: user.userMetadata?['nickname'] ?? 
+                user.userMetadata?['display_name'] ??
+                user.userMetadata?['full_name'] ?? 
+                user.userMetadata?['name'] ?? 
+                user.email?.split('@')[0] ?? 'User',
       email: user.email ?? '',
       photoUrl: user.userMetadata?['avatar_url'],
       provider: user.appMetadata['provider'] ?? 'email',
@@ -641,20 +649,22 @@ class SupabaseAuthService {
       debugPrint('🔍 [ensureUserHasNickname] 사용자 제공자: $provider');
       debugPrint('🔍 [ensureUserHasNickname] OAuth 사용자 여부: $isOAuthUser');
       
-      // 🎯 탈퇴한 사용자 재가입 감지: profiles 없으면 = 탈퇴 후 재가입
-      final isDeletedUserReturning = profile == null; // profiles에 없음 = 탈퇴한 사용자
+      // 🎯 탈퇴한 사용자 재가입 감지 (더 정확한 방법)
+      final isDeletedUserReturning = profile == null || 
+          (profile['provider'] == 'deleted') ||
+          (profile['email'] != null && profile['email'].toString().startsWith('deleted_'));
       
       debugPrint('🔍 [ensureUserHasNickname] 탈퇴 후 재가입 여부: $isDeletedUserReturning');
+      debugPrint('🔍 [ensureUserHasNickname] 프로필 데이터: $profile');
       
-      // 새 닉네임 생성 조건 (스마트하게 판단)
-      final shouldGenerateNewNickname = 
-          // 1. 탈퇴한 사용자의 재가입 (무조건 새 닉네임!)
-          isDeletedUserReturning ||
-          // 2. 닉네임 자체가 없거나 비어있음
+      // 🔥 강제 조건: 탈퇴한 사용자는 무조건 새 닉네임!
+      final shouldGenerateNewNickname = isDeletedUserReturning || 
           currentNickname == null || 
           currentNickname.isEmpty ||
-          // 3. 너무 짧은 임시 닉네임
-          currentNickname.length < 2;
+          currentNickname.length < 2 ||
+          currentNickname.startsWith('deleted_');
+      
+      debugPrint('🔥 [ensureUserHasNickname] 강제 새 닉네임 생성: $shouldGenerateNewNickname');
       
       debugPrint('🔍 [ensureUserHasNickname] 새 닉네임 생성 필요: $shouldGenerateNewNickname');
       debugPrint('🔍 [ensureUserHasNickname] 현재 닉네임: "$currentNickname" (길이: ${currentNickname?.length})');
@@ -703,20 +713,32 @@ class SupabaseAuthService {
         debugPrint('⚠️ [ensureUserHasNickname] profiles 업데이트 실패: $profileError');
       }
 
-      // 사용자 메타데이터도 업데이트 (1회성)
+      // 🔥 메타데이터 강제 덮어쓰기 (기존 데이터 완전 교체)
       try {
+        debugPrint('🔥 [ensureUserHasNickname] 메타데이터 강제 덮어쓰기 중...');
+        
         await _client.auth.updateUser(
           UserAttributes(
             data: {
               'nickname': uniqueNickname,
               'full_name': uniqueNickname,
+              'name': uniqueNickname, // name도 덮어쓰기
+              'display_name': uniqueNickname, // display_name도 덮어쓰기
+              'updated_by': 'auto_nickname_generator',
+              'last_nickname_update': DateTime.now().toIso8601String(),
             }
           )
         );
         
-        debugPrint('✅ [ensureUserHasNickname] 메타데이터 업데이트 완료');
+        debugPrint('✅ [ensureUserHasNickname] 메타데이터 강제 덮어쓰기 완료');
+        
+        // 🔄 즉시 세션 새로고침 강제
+        await Future.delayed(Duration(milliseconds: 500));
+        final refreshedUser = currentUser;
+        debugPrint('🔄 [ensureUserHasNickname] 세션 새로고침 후 메타데이터: ${refreshedUser?.userMetadata}');
+        
       } catch (metaError) {
-        debugPrint('⚠️ [ensureUserHasNickname] 메타데이터 업데이트 실패: $metaError');
+        debugPrint('❌ [ensureUserHasNickname] 메타데이터 강제 업데이트 실패: $metaError');
       }
 
       debugPrint('🎉 [ensureUserHasNickname] 한국어 닉네임 1회성 설정 완료: "$currentNickname" → "$uniqueNickname"');
