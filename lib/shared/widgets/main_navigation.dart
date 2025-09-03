@@ -45,18 +45,17 @@ class _MainNavigationState extends State<MainNavigation> {
       
       print('📋 [MainNavigation] 기본 로그인 상태: $isLoggedIn');
       
-      // 🔄 재가입 처리: 탈퇴한 계정이면 새로운 사용자로 재설정
+      // 🔄 탈퇴 감지 로직 임시 비활성화 (테스트를 위해)
       bool finalLoginStatus = isLoggedIn;
+      // TODO: 탈퇴 기능 완성 후 다시 활성화
+      /*
       if (isLoggedIn) {
         final isDeleted = await authService.isDeletedAccount();
         if (isDeleted) {
-          print('🔄 [MainNavigation] 탈퇴 계정의 재가입 감지 - 새로운 사용자로 재설정');
-          
-          // 탈퇴한 계정은 일단 로그아웃 처리 (임시)
-          await authService.signOut();
-          print('✅ [MainNavigation] 탈퇴 계정 로그아웃 처리 완료');
+          print('🔄 [MainNavigation] 탈퇴 계정 재가입 처리');
         }
       }
+      */
       
       print('📋 [MainNavigation] 최종 로그인 상태: $finalLoginStatus');
       
@@ -484,8 +483,8 @@ class _MyPageState extends State<MyPage> {
   }
   
   Future<dynamic> _getUserInfo() async {
-    // 🔒 보안: 탈퇴한 계정 체크 후 안전한 사용자 정보 가져오기
-    return await SupabaseAuthService().getSafeCurrentUserInfo();
+    // 임시: 탈퇴 체크 비활성화 (테스트를 위해)
+    return SupabaseAuthService().currentUserInfo;
   }
 
   // 닉네임 편집 다이얼로그
