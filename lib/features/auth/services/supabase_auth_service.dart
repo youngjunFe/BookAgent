@@ -16,19 +16,52 @@ class SupabaseAuthService {
   // 로그인 상태 확인
   bool get isLoggedIn => currentUser != null;
 
-  // 사용자 정보를 UserInfo 형태로 변환 (탈퇴한 계정 체크 포함)
+  // 사용자 정보를 UserInfo 형태로 변환 (닉네임 필드 통일)
   UserInfo? get currentUserInfo {
     final user = currentUser;
     if (user == null) return null;
     
+    // nickname 필드가 없는 사용자는 자동으로 설정
+    final currentNickname = user.userMetadata?['nickname'];
+    if (currentNickname == null || currentNickname.toString().isEmpty) {
+      _ensureNicknameExists(user);
+    }
+    
     return UserInfo(
       id: user.id,
       name: user.userMetadata?['full_name'] ?? user.email?.split('@')[0] ?? 'User',
-      nickname: user.userMetadata?['nickname'] ?? user.userMetadata?['full_name'] ?? user.email?.split('@')[0] ?? 'User',
+      nickname: user.userMetadata?['nickname'] ?? user.userMetadata?['name'] ?? user.userMetadata?['full_name'] ?? user.email?.split('@')[0] ?? 'User',
       email: user.email ?? '',
       photoUrl: user.userMetadata?['avatar_url'],
       provider: user.appMetadata['provider'] ?? 'email',
     );
+  }
+
+  // nickname 필드가 없는 사용자에게 자동으로 nickname 추가
+  Future<void> _ensureNicknameExists(User user) async {
+    try {
+      final existingName = user.userMetadata?['name'] ?? 
+                          user.userMetadata?['full_name'] ?? 
+                          user.email?.split('@')[0] ?? 
+                          'User';
+      
+      debugPrint('🔧 [_ensureNicknameExists] nickname 필드 없는 사용자 발견: ${user.email}');
+      debugPrint('📋 [_ensureNicknameExists] 기존 name: $existingName');
+      
+      // nickname 필드 추가
+      await _client.auth.updateUser(
+        UserAttributes(
+          data: {
+            ...user.userMetadata ?? {},
+            'nickname': existingName,  // 기존 name을 nickname으로 복사
+          }
+        )
+      );
+      
+      debugPrint('✅ [_ensureNicknameExists] nickname 필드 추가 완료: $existingName');
+    } catch (e) {
+      debugPrint('❌ [_ensureNicknameExists] nickname 필드 추가 실패: $e');
+    }
   }
 
   // 탈퇴한 계정인지 확인 (보안 중요!)
