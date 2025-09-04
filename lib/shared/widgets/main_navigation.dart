@@ -7,6 +7,8 @@ import '../../features/library/presentation/library_page.dart';
 import '../../features/auth/services/supabase_auth_service.dart';
 import '../../features/auth/presentation/login_page.dart';
 import '../../features/auth/presentation/nickname_test_page.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../core/supabase/supabase_client_provider.dart';
 
 class MainNavigation extends StatefulWidget {
   final int initialIndex;
@@ -568,14 +570,25 @@ class _MyPageState extends State<MyPage> {
                   try {
                     final authService = SupabaseAuthService();
                     
-                    // 임시: 닉네임 편집 기능 비활성화 
-                    _showSnackBar(context, '닉네임 편집 기능을 준비 중입니다', isError: true);
-                    setState(() => isLoading = false);
-                    return;
+                    // 🔥 간단한 메타데이터 닉네임 업데이트!
+                    await SupabaseClientProvider.client.auth.updateUser(
+                      UserAttributes(
+                        data: {
+                          'nickname': newNickname,
+                          'full_name': newNickname,
+                          'name': newNickname,
+                        }
+                      )
+                    );
                     
-                    // TODO: 닉네임 업데이트 로직 재구현 필요
+                    Navigator.of(context).pop(newNickname);
+                    _showSnackBar(context, '닉네임이 변경되었습니다! 🎉');
+                    
+                    // UI 새로고침을 위한 setState 
+                    setState(() {});
+                    
                   } catch (e) {
-                    _showSnackBar(context, '오류가 발생했습니다: $e', isError: true);
+                    _showSnackBar(context, '닉네임 변경 중 오류가 발생했습니다: $e', isError: true);
                   }
                   
                   setState(() => isLoading = false);
