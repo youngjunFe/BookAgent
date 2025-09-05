@@ -7,6 +7,7 @@ import '../../features/library/presentation/library_page.dart';
 import '../../features/auth/services/supabase_auth_service.dart';
 import '../../features/auth/presentation/login_page.dart';
 import '../../features/auth/presentation/nickname_test_page.dart';
+import '../../core/services/nickname_generator_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/supabase/supabase_client_provider.dart';
 
@@ -47,17 +48,51 @@ class _MainNavigationState extends State<MainNavigation> {
       
       print('📋 [MainNavigation] 기본 로그인 상태: $isLoggedIn');
       
-      // 🔄 탈퇴 감지 로직 임시 비활성화 (테스트를 위해)
+      // 🔥 재가입시 자동 닉네임 생성 (무조건 체크)
       bool finalLoginStatus = isLoggedIn;
-      // TODO: 탈퇴 기능 완성 후 다시 활성화
-      /*
       if (isLoggedIn) {
-        final isDeleted = await authService.isDeletedAccount();
-        if (isDeleted) {
-          print('🔄 [MainNavigation] 탈퇴 계정 재가입 처리');
+        try {
+          print('🔥 [MainNavigation] 사용자 닉네임 상태 체크 중...');
+          
+          final user = authService.currentUser;
+          if (user != null) {
+            final currentNickname = user.userMetadata?['nickname'];
+            final accountStatus = user.userMetadata?['account_status'];
+            
+            print('📋 [MainNavigation] 현재 닉네임: $currentNickname');
+            print('📋 [MainNavigation] 계정 상태: $accountStatus');
+            
+            // 닉네임이 없거나 탈퇴 상태면 새로 생성
+            if (currentNickname == null || 
+                currentNickname.toString().isEmpty ||
+                accountStatus == 'deleted') {
+              
+              print('🎨 [MainNavigation] 새로운 닉네임 자동 생성 시작!');
+              
+              final nicknameService = NicknameGeneratorService();
+              final newNickname = nicknameService.generateRandomNickname();
+              
+              print('✨ [MainNavigation] 생성된 닉네임: $newNickname');
+              
+              // 메타데이터 업데이트
+              await SupabaseClientProvider.client.auth.updateUser(
+                UserAttributes(
+                  data: {
+                    'account_status': 'active',
+                    'nickname': newNickname,
+                    'full_name': newNickname,
+                    'name': newNickname,
+                  }
+                )
+              );
+              
+              print('🎉 [MainNavigation] 새 닉네임 적용 완료: $newNickname');
+            }
+          }
+        } catch (e) {
+          print('❌ [MainNavigation] 닉네임 자동 생성 실패: $e');
         }
       }
-      */
       
       print('📋 [MainNavigation] 최종 로그인 상태: $finalLoginStatus');
       
