@@ -393,7 +393,24 @@ class SupabaseAuthService {
         debugPrint('ℹ️ [deleteAccount] 프로필이 이미 없음 (이미 삭제된 상태)');
       }
 
-      // 2. 로그아웃 처리
+      // 2. 메타데이터도 완전 삭제 (중요!)
+      debugPrint('🗑️ [deleteAccount] 메타데이터 완전 삭제 중...');
+      
+      await _client.auth.updateUser(
+        UserAttributes(
+          data: {
+            'account_status': 'deleted',
+            'nickname': null,
+            'full_name': null,
+            'name': null,
+            'display_name': null,
+          }
+        )
+      );
+      
+      debugPrint('✅ [deleteAccount] 메타데이터 삭제 완료');
+
+      // 3. 로그아웃 처리
       debugPrint('🔄 [deleteAccount] 로그아웃 처리 중...');
       await _client.auth.signOut();
       debugPrint('✅ [deleteAccount] 로그아웃 완료');
