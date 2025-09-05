@@ -576,21 +576,7 @@ class _MyPageState extends State<MyPage> {
                       return;
                     }
                     
-                    // 🔍 중복 체크: profiles 테이블에서 다른 사용자가 사용 중인지 확인
-                    final existingUser = await SupabaseClientProvider.client
-                        .from('profiles')
-                        .select('id')
-                        .eq('nickname', newNickname)
-                        .neq('id', user.id)  // 자신은 제외
-                        .maybeSingle();
-                    
-                    if (existingUser != null) {
-                      _showSnackBar(context, '이미 다른 사용자가 사용 중인 닉네임입니다', isError: true);
-                      setState(() => isLoading = false);
-                      return;
-                    }
-                    
-                    // 🔥 중복 없으니까 메타데이터 업데이트!
+                    // 🔥 간단하게 메타데이터만 업데이트! (profiles 무시)
                     await SupabaseClientProvider.client.auth.updateUser(
                       UserAttributes(
                         data: {
@@ -600,21 +586,6 @@ class _MyPageState extends State<MyPage> {
                         }
                       )
                     );
-                    
-                    // profiles 테이블도 동기화 (중복 체크 용도)
-                    try {
-                      await SupabaseClientProvider.client
-                          .from('profiles')
-                          .upsert({
-                            'id': user.id,
-                            'email': user.email,
-                            'nickname': newNickname,
-                            'full_name': newNickname,
-                            'updated_at': DateTime.now().toIso8601String(),
-                          });
-                    } catch (profileError) {
-                      print('⚠️ profiles 동기화 실패 (메타데이터는 업데이트됨): $profileError');
-                    }
                     
                     Navigator.of(context).pop(newNickname);
                     _showSnackBar(context, '닉네임이 변경되었습니다! 🎉');
