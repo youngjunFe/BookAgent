@@ -150,14 +150,18 @@ class SupabaseAuthService {
     try {
       debugPrint('🚀 [signUpWithEmail] 이메일 회원가입 시작: $email');
       
-      // DB 트리거가 자동으로 프로필 생성하므로 닉네임 미리 생성 불필요
+      // 1. 회원가입 먼저 진행
       final response = await _client.auth.signUp(
         email: email,
         password: password,
       );
 
       if (response.user != null) {
-        debugPrint('🎉 [signUpWithEmail] 회원가입 성공! DB 트리거가 자동으로 프로필 생성합니다.');
+        debugPrint('🎉 [signUpWithEmail] 회원가입 성공! 사용자 ID: ${response.user!.id}');
+        
+        // 2. 프로필 생성 (트리거가 안 되니까 직접 처리)
+        await _createUserProfile(response.user!);
+        
         return AuthResult.success(_convertToUserInfo(response.user!));
       } else {
         return AuthResult.error('회원가입에 실패했습니다.');
@@ -192,7 +196,7 @@ class SupabaseAuthService {
           debugPrint('🔍 [signInWithGoogle] 사용자 메타데이터: ${user.userMetadata}');
           debugPrint('🔍 [signInWithGoogle] 닉네임 확인 전 사용자 정보: ${_convertToUserInfo(user)}');
           
-          await _ensureUserHasNickname(user); // 닉네임 확인 및 생성
+          await _createUserProfile(user);
           
           // 업데이트된 사용자 정보 다시 가져오기
           final updatedUser = currentUser;
@@ -217,7 +221,7 @@ class SupabaseAuthService {
       final user = currentUser;
       if (user != null) {
         debugPrint('🔵 모바일 로그인 성공: ${user.email}');
-        await _ensureUserHasNickname(user); // 닉네임 확인 및 생성
+        await _createUserProfile(user); // 프로필 생성
         return AuthResult.success(_convertToUserInfo(user));
       } else {
         debugPrint('🔵 모바일 로그인 실패: 사용자 정보 없음');
@@ -275,7 +279,7 @@ class SupabaseAuthService {
         debugPrint('🔍 [signInWithKakao] 사용자 메타데이터: ${user.userMetadata}');
         debugPrint('🔍 [signInWithKakao] 닉네임 확인 전 사용자 정보: ${_convertToUserInfo(user)}');
         
-        await _ensureUserHasNickname(user); // 닉네임 확인 및 생성
+        await _createUserProfile(user); // 프로필 생성
         
         // 업데이트된 사용자 정보 다시 가져오기
         final updatedUser = currentUser;
@@ -605,8 +609,59 @@ class SupabaseAuthService {
     }
   }
 
-  // OAuth 사용자 프로필 확인 (DB 트리거가 자동 생성하므로 단순화)
-  Future<void> _ensureUserHasNickname(User user) async {
+  // 사용자 프로필 생성 (올바른 API 호출)
+  Future<void> _createUserProfile(User user) async {
+    try {
+      debugPrint('🔧 [_createUserProfile] 프로필 생성 시작: ${user.email}');
+      
+      // 이미 프로필이 있는지 확인
+      final existingProfile = await _client
+          .from('profiles')
+          .select('id')
+          .eq('id', user.id)
+          .maybeSingle();
+      
+      if (existingProfile != null) {
+        debugPrint('✅ [_createUserProfile] 이미 프로필이 존재합니다');
+        return;
+      }
+      
+      // 닉네임 생성
+      final nicknameService = NicknameGeneratorService();
+      String nickname = nicknameService.generateRandomNickname();
+      
+      // 중복 체크 (최대 5번 시도)
+      for (int i = 1; i <= 5; i++) {
+        final isDuplicate = await checkNicknameExists(nickname);
+        if (!isDuplicate) {
+          break;
+        }
+        nickname = '${nicknameService.generateRandomNickname()}$i';
+      }
+      
+      debugPrint('🎯 [_createUserProfile] 생성된 닉네임: $nickname');
+      
+      // 프로필 생성
+      await _client.from('profiles').insert({
+        'id': user.id,
+        'email': user.email,
+        'full_name': nickname,
+        'nickname': nickname,
+        'provider': user.appMetadata['provider'] ?? 'email',
+        'created_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toIso8601String(),
+      });
+      
+      debugPrint('✅ [_createUserProfile] 프로필 생성 완료: $nickname');
+      
+    } catch (e) {
+      debugPrint('❌ [_createUserProfile] 프로필 생성 실패: $e');
+      // 프로필 생성 실패해도 로그인은 계속 진행
+    }
+  }
+
+  // 이전 함수 (더 이상 사용하지 않음)
+  Future<void> _ensureUserHasNickname_DEPRECATED(User user) async {
     try {
       debugPrint('🎯 [_ensureUserHasNickname] 사용자 닉네임 확인 중: ${user.email}');
       
