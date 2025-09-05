@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/theme/elevation_levels.dart';
+import '../../../core/services/time_based_message_service.dart';
 import '../../../shared/widgets/main_navigation.dart';
 import '../../chat/presentation/ai_chat_page.dart';
 import '../../chat/presentation/character_selection_page.dart';
@@ -74,7 +75,7 @@ class _HomeViewState extends State<HomeView> {
               ),
             ),
             
-            // 인사말
+            // 시간대별 개인화 인사말
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Align(
@@ -83,10 +84,17 @@ class _HomeViewState extends State<HomeView> {
                   future: Future.value(SupabaseAuthService().currentUserInfo),
                   builder: (context, snapshot) {
                     final user = snapshot.data;
+                    final isLoggedIn = user != null;
                     final nickname = user?.nickname ?? '독서가';
                     
+                    // 시간대별 메시지 가져오기
+                    final message = TimeBasedMessageService.getMessageForCurrentTime(
+                      isLoggedIn: isLoggedIn,
+                      nickname: nickname,
+                    );
+                    
                     return Text(
-                      '$nickname님, 상쾌한 아침이에요.\n오늘도 첫 감동을 나눠보세요.',
+                      message.fullMessage,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,

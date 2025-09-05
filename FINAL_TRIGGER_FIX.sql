@@ -13,6 +13,7 @@ DROP TRIGGER IF EXISTS on_auth_user_created_final ON auth.users CASCADE;
 DROP TRIGGER IF EXISTS on_auth_user_created_simple ON auth.users CASCADE;
 DROP TRIGGER IF EXISTS test_auth_user_created ON auth.users CASCADE;
 DROP TRIGGER IF EXISTS handle_new_user_trigger ON auth.users CASCADE;
+DROP TRIGGER IF EXISTS auto_profile_trigger ON auth.users CASCADE;
 
 -- 모든 가능한 함수들 삭제
 DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE;
@@ -23,6 +24,8 @@ DROP FUNCTION IF EXISTS public.handle_new_user_simple() CASCADE;
 DROP FUNCTION IF EXISTS public.test_new_user_trigger() CASCADE;
 DROP FUNCTION IF EXISTS public.create_test_nickname() CASCADE;
 DROP FUNCTION IF EXISTS public.generate_simple_nickname(UUID) CASCADE;
+DROP FUNCTION IF EXISTS public.auto_create_profile() CASCADE;
+DROP FUNCTION IF EXISTS public.make_nickname() CASCADE;
 DROP FUNCTION IF EXISTS generate_korean_nickname_safe(UUID) CASCADE;
 DROP FUNCTION IF EXISTS generate_safe_nickname(UUID, TEXT, JSONB, TEXT) CASCADE;
 DROP FUNCTION IF EXISTS generate_default_nickname(UUID, TEXT) CASCADE;
