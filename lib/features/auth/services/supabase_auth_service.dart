@@ -159,10 +159,20 @@ class SupabaseAuthService {
       if (response.user != null) {
         debugPrint('🎉 [signUpWithEmail] 회원가입 성공! 사용자 ID: ${response.user!.id}');
         
-        // 2. 프로필 생성 (최대 3번 재시도)
+        // 2. 프로필 생성 완료까지 대기
         await _createUserProfileWithRetry(response.user!);
         
-        return AuthResult.success(_convertToUserInfo(response.user!));
+        // 3. 프로필 생성 완료 후 잠시 대기 (DB 반영 시간)
+        await Future.delayed(Duration(milliseconds: 1000));
+        
+        // 4. 업데이트된 사용자 정보 다시 가져오기
+        final updatedUser = currentUser;
+        if (updatedUser != null) {
+          debugPrint('✅ [signUpWithEmail] 최종 사용자 정보 확인 완료');
+          return AuthResult.success(_convertToUserInfo(updatedUser));
+        } else {
+          return AuthResult.success(_convertToUserInfo(response.user!));
+        }
       } else {
         return AuthResult.error('회원가입에 실패했습니다.');
       }
@@ -196,7 +206,11 @@ class SupabaseAuthService {
           debugPrint('🔍 [signInWithGoogle] 사용자 메타데이터: ${user.userMetadata}');
           debugPrint('🔍 [signInWithGoogle] 닉네임 확인 전 사용자 정보: ${_convertToUserInfo(user)}');
           
+          // 프로필 생성 완료까지 대기
           await _createUserProfileWithRetry(user);
+          
+          // 충분한 대기 시간 (DB 반영 + 캐시 업데이트)
+          await Future.delayed(Duration(milliseconds: 1500));
           
           // 업데이트된 사용자 정보 다시 가져오기
           final updatedUser = currentUser;
