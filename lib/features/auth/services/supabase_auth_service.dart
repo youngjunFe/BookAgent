@@ -159,8 +159,8 @@ class SupabaseAuthService {
       if (response.user != null) {
         debugPrint('🎉 [signUpWithEmail] 회원가입 성공! 사용자 ID: ${response.user!.id}');
         
-        // 2. 프로필 생성 (트리거가 안 되니까 직접 처리)
-        await _createUserProfile(response.user!);
+        // 2. 프로필 생성 (최대 3번 재시도)
+        await _createUserProfileWithRetry(response.user!);
         
         return AuthResult.success(_convertToUserInfo(response.user!));
       } else {
@@ -196,7 +196,7 @@ class SupabaseAuthService {
           debugPrint('🔍 [signInWithGoogle] 사용자 메타데이터: ${user.userMetadata}');
           debugPrint('🔍 [signInWithGoogle] 닉네임 확인 전 사용자 정보: ${_convertToUserInfo(user)}');
           
-          await _createUserProfile(user);
+          await _createUserProfileWithRetry(user);
           
           // 업데이트된 사용자 정보 다시 가져오기
           final updatedUser = currentUser;
@@ -607,6 +607,24 @@ class SupabaseAuthService {
       debugPrint('❌ [isNicknameAvailable] 중복 체크 에러: $e');
       return false; // 에러 발생시 안전하게 사용 불가로 처리
     }
+  }
+
+  // 재시도 로직이 포함된 프로필 생성
+  Future<void> _createUserProfileWithRetry(User user) async {
+    for (int attempt = 1; attempt <= 3; attempt++) {
+      try {
+        debugPrint('🔄 [_createUserProfileWithRetry] 시도 $attempt/3');
+        await _createUserProfile(user);
+        debugPrint('✅ [_createUserProfileWithRetry] $attempt번째 시도에서 성공');
+        return; // 성공하면 종료
+      } catch (e) {
+        debugPrint('❌ [_createUserProfileWithRetry] $attempt번째 시도 실패: $e');
+        if (attempt < 3) {
+          await Future.delayed(Duration(milliseconds: 500)); // 0.5초 대기
+        }
+      }
+    }
+    debugPrint('💥 [_createUserProfileWithRetry] 3번 모두 실패, 포기');
   }
 
   // 사용자 프로필 생성 또는 업데이트 (탈퇴 후 재가입 대응)
