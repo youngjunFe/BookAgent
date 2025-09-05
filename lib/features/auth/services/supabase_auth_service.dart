@@ -159,20 +159,19 @@ class SupabaseAuthService {
       if (response.user != null) {
         debugPrint('🎉 [signUpWithEmail] 회원가입 성공! 사용자 ID: ${response.user!.id}');
         
-        // 2. 프로필 생성 완료까지 대기
-        await _createUserProfileWithRetry(response.user!);
+        // 간단하게 프로필 바로 생성
+        final nickname = 'ㅊㅊㅊ독서가${DateTime.now().millisecondsSinceEpoch % 10000}';
         
-        // 3. 프로필 생성 완료 후 잠시 대기 (DB 반영 시간)
-        await Future.delayed(Duration(milliseconds: 1000));
+        await _client.from('profiles').insert({
+          'id': response.user!.id,
+          'email': response.user!.email,
+          'nickname': nickname,
+          'full_name': nickname,
+          'provider': 'email',
+        });
         
-        // 4. 업데이트된 사용자 정보 다시 가져오기
-        final updatedUser = currentUser;
-        if (updatedUser != null) {
-          debugPrint('✅ [signUpWithEmail] 최종 사용자 정보 확인 완료');
-          return AuthResult.success(_convertToUserInfo(updatedUser));
-        } else {
-          return AuthResult.success(_convertToUserInfo(response.user!));
-        }
+        debugPrint('✅ [signUpWithEmail] 프로필 생성 완료: $nickname');
+        return AuthResult.success(_convertToUserInfo(response.user!));
       } else {
         return AuthResult.error('회원가입에 실패했습니다.');
       }
