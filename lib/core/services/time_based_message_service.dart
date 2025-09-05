@@ -25,25 +25,25 @@ class TimeBasedMessageService {
       // 아침 (06:00-08:59)
       return TimeBasedMessage(
         message1: '$nickname님, 좋은 아침이에요!',
-        message2: '오늘의 첫 감동 치킷과 함께 하세요✨',
+        message2: '오늘의 첫 감동 치읓과 함께 하세요✨',
       );
     } else if (hour >= 9 && hour < 12) {
       // 오전 (09:00-11:59)
       return TimeBasedMessage(
-        message1: '$nickname님, 지붕은 아직 잠이 덜 깼어요.',
+        message1: '$nickname님, 치읓은 아직 잠이 덜 깼어요.',
         message2: '오늘의 감동을 함께 깨워볼까요?👀',
       );
     } else if (hour >= 12 && hour < 15) {
       // 점심 (12:00-14:59)
       return TimeBasedMessage(
         message1: '$nickname님, 점심 드셨나요?🍚',
-        message2: '치킷과의 대화로 마음 한끼 어떠요?',
+        message2: '치읓과의 대화로 마음 한끼 어떠요?',
       );
     } else if (hour >= 15 && hour < 18) {
       // 오후 (15:00-17:59)
       return TimeBasedMessage(
         message1: '$nickname님, 잠이 쏟아지는 나른한 오후에요🥱',
-        message2: '치킷과 감동 나누고 집중력 회복해요!',
+        message2: '치읓과 감동 나누고 집중력 회복해요!',
       );
     } else if (hour >= 18 && hour < 21) {
       // 저녁 (18:00-20:59)
@@ -61,13 +61,13 @@ class TimeBasedMessageService {
       // 밤 (00:00-02:59)
       return TimeBasedMessage(
         message1: '$nickname님, 밤이 깊었어요🌙',
-        message2: '치킷에게 감동을 들려주세요.',
+        message2: '치읓에게 감동을 들려주세요.',
       );
     } else {
       // 새벽 (03:00-05:59)
       return TimeBasedMessage(
         message1: '$nickname님, 잠 못 드는 새벽인가요?🦉',
-        message2: '새벽의 사색 치킷과 나눠보세요.',
+        message2: '새벽의 사색 치읓과 나눠보세요.',
       );
     }
   }
@@ -78,7 +78,7 @@ class TimeBasedMessageService {
       // 오전 (06:00-11:59)
       return TimeBasedMessage(
         message1: '상쾌한 오전이에요!',
-        message2: '치킷과의 대화로 감동을 깨워보세요.🌱',
+        message2: '치읓과의 대화로 감동을 깨워보세요.🌱',
       );
     } else if (hour >= 12 && hour < 20) {
       // 오후 (12:00-19:59)

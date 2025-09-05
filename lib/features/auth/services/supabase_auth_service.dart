@@ -609,22 +609,17 @@ class SupabaseAuthService {
     }
   }
 
-  // 사용자 프로필 생성 (올바른 API 호출)
+  // 사용자 프로필 생성 또는 업데이트 (탈퇴 후 재가입 대응)
   Future<void> _createUserProfile(User user) async {
     try {
-      debugPrint('🔧 [_createUserProfile] 프로필 생성 시작: ${user.email}');
+      debugPrint('🔧 [_createUserProfile] 프로필 확인/생성 시작: ${user.email}');
       
-      // 이미 프로필이 있는지 확인
+      // 기존 프로필 확인 (닉네임까지 포함해서)
       final existingProfile = await _client
           .from('profiles')
-          .select('id')
+          .select('id, nickname')
           .eq('id', user.id)
           .maybeSingle();
-      
-      if (existingProfile != null) {
-        debugPrint('✅ [_createUserProfile] 이미 프로필이 존재합니다');
-        return;
-      }
       
       // 닉네임 생성
       final nicknameService = NicknameGeneratorService();
@@ -641,21 +636,39 @@ class SupabaseAuthService {
       
       debugPrint('🎯 [_createUserProfile] 생성된 닉네임: $nickname');
       
-      // 프로필 생성
-      await _client.from('profiles').insert({
-        'id': user.id,
-        'email': user.email,
-        'full_name': nickname,
-        'nickname': nickname,
-        'provider': user.appMetadata['provider'] ?? 'email',
-        'created_at': DateTime.now().toIso8601String(),
-        'updated_at': DateTime.now().toIso8601String(),
-      });
-      
-      debugPrint('✅ [_createUserProfile] 프로필 생성 완료: $nickname');
+      if (existingProfile != null) {
+        // 프로필이 이미 있으면 업데이트 (탈퇴 후 재가입 대응)
+        debugPrint('🔄 [_createUserProfile] 기존 프로필 업데이트 (재가입 처리)');
+        
+        await _client.from('profiles').update({
+          'email': user.email,
+          'full_name': nickname,
+          'nickname': nickname,
+          'provider': user.appMetadata['provider'] ?? 'email',
+          'updated_at': DateTime.now().toIso8601String(),
+        }).eq('id', user.id);
+        
+        debugPrint('✅ [_createUserProfile] 프로필 업데이트 완료: $nickname');
+        
+      } else {
+        // 프로필이 없으면 새로 생성
+        debugPrint('📝 [_createUserProfile] 새 프로필 생성');
+        
+        await _client.from('profiles').insert({
+          'id': user.id,
+          'email': user.email,
+          'full_name': nickname,
+          'nickname': nickname,
+          'provider': user.appMetadata['provider'] ?? 'email',
+          'created_at': DateTime.now().toIso8601String(),
+          'updated_at': DateTime.now().toIso8601String(),
+        });
+        
+        debugPrint('✅ [_createUserProfile] 프로필 생성 완료: $nickname');
+      }
       
     } catch (e) {
-      debugPrint('❌ [_createUserProfile] 프로필 생성 실패: $e');
+      debugPrint('❌ [_createUserProfile] 프로필 처리 실패: $e');
       // 프로필 생성 실패해도 로그인은 계속 진행
     }
   }
