@@ -148,30 +148,22 @@ class SupabaseAuthService {
   // 이메일 회원가입
   Future<AuthResult> signUpWithEmail(String email, String password) async {
     try {
-      // 1. 먼저 랜덤 닉네임 생성
-      final nicknameService = NicknameGeneratorService();
-      final uniqueNickname = await nicknameService.generateUniqueNickname(
-        checkDuplicate: checkNicknameExists,
-      );
-
-      // 2. 회원가입 진행
+      debugPrint('🚀 [signUpWithEmail] 이메일 회원가입 시작: $email');
+      
+      // DB 트리거가 자동으로 프로필 생성하므로 닉네임 미리 생성 불필요
       final response = await _client.auth.signUp(
         email: email,
         password: password,
-        data: {
-          'nickname': uniqueNickname,
-          'full_name': uniqueNickname, // 기본 이름도 닉네임으로 설정
-        }
       );
 
       if (response.user != null) {
-        debugPrint('🎉 회원가입 성공! 자동 생성된 닉네임: $uniqueNickname');
+        debugPrint('🎉 [signUpWithEmail] 회원가입 성공! DB 트리거가 자동으로 프로필 생성합니다.');
         return AuthResult.success(_convertToUserInfo(response.user!));
       } else {
         return AuthResult.error('회원가입에 실패했습니다.');
       }
     } catch (error) {
-      debugPrint('이메일 회원가입 에러: $error');
+      debugPrint('❌ [signUpWithEmail] 이메일 회원가입 에러: $error');
       return AuthResult.error('회원가입에 실패했습니다: $error');
     }
   }
@@ -613,7 +605,7 @@ class SupabaseAuthService {
     }
   }
 
-  // 새로운 OAuth 사용자를 위한 닉네임 생성 및 설정
+  // OAuth 사용자 프로필 확인 (DB 트리거가 자동 생성하므로 단순화)
   Future<void> _ensureUserHasNickname(User user) async {
     try {
       debugPrint('🎯 [_ensureUserHasNickname] 사용자 닉네임 확인 중: ${user.email}');
@@ -658,63 +650,43 @@ class SupabaseAuthService {
         return; // 기존 닉네임 유지하고 함수 종료
       }
 
-      // 새 닉네임 생성 필요한 경우
-      debugPrint('🎨 [_ensureUserHasNickname] 예쁜 한국어 닉네임 생성 중... (로컬 생성 사용)');
+      // DB 트리거가 자동으로 프로필을 생성했을 것이므로, 잠시 대기 후 확인
+      debugPrint('⏳ [_ensureUserHasNickname] DB 트리거 처리 대기 중...');
+      await Future.delayed(Duration(seconds: 1)); // 트리거 처리 시간 대기
       
-      final nicknameService = NicknameGeneratorService();
-      // 🎯 로컬 생성만 사용 (더 안정적)
-      String uniqueNickname = nicknameService.generateRandomNickname();
-      
-      // 간단한 중복 체크 (최대 5번 시도)
-      for (int i = 1; i <= 5; i++) {
-        final isDuplicate = await checkNicknameExists(uniqueNickname);
-        if (!isDuplicate) {
-          break; // 중복 없으면 사용
-        }
-        // 중복이면 숫자 추가
-        uniqueNickname = '${nicknameService.generateRandomNickname()}$i';
-      }
-
-      debugPrint('✨ [_ensureUserHasNickname] 생성된 로컬 닉네임: $uniqueNickname');
-
-      // profiles 테이블에 안전하게 저장 (1회성)
+      // 프로필이 생성되었는지 다시 확인
       try {
-        await _client
+        final updatedProfile = await _client
             .from('profiles')
-            .upsert({
-              'id': user.id,
-              'email': user.email,
-              'full_name': uniqueNickname, // 실명도 예쁜 닉네임으로
-              'avatar_url': user.userMetadata?['avatar_url'] ?? user.userMetadata?['picture'],
-              'provider': provider,
-              'nickname': uniqueNickname,
-              'created_at': DateTime.now().toIso8601String(),
-              'updated_at': DateTime.now().toIso8601String(),
-            });
+            .select('nickname, full_name')
+            .eq('id', user.id)
+            .maybeSingle();
         
-        debugPrint('✅ [_ensureUserHasNickname] profiles 테이블 업데이트 완료 (1회성)');
-      } catch (profileError) {
-        debugPrint('⚠️ [_ensureUserHasNickname] profiles 업데이트 실패: $profileError');
+        if (updatedProfile != null && updatedProfile['nickname'] != null) {
+          debugPrint('✅ [_ensureUserHasNickname] DB 트리거로 생성된 프로필 확인: ${updatedProfile['nickname']}');
+          return;
+        }
+      } catch (e) {
+        debugPrint('⚠️ [_ensureUserHasNickname] 프로필 확인 실패: $e');
       }
 
-      // 사용자 메타데이터도 업데이트 (1회성)
+      // 만약 트리거가 실패했다면 기본 처리 (보조적으로만)
+      debugPrint('🔄 [_ensureUserHasNickname] 트리거 실패시 보조 처리...');
       try {
         await _client.auth.updateUser(
           UserAttributes(
             data: {
-              'nickname': uniqueNickname,
-              'full_name': uniqueNickname,
+              'needs_profile': 'true', // 트리거 실패 마커
             }
           )
         );
         
-        debugPrint('✅ [_ensureUserHasNickname] 메타데이터 업데이트 완료');
+        debugPrint('⚠️ [_ensureUserHasNickname] 트리거 실패 마커 설정 완료');
       } catch (metaError) {
         debugPrint('⚠️ [_ensureUserHasNickname] 메타데이터 업데이트 실패: $metaError');
       }
 
-      debugPrint('🎉 [_ensureUserHasNickname] 한국어 닉네임 1회성 설정 완료: "$currentNickname" → "$uniqueNickname"');
-      debugPrint('🔒 [_ensureUserHasNickname] 다음 로그인부터는 이 닉네임이 유지됩니다');
+      debugPrint('⚠️ [_ensureUserHasNickname] DB 트리거 처리 필요');
     } catch (e) {
       debugPrint('❌ [_ensureUserHasNickname] OAuth 사용자 닉네임 설정 에러: $e');
     }
