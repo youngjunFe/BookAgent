@@ -576,7 +576,31 @@ class _MyPageState extends State<MyPage> {
                       return;
                     }
                     
-                    // 🔥 간단하게 메타데이터만 업데이트! (profiles 무시)
+                    // 🔍 profiles 테이블에서 중복 체크 (완전한 검증)
+                    final existingUser = await SupabaseClientProvider.client
+                        .from('profiles')
+                        .select('id, nickname')
+                        .eq('nickname', newNickname)
+                        .neq('id', user.id)  // 자신은 제외
+                        .maybeSingle();
+                    
+                    if (existingUser != null) {
+                      _showSnackBar(context, '이미 다른 사용자가 사용 중인 닉네임입니다: ${existingUser['nickname']}', isError: true);
+                      setState(() => isLoading = false);
+                      return;
+                    }
+                    
+                    // 1. profiles 테이블 먼저 업데이트 (실제 데이터)
+                    await SupabaseClientProvider.client
+                        .from('profiles')
+                        .update({
+                          'nickname': newNickname,
+                          'full_name': newNickname,
+                          'updated_at': DateTime.now().toIso8601String(),
+                        })
+                        .eq('id', user.id);
+                    
+                    // 2. 메타데이터도 업데이트 (백업용)
                     await SupabaseClientProvider.client.auth.updateUser(
                       UserAttributes(
                         data: {
