@@ -159,9 +159,31 @@ class SupabaseAuthService {
       if (response.user != null) {
         debugPrint('🎉 [signUpWithEmail] 회원가입 성공! 사용자 ID: ${response.user!.id}');
         
-        // 간단하게 프로필 바로 생성
-        final nickname = 'ㅊㅊㅊ독서가${DateTime.now().millisecondsSinceEpoch % 10000}';
+        // 제대로 된 한국어 닉네임 생성 + 중복 체크
+        final nicknameService = NicknameGeneratorService();
+        String nickname = nicknameService.generateRandomNickname(); // 귀여운토끼 같은 한국어 닉네임
         
+        // 중복 체크 (최대 5번 시도)
+        for (int i = 1; i <= 5; i++) {
+          final isDuplicate = await checkNicknameExists(nickname);
+          if (!isDuplicate) {
+            break; // 중복 아니면 사용
+          }
+          // 중복이면 새로 생성
+          nickname = nicknameService.generateRandomNickname();
+        }
+        
+        debugPrint('🎯 [signUpWithEmail] 최종 선택된 닉네임: $nickname');
+        
+        // 1. 메타데이터에 저장 (화면 표시용)
+        await _client.auth.updateUser(UserAttributes(
+          data: {
+            'nickname': nickname,
+            'full_name': nickname,
+          }
+        ));
+        
+        // 2. profiles 테이블에 저장 (중복 체크용)
         await _client.from('profiles').insert({
           'id': response.user!.id,
           'email': response.user!.email,
@@ -170,7 +192,7 @@ class SupabaseAuthService {
           'provider': 'email',
         });
         
-        debugPrint('✅ [signUpWithEmail] 프로필 생성 완료: $nickname');
+        debugPrint('✅ [signUpWithEmail] 메타데이터 + profiles 테이블 둘 다 저장 완료: $nickname');
         return AuthResult.success(_convertToUserInfo(response.user!));
       } else {
         return AuthResult.error('회원가입에 실패했습니다.');
