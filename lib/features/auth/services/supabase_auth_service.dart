@@ -153,13 +153,9 @@ class SupabaseAuthService {
       if (response.user != null) {
         debugPrint('🎉 [signUpWithEmail] 회원가입 성공! 사용자 ID: ${response.user!.id}');
         
-        // 간단한 닉네임 생성 (중복 체크 없이)
-        final nicknameService = NicknameGeneratorService();
-        final nickname = nicknameService.generateRandomNickname();
+        // 간단하게 프로필 바로 생성 (아까 잘 됐던 방식)
+        final nickname = 'ㅊㅊㅊ독서가${DateTime.now().millisecondsSinceEpoch % 10000}';
         
-        debugPrint('🎯 [signUpWithEmail] 생성된 닉네임: $nickname');
-        
-        // profiles 테이블에만 저장 (간단하게)
         await _client.from('profiles').insert({
           'id': response.user!.id,
           'email': response.user!.email,
