@@ -16,38 +16,25 @@ class SupabaseAuthService {
   // 로그인 상태 확인
   bool get isLoggedIn => currentUser != null;
 
-  // 사용자 정보를 UserInfo 형태로 변환 (profiles 테이블에서 닉네임 가져오기)
+  // 사용자 정보를 UserInfo 형태로 변환 (닉네임 필드 통일)
   UserInfo? get currentUserInfo {
     final user = currentUser;
     if (user == null) return null;
     
+    // nickname 필드가 없는 사용자는 자동으로 설정
+    final currentNickname = user.userMetadata?['nickname'];
+    if (currentNickname == null || currentNickname.toString().isEmpty) {
+      _ensureNicknameExists(user);
+    }
+    
     return UserInfo(
       id: user.id,
       name: user.userMetadata?['full_name'] ?? user.email?.split('@')[0] ?? 'User',
-      nickname: '독서가', // 기본값, 실제로는 FutureBuilder에서 profiles 테이블 조회
+      nickname: user.userMetadata?['nickname'] ?? user.userMetadata?['name'] ?? user.userMetadata?['full_name'] ?? user.email?.split('@')[0] ?? 'User',
       email: user.email ?? '',
       photoUrl: user.userMetadata?['avatar_url'],
       provider: user.appMetadata['provider'] ?? 'email',
     );
-  }
-  
-  // profiles 테이블에서 닉네임 가져오기
-  Future<String> getUserNickname() async {
-    final user = currentUser;
-    if (user == null) return '독서가';
-    
-    try {
-      final profile = await _client
-          .from('profiles')
-          .select('nickname')
-          .eq('id', user.id)
-          .maybeSingle();
-      
-      return profile?['nickname'] ?? '독서가';
-    } catch (e) {
-      debugPrint('❌ [getUserNickname] 닉네임 조회 실패: $e');
-      return '독서가';
-    }
   }
 
   // nickname 필드가 없는 사용자에게 자동으로 nickname 추가
@@ -172,7 +159,7 @@ class SupabaseAuthService {
       if (response.user != null) {
         debugPrint('🎉 [signUpWithEmail] 회원가입 성공! 사용자 ID: ${response.user!.id}');
         
-        // 간단하게 프로필 바로 생성 (아까 잘 됐던 방식)
+        // 간단하게 프로필 바로 생성
         final nickname = 'ㅊㅊㅊ독서가${DateTime.now().millisecondsSinceEpoch % 10000}';
         
         await _client.from('profiles').insert({
