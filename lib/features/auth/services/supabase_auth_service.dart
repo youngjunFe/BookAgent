@@ -159,16 +159,30 @@ class SupabaseAuthService {
       if (response.user != null) {
         debugPrint('🎉 [signUpWithEmail] 회원가입 성공! 사용자 ID: ${response.user!.id}');
         
-        // 간단하게 프로필 바로 생성
-        final nickname = 'ㅊㅊㅊ독서가${DateTime.now().millisecondsSinceEpoch % 10000}';
+        // DB의 한국어 닉네임 생성 함수 사용 (동기화)
+        final nicknameResult = await _client.rpc('generate_korean_nickname');
+        final nickname = nicknameResult as String? ?? '독서가${DateTime.now().millisecondsSinceEpoch % 10000}';
         
+        // 1. profiles 테이블에 저장 (중복 체크용)
         await _client.from('profiles').insert({
           'id': response.user!.id,
           'email': response.user!.email,
           'nickname': nickname,
           'full_name': nickname,
           'provider': 'email',
+          'created_at': DateTime.now().toIso8601String(),
+          'updated_at': DateTime.now().toIso8601String(),
         });
+        
+        // 2. userMetadata에도 저장 (프론트 표시용)
+        await _client.auth.updateUser(
+          UserAttributes(
+            data: {
+              'nickname': nickname,
+              'full_name': nickname,
+            }
+          )
+        );
         
         debugPrint('✅ [signUpWithEmail] 프로필 생성 완료: $nickname');
         return AuthResult.success(_convertToUserInfo(response.user!));
@@ -652,18 +666,9 @@ class SupabaseAuthService {
           .eq('id', user.id)
           .maybeSingle();
       
-      // 닉네임 생성
-      final nicknameService = NicknameGeneratorService();
-      String nickname = nicknameService.generateRandomNickname();
-      
-      // 중복 체크 (최대 5번 시도)
-      for (int i = 1; i <= 5; i++) {
-        final isDuplicate = await checkNicknameExists(nickname);
-        if (!isDuplicate) {
-          break;
-        }
-        nickname = '${nicknameService.generateRandomNickname()}$i';
-      }
+      // DB의 한국어 닉네임 생성 함수 사용 (중복 체크 포함)
+      final nicknameResult = await _client.rpc('generate_korean_nickname');
+      String nickname = nicknameResult as String? ?? '독서가${DateTime.now().millisecondsSinceEpoch % 10000}';
       
       debugPrint('🎯 [_createUserProfile] 생성된 닉네임: $nickname');
       
@@ -671,6 +676,7 @@ class SupabaseAuthService {
         // 프로필이 이미 있으면 업데이트 (탈퇴 후 재가입 대응)
         debugPrint('🔄 [_createUserProfile] 기존 프로필 업데이트 (재가입 처리)');
         
+        // profiles 테이블 업데이트
         await _client.from('profiles').update({
           'email': user.email,
           'full_name': nickname,
@@ -679,12 +685,24 @@ class SupabaseAuthService {
           'updated_at': DateTime.now().toIso8601String(),
         }).eq('id', user.id);
         
-        debugPrint('✅ [_createUserProfile] 프로필 업데이트 완료: $nickname');
+        // userMetadata도 업데이트 (프론트 표시용)
+        await _client.auth.updateUser(
+          UserAttributes(
+            data: {
+              ...user.userMetadata ?? {},
+              'nickname': nickname,
+              'full_name': nickname,
+            }
+          )
+        );
+        
+        debugPrint('✅ [_createUserProfile] 프로필 + 메타데이터 업데이트 완료: $nickname');
         
       } else {
         // 프로필이 없으면 새로 생성
         debugPrint('📝 [_createUserProfile] 새 프로필 생성');
         
+        // profiles 테이블에 생성
         await _client.from('profiles').insert({
           'id': user.id,
           'email': user.email,
@@ -695,7 +713,18 @@ class SupabaseAuthService {
           'updated_at': DateTime.now().toIso8601String(),
         });
         
-        debugPrint('✅ [_createUserProfile] 프로필 생성 완료: $nickname');
+        // userMetadata에도 저장 (프론트 표시용)
+        await _client.auth.updateUser(
+          UserAttributes(
+            data: {
+              ...user.userMetadata ?? {},
+              'nickname': nickname,
+              'full_name': nickname,
+            }
+          )
+        );
+        
+        debugPrint('✅ [_createUserProfile] 프로필 + 메타데이터 생성 완료: $nickname');
       }
       
     } catch (e) {
