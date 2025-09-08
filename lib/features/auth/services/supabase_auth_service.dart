@@ -710,30 +710,36 @@ class SupabaseAuthService {
       debugPrint('🎯 [_createUserProfile] 생성된 닉네임: $nickname');
       
       if (existingProfile != null) {
-        // 프로필이 이미 있으면 업데이트 (탈퇴 후 재가입 대응)
-        debugPrint('🔄 [_createUserProfile] 기존 프로필 업데이트 (재가입 처리)');
+        // 탈퇴 후 재가입이면 무조건 새로운 닉네임으로 완전 교체
+        debugPrint('🔄 [_createUserProfile] 탈퇴 후 재가입 - 새 닉네임으로 완전 교체');
         
-        // profiles 테이블 업데이트
+        // 새로운 한국어 닉네임 생성
+        final newNicknameResult = await _client.rpc('generate_korean_nickname');
+        final newNickname = newNicknameResult as String? ?? nickname;
+        
+        debugPrint('🎯 [_createUserProfile] 재가입용 새 닉네임: $newNickname');
+        
+        // profiles 테이블 완전 새로 업데이트
         await _client.from('profiles').update({
           'email': user.email,
-          'full_name': nickname,
-          'nickname': nickname,
+          'full_name': newNickname,
+          'nickname': newNickname,
           'provider': user.appMetadata['provider'] ?? 'email',
+          'created_at': DateTime.now().toIso8601String(), // 재가입이므로 생성일도 새로
           'updated_at': DateTime.now().toIso8601String(),
         }).eq('id', user.id);
         
-        // userMetadata도 업데이트 (프론트 표시용)
+        // userMetadata도 새로운 닉네임으로 업데이트
         await _client.auth.updateUser(
           UserAttributes(
             data: {
-              ...user.userMetadata ?? {},
-              'nickname': nickname,
-              'full_name': nickname,
+              'nickname': newNickname,
+              'full_name': newNickname,
             }
           )
         );
         
-        debugPrint('✅ [_createUserProfile] 프로필 + 메타데이터 업데이트 완료: $nickname');
+        debugPrint('✅ [_createUserProfile] 재가입 프로필 완전 새로고침 완료: $newNickname');
         
       } else {
         // 프로필이 없으면 새로 생성
