@@ -163,65 +163,12 @@ class SupabaseAuthService {
         debugPrint('⏳ [signUpWithEmail] auth.users 테이블 반영 대기 중...');
         await Future.delayed(Duration(milliseconds: 1500));
         
-        // DB의 한국어 닉네임 생성 함수 사용
-        final nicknameResult = await _client.rpc('generate_korean_nickname');
-        final nickname = nicknameResult as String? ?? '독서가${DateTime.now().millisecondsSinceEpoch % 10000}';
+        debugPrint('🎯 [signUpWithEmail] 이메일 회원가입 → Edge Function으로 프로필 생성');
         
-        debugPrint('🎯 [signUpWithEmail] 생성된 닉네임: $nickname');
+        // Edge Function으로 확실한 프로필 생성
+        await _createProfileWithEdgeFunction(response.user!);
         
-        // 1. profiles 테이블에 저장 (재시도 로직으로 외래키 문제 해결)
-        bool profileInserted = false;
-        for (int attempt = 1; attempt <= 5; attempt++) {
-          try {
-            debugPrint('🔄 [signUpWithEmail] profiles INSERT 시도 $attempt/5');
-            
-            await _client.from('profiles').insert({
-              'id': response.user!.id,
-              'email': response.user!.email,
-              'nickname': nickname,
-              'full_name': nickname,
-              'provider': 'email',
-              'created_at': DateTime.now().toIso8601String(),
-              'updated_at': DateTime.now().toIso8601String(),
-            });
-            
-            debugPrint('✅ [signUpWithEmail] profiles INSERT 성공! (시도 $attempt)');
-            profileInserted = true;
-            break; // 성공하면 루프 종료
-            
-          } catch (insertError) {
-            debugPrint('❌ [signUpWithEmail] profiles INSERT 실패 (시도 $attempt): $insertError');
-            
-            if (insertError.toString().contains('23503') || insertError.toString().contains('foreign key')) {
-              debugPrint('⏳ [signUpWithEmail] 외래키 문제 - ${attempt * 300}ms 추가 대기...');
-              await Future.delayed(Duration(milliseconds: attempt * 300));
-            } else if (attempt < 5) {
-              await Future.delayed(Duration(milliseconds: 200));
-            }
-          }
-        }
-        
-        if (!profileInserted) {
-          debugPrint('💥 [signUpWithEmail] profiles INSERT 5번 모두 실패 - 메타데이터만으로 진행');
-        }
-        
-        // 2. userMetadata에 저장 (프론트 표시용 - 이건 항상 성공)
-        try {
-          await _client.auth.updateUser(
-            UserAttributes(
-              data: {
-                'nickname': nickname,
-                'full_name': nickname,
-              }
-            )
-          );
-          
-          debugPrint('✅ [signUpWithEmail] userMetadata 저장 성공');
-        } catch (metaError) {
-          debugPrint('❌ [signUpWithEmail] userMetadata 저장 실패: $metaError');
-        }
-        
-        debugPrint('✅ [signUpWithEmail] 프로필 생성 완료: $nickname');
+        debugPrint('✅ [signUpWithEmail] 프로필 생성 완료');
         return AuthResult.success(_convertToUserInfo(response.user!));
       } else {
         return AuthResult.error('회원가입에 실패했습니다.');
@@ -257,7 +204,7 @@ class SupabaseAuthService {
           debugPrint('🔍 [signInWithGoogle] 닉네임 확인 전 사용자 정보: ${_convertToUserInfo(user)}');
           
           // 프로필 생성 완료까지 대기
-          await _createUserProfileWithRetry(user);
+          await _createProfileWithEdgeFunction(user);
           
           // 충분한 대기 시간 (DB 반영 + 캐시 업데이트)
           await Future.delayed(Duration(milliseconds: 1500));
@@ -285,7 +232,7 @@ class SupabaseAuthService {
       final user = currentUser;
       if (user != null) {
         debugPrint('🔵 모바일 로그인 성공: ${user.email}');
-        await _createUserProfile(user); // 프로필 생성
+          await _createProfileWithEdgeFunction(user); // Edge Function으로 프로필 생성
         return AuthResult.success(_convertToUserInfo(user));
       } else {
         debugPrint('🔵 모바일 로그인 실패: 사용자 정보 없음');
@@ -333,8 +280,8 @@ class SupabaseAuthService {
           debugPrint('🟡 카카오 웹 로그인 성공: ${user.email}');
           debugPrint('🔍 [signInWithKakao] 사용자 메타데이터: ${user.userMetadata}');
           
-          // 🔧 여기가 핵심! 카카오 로그인 후 프로필 생성
-          await _createUserProfileWithRetry(user);
+          // 🔧 Edge Function으로 확실한 프로필 생성
+          await _createProfileWithEdgeFunction(user);
           
           // 업데이트된 사용자 정보 다시 가져오기
           final updatedUser = currentUser;
@@ -361,7 +308,7 @@ class SupabaseAuthService {
         debugPrint('🔍 [signInWithKakao] 사용자 메타데이터: ${user.userMetadata}');
         debugPrint('🔍 [signInWithKakao] 닉네임 확인 전 사용자 정보: ${_convertToUserInfo(user)}');
         
-        await _createUserProfile(user); // 프로필 생성
+          await _createProfileWithEdgeFunction(user); // Edge Function으로 프로필 생성
         
         // 업데이트된 사용자 정보 다시 가져오기
         final updatedUser = currentUser;
@@ -699,8 +646,43 @@ class SupabaseAuthService {
     }
   }
 
-  // 재시도 로직이 포함된 프로필 생성
-  Future<void> _createUserProfileWithRetry(User user) async {
+  // Edge Function으로 확실한 프로필 생성
+  Future<void> _createProfileWithEdgeFunction(User user) async {
+    try {
+      debugPrint('🚀 [_createProfileWithEdgeFunction] Edge Function 호출: ${user.email}');
+      
+      final result = await _client.functions.invoke('create-profile', body: {
+        'user_id': user.id,
+        'email': user.email,
+        'provider': user.appMetadata['provider'] ?? 'email',
+      });
+      
+      if (result.data != null && result.data['success'] == true) {
+        final nickname = result.data['nickname'];
+        debugPrint('✅ [_createProfileWithEdgeFunction] 성공: $nickname');
+        
+        // userMetadata도 업데이트
+        await _client.auth.updateUser(
+          UserAttributes(
+            data: {
+              'nickname': nickname,
+              'full_name': nickname,
+            }
+          )
+        );
+        
+        debugPrint('✅ [_createProfileWithEdgeFunction] userMetadata도 업데이트 완료');
+      } else {
+        debugPrint('❌ [_createProfileWithEdgeFunction] Edge Function 실패: ${result.data}');
+      }
+      
+    } catch (e) {
+      debugPrint('❌ [_createProfileWithEdgeFunction] Edge Function 호출 에러: $e');
+    }
+  }
+
+  // 이전 재시도 로직 (더 이상 사용 안함)
+  Future<void> _createUserProfileWithRetry_DEPRECATED(User user) async {
     for (int attempt = 1; attempt <= 3; attempt++) {
       try {
         debugPrint('🔄 [_createUserProfileWithRetry] 시도 $attempt/3');
