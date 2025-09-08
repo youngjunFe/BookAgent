@@ -159,30 +159,67 @@ class SupabaseAuthService {
       if (response.user != null) {
         debugPrint('🎉 [signUpWithEmail] 회원가입 성공! 사용자 ID: ${response.user!.id}');
         
-        // DB의 한국어 닉네임 생성 함수 사용 (동기화)
+        // 중요! auth.users 테이블 반영 완료까지 대기
+        debugPrint('⏳ [signUpWithEmail] auth.users 테이블 반영 대기 중...');
+        await Future.delayed(Duration(milliseconds: 1500));
+        
+        // DB의 한국어 닉네임 생성 함수 사용
         final nicknameResult = await _client.rpc('generate_korean_nickname');
         final nickname = nicknameResult as String? ?? '독서가${DateTime.now().millisecondsSinceEpoch % 10000}';
         
-        // 1. profiles 테이블에 저장 (중복 체크용)
-        await _client.from('profiles').insert({
-          'id': response.user!.id,
-          'email': response.user!.email,
-          'nickname': nickname,
-          'full_name': nickname,
-          'provider': 'email',
-          'created_at': DateTime.now().toIso8601String(),
-          'updated_at': DateTime.now().toIso8601String(),
-        });
+        debugPrint('🎯 [signUpWithEmail] 생성된 닉네임: $nickname');
         
-        // 2. userMetadata에도 저장 (프론트 표시용)
-        await _client.auth.updateUser(
-          UserAttributes(
-            data: {
+        // 1. profiles 테이블에 저장 (재시도 로직으로 외래키 문제 해결)
+        bool profileInserted = false;
+        for (int attempt = 1; attempt <= 5; attempt++) {
+          try {
+            debugPrint('🔄 [signUpWithEmail] profiles INSERT 시도 $attempt/5');
+            
+            await _client.from('profiles').insert({
+              'id': response.user!.id,
+              'email': response.user!.email,
               'nickname': nickname,
               'full_name': nickname,
+              'provider': 'email',
+              'created_at': DateTime.now().toIso8601String(),
+              'updated_at': DateTime.now().toIso8601String(),
+            });
+            
+            debugPrint('✅ [signUpWithEmail] profiles INSERT 성공! (시도 $attempt)');
+            profileInserted = true;
+            break; // 성공하면 루프 종료
+            
+          } catch (insertError) {
+            debugPrint('❌ [signUpWithEmail] profiles INSERT 실패 (시도 $attempt): $insertError');
+            
+            if (insertError.toString().contains('23503') || insertError.toString().contains('foreign key')) {
+              debugPrint('⏳ [signUpWithEmail] 외래키 문제 - ${attempt * 300}ms 추가 대기...');
+              await Future.delayed(Duration(milliseconds: attempt * 300));
+            } else if (attempt < 5) {
+              await Future.delayed(Duration(milliseconds: 200));
             }
-          )
-        );
+          }
+        }
+        
+        if (!profileInserted) {
+          debugPrint('💥 [signUpWithEmail] profiles INSERT 5번 모두 실패 - 메타데이터만으로 진행');
+        }
+        
+        // 2. userMetadata에 저장 (프론트 표시용 - 이건 항상 성공)
+        try {
+          await _client.auth.updateUser(
+            UserAttributes(
+              data: {
+                'nickname': nickname,
+                'full_name': nickname,
+              }
+            )
+          );
+          
+          debugPrint('✅ [signUpWithEmail] userMetadata 저장 성공');
+        } catch (metaError) {
+          debugPrint('❌ [signUpWithEmail] userMetadata 저장 실패: $metaError');
+        }
         
         debugPrint('✅ [signUpWithEmail] 프로필 생성 완료: $nickname');
         return AuthResult.success(_convertToUserInfo(response.user!));
