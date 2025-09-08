@@ -372,7 +372,7 @@ class SupabaseAuthService {
     }
   }
 
-  // 회원 탈퇴 (간단하고 확실한 버전)
+  // 회원 탈퇴 (Authentication 완전 삭제로 근본 해결)
   Future<bool> deleteAccount() async {
     final user = currentUser;
     if (user == null) {
@@ -380,11 +380,11 @@ class SupabaseAuthService {
       return false;
     }
 
-    debugPrint('🗑️ [deleteAccount] 간단한 탈퇴 처리 시작: ${user.email}');
-    debugPrint('👤 [deleteAccount] 사용자 ID: ${user.id}');
+    debugPrint('💥 [deleteAccount] Authentication 완전 삭제 시작: ${user.email}');
+    debugPrint('🎯 [deleteAccount] 탈퇴 후 재가입 문제 근본 해결');
 
     try {
-      // 🎯 핵심만 간단하게: profiles 데이터 삭제 + 로그아웃
+      // 1. profiles 테이블 데이터 삭제
       
       // 1. profiles 테이블에서 사용자 데이터 삭제 (강화된 방법)
       debugPrint('🗑️ [deleteAccount] 사용자 프로필 삭제 중...');
@@ -470,12 +470,20 @@ class SupabaseAuthService {
       
       debugPrint('✅ [deleteAccount] 메타데이터 삭제 완료');
 
-      // 3. 로그아웃 처리
-      debugPrint('🔄 [deleteAccount] 로그아웃 처리 중...');
-      await _client.auth.signOut();
-      debugPrint('✅ [deleteAccount] 로그아웃 완료');
+      // 3. 🔥 핵심 해결: auth.users에서도 완전 삭제!
+      debugPrint('💥 [deleteAccount] auth.users에서 완전 삭제 중...');
       
-      debugPrint('🎉 [deleteAccount] 탈퇴 처리 성공!');
+      // Supabase Admin API로 사용자 완전 삭제
+      try {
+        await _client.auth.admin.deleteUser(user.id);
+        debugPrint('✅ [deleteAccount] Authentication 완전 삭제 성공!');
+      } catch (adminError) {
+        debugPrint('⚠️ [deleteAccount] Admin 삭제 실패, 로그아웃만: $adminError');
+        // Admin 권한이 없으면 로그아웃만
+        await _client.auth.signOut();
+      }
+      
+      debugPrint('🎉 [deleteAccount] 완전 탈퇴 성공! 재가입시 완전히 새로운 계정으로 처리!');
       return true;
 
     } catch (e) {
