@@ -325,14 +325,32 @@ class SupabaseAuthService {
 
       if (kIsWeb) {
         debugPrint('🟡 웹 환경: 카카오 리다이렉트 진행 중');
-        // 웹에서는 리다이렉트가 발생하므로 여기서 바로 성공 응답을 보내지 않음
-        return AuthResult.success(UserInfo(
-          id: 'pending_kakao',
-          name: 'Kakao User',
-          nickname: 'Kakao User',
-          email: 'pending@kakao.com',
-          provider: 'kakao',
-        ));
+        // 웹에서는 리다이렉트 후 세션이 복원되므로 대기 후 프로필 생성
+        await Future.delayed(const Duration(seconds: 1));
+        
+        final user = currentUser;
+        if (user != null) {
+          debugPrint('🟡 카카오 웹 로그인 성공: ${user.email}');
+          debugPrint('🔍 [signInWithKakao] 사용자 메타데이터: ${user.userMetadata}');
+          
+          // 🔧 여기가 핵심! 카카오 로그인 후 프로필 생성
+          await _createUserProfileWithRetry(user);
+          
+          // 업데이트된 사용자 정보 다시 가져오기
+          final updatedUser = currentUser;
+          debugPrint('🔍 [signInWithKakao] 프로필 생성 후 사용자 정보: ${_convertToUserInfo(updatedUser!)}');
+          
+          return AuthResult.success(_convertToUserInfo(updatedUser));
+        } else {
+          debugPrint('🟡 카카오 웹 로그인 대기 중 (리다이렉트 필요)');
+          return AuthResult.success(UserInfo(
+            id: 'pending_kakao',
+            name: 'Kakao User',
+            nickname: 'Kakao User',
+            email: 'pending@kakao.com',
+            provider: 'kakao',
+          ));
+        }
       }
 
       // 모바일에서는 응답을 기다림
