@@ -80,14 +80,15 @@ class _HomeViewState extends State<HomeView> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: FutureBuilder<UserInfo?>(
-                  future: Future.value(SupabaseAuthService().currentUserInfo),
+                child: FutureBuilder<String>(
+                  future: SupabaseAuthService().isLoggedIn 
+                      ? SupabaseAuthService().getUserNickname() 
+                      : Future.value('독서가'),
                   builder: (context, snapshot) {
-                    final user = snapshot.data;
-                    final isLoggedIn = user != null;
-                    final nickname = user?.nickname ?? '독서가';
+                    final nickname = snapshot.data ?? '독서가';
+                    final isLoggedIn = SupabaseAuthService().isLoggedIn;
                     
-                    // 시간대별 메시지 가져오기
+                    // 시간대별 메시지 가져오기 (profiles 테이블의 닉네임 사용)
                     final message = TimeBasedMessageService.getMessageForCurrentTime(
                       isLoggedIn: isLoggedIn,
                       nickname: nickname,

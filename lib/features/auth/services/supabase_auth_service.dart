@@ -24,11 +24,30 @@ class SupabaseAuthService {
     return UserInfo(
       id: user.id,
       name: user.userMetadata?['full_name'] ?? user.email?.split('@')[0] ?? 'User',
-      nickname: 'profiles에서 가져올 예정', // TODO: profiles 테이블에서 실시간으로 가져와야 함
+      nickname: '독서가', // 기본값, 실제로는 FutureBuilder에서 profiles 테이블 조회
       email: user.email ?? '',
       photoUrl: user.userMetadata?['avatar_url'],
       provider: user.appMetadata['provider'] ?? 'email',
     );
+  }
+  
+  // profiles 테이블에서 닉네임 가져오기
+  Future<String> getUserNickname() async {
+    final user = currentUser;
+    if (user == null) return '독서가';
+    
+    try {
+      final profile = await _client
+          .from('profiles')
+          .select('nickname')
+          .eq('id', user.id)
+          .maybeSingle();
+      
+      return profile?['nickname'] ?? '독서가';
+    } catch (e) {
+      debugPrint('❌ [getUserNickname] 닉네임 조회 실패: $e');
+      return '독서가';
+    }
   }
 
   // nickname 필드가 없는 사용자에게 자동으로 nickname 추가
