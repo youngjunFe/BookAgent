@@ -16,21 +16,15 @@ class SupabaseAuthService {
   // 로그인 상태 확인
   bool get isLoggedIn => currentUser != null;
 
-  // 사용자 정보를 UserInfo 형태로 변환 (닉네임 필드 통일)
+  // 사용자 정보를 UserInfo 형태로 변환 (profiles 테이블에서 닉네임 가져오기)
   UserInfo? get currentUserInfo {
     final user = currentUser;
     if (user == null) return null;
     
-    // nickname 필드가 없는 사용자는 자동으로 설정
-    final currentNickname = user.userMetadata?['nickname'];
-    if (currentNickname == null || currentNickname.toString().isEmpty) {
-      _ensureNicknameExists(user);
-    }
-    
     return UserInfo(
       id: user.id,
       name: user.userMetadata?['full_name'] ?? user.email?.split('@')[0] ?? 'User',
-      nickname: user.userMetadata?['nickname'] ?? user.userMetadata?['name'] ?? user.userMetadata?['full_name'] ?? user.email?.split('@')[0] ?? 'User',
+      nickname: 'profiles에서 가져올 예정', // TODO: profiles 테이블에서 실시간으로 가져와야 함
       email: user.email ?? '',
       photoUrl: user.userMetadata?['avatar_url'],
       provider: user.appMetadata['provider'] ?? 'email',
@@ -159,31 +153,13 @@ class SupabaseAuthService {
       if (response.user != null) {
         debugPrint('🎉 [signUpWithEmail] 회원가입 성공! 사용자 ID: ${response.user!.id}');
         
-        // 제대로 된 한국어 닉네임 생성 + 중복 체크
+        // 간단한 닉네임 생성 (중복 체크 없이)
         final nicknameService = NicknameGeneratorService();
-        String nickname = nicknameService.generateRandomNickname(); // 귀여운토끼 같은 한국어 닉네임
+        final nickname = nicknameService.generateRandomNickname();
         
-        // 중복 체크 (최대 5번 시도)
-        for (int i = 1; i <= 5; i++) {
-          final isDuplicate = await checkNicknameExists(nickname);
-          if (!isDuplicate) {
-            break; // 중복 아니면 사용
-          }
-          // 중복이면 새로 생성
-          nickname = nicknameService.generateRandomNickname();
-        }
+        debugPrint('🎯 [signUpWithEmail] 생성된 닉네임: $nickname');
         
-        debugPrint('🎯 [signUpWithEmail] 최종 선택된 닉네임: $nickname');
-        
-        // 1. 메타데이터에 저장 (화면 표시용)
-        await _client.auth.updateUser(UserAttributes(
-          data: {
-            'nickname': nickname,
-            'full_name': nickname,
-          }
-        ));
-        
-        // 2. profiles 테이블에 저장 (중복 체크용)
+        // profiles 테이블에만 저장 (간단하게)
         await _client.from('profiles').insert({
           'id': response.user!.id,
           'email': response.user!.email,
@@ -192,7 +168,7 @@ class SupabaseAuthService {
           'provider': 'email',
         });
         
-        debugPrint('✅ [signUpWithEmail] 메타데이터 + profiles 테이블 둘 다 저장 완료: $nickname');
+        debugPrint('✅ [signUpWithEmail] 프로필 생성 완료: $nickname');
         return AuthResult.success(_convertToUserInfo(response.user!));
       } else {
         return AuthResult.error('회원가입에 실패했습니다.');
