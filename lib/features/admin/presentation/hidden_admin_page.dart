@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../services/admin_config_service.dart';
 
 class HiddenAdminPage extends StatefulWidget {
   const HiddenAdminPage({super.key});
@@ -61,10 +61,10 @@ class _HiddenAdminPageState extends State<HiddenAdminPage> {
 
   Future<void> _loadSavedPrompts() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final chatSettings = await AdminConfigService.getChatSettings();
       
       setState(() {
-        _aiPromptController.text = prefs.getString('admin_ai_prompt') ?? 
+        _aiPromptController.text = chatSettings['ai_chat_prompt'] ?? 
           '''당신은 독서를 사랑하는 친근한 AI 어시스턴트입니다. 
 사용자가 선택한 책에 대해 깊이 있는 대화를 나누며, 감동문 작성을 도와주세요.
 
@@ -77,7 +77,7 @@ class _HiddenAdminPageState extends State<HiddenAdminPage> {
 
 대화는 자연스럽고 따뜻하게, 사용자가 자신의 생각을 깊이 탐구할 수 있도록 도와주세요.''';
 
-        _characterPromptController.text = prefs.getString('admin_character_prompt') ?? 
+        _characterPromptController.text = chatSettings['character_chat_prompt'] ?? 
           '''당신은 {character_name}입니다. 
 책 "{book_title}"의 등장인물로서 독자와 대화합니다.
 
@@ -89,7 +89,7 @@ class _HiddenAdminPageState extends State<HiddenAdminPage> {
 
 {character_name}가 되어 독자와 의미 있는 대화를 나누세요.''';
 
-        _reviewPromptController.text = prefs.getString('admin_review_prompt') ?? 
+        _reviewPromptController.text = chatSettings['review_generation_prompt'] ?? 
           '''사용자와의 대화 내용을 바탕으로 감동적이고 개인적인 감동문을 작성해주세요.
 
 다음 요소를 포함하세요:
@@ -104,14 +104,14 @@ class _HiddenAdminPageState extends State<HiddenAdminPage> {
 길이는 200-500자 정도로 적당하게 작성해주세요.''';
 
         // 인사말 설정 로드
-        _aiWelcomeController.text = prefs.getString('admin_ai_welcome') ?? 
+        _aiWelcomeController.text = chatSettings['ai_welcome_message'] ?? 
           '''안녕하세요! 📚 저는 당신의 독서 여정을 함께할 AI 친구입니다.
 
 선택하신 책에 대해 깊이 있는 대화를 나누며, 여러분만의 특별한 감동문을 만들어보아요!
 
 책을 읽으면서 어떤 느낌이 드셨나요? 궁금한 점이나 인상 깊었던 부분이 있다면 언제든 말씀해 주세요. 😊''';
 
-        _characterWelcomeController.text = prefs.getString('admin_character_welcome') ?? 
+        _characterWelcomeController.text = chatSettings['character_welcome_message_template'] ?? 
           '''안녕하세요! 저는 "{book_title}"에서 온 {character_name}입니다. ✨
 
 이 책을 읽어주셔서 정말 감사해요. 저와 함께 이야기 속 세계를 더 깊이 탐험해보지 않을래요?
@@ -119,8 +119,8 @@ class _HiddenAdminPageState extends State<HiddenAdminPage> {
 책을 읽으면서 궁금했던 점이나 제게 하고 싶은 말이 있다면 편하게 말씀해 주세요! 🌟''';
 
         // 대화 설정 로드
-        _minChatCountController.text = prefs.getInt('admin_min_chat_count')?.toString() ?? '10';
-        _maxChatCountController.text = prefs.getInt('admin_max_chat_count')?.toString() ?? '15';
+        _minChatCountController.text = chatSettings['min_chat_count'].toString();
+        _maxChatCountController.text = chatSettings['max_chat_count'].toString();
       });
     } catch (e) {
       print('프롬프트 로드 실패: $e');
@@ -133,30 +133,37 @@ class _HiddenAdminPageState extends State<HiddenAdminPage> {
     });
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      
-      await prefs.setString('admin_ai_prompt', _aiPromptController.text);
-      await prefs.setString('admin_character_prompt', _characterPromptController.text);
-      await prefs.setString('admin_review_prompt', _reviewPromptController.text);
-      await prefs.setString('admin_ai_welcome', _aiWelcomeController.text);
-      await prefs.setString('admin_character_welcome', _characterWelcomeController.text);
-      
-      // 대화 설정 저장
+      // 대화 설정 유효성 검사
       final minCount = int.tryParse(_minChatCountController.text) ?? 10;
       final maxCount = int.tryParse(_maxChatCountController.text) ?? 15;
       
       if (minCount > maxCount) {
         throw Exception('최소 대화 횟수는 최대 대화 횟수보다 작아야 합니다.');
       }
+
+      // Supabase에 설정 저장
+      final configs = <String, String>{
+        'ai_chat_prompt': _aiPromptController.text,
+        'character_chat_prompt': _characterPromptController.text,
+        'review_generation_prompt': _reviewPromptController.text,
+        'ai_welcome_message': _aiWelcomeController.text,
+        'character_welcome_message_template': _characterWelcomeController.text,
+        'min_chat_count': minCount.toString(),
+        'max_chat_count': maxCount.toString(),
+      };
+
+      final success = await AdminConfigService.saveConfigs(configs);
       
-      await prefs.setInt('admin_min_chat_count', minCount);
-      await prefs.setInt('admin_max_chat_count', maxCount);
+      if (!success) {
+        throw Exception('데이터베이스 저장에 실패했습니다.');
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('프롬프트가 성공적으로 저장되었습니다.'),
+            content: Text('설정이 성공적으로 저장되었습니다! 🎉'),
             backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
           ),
         );
       }
@@ -166,6 +173,7 @@ class _HiddenAdminPageState extends State<HiddenAdminPage> {
           SnackBar(
             content: Text('저장 실패: $e'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
           ),
         );
       }
