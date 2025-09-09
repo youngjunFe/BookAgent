@@ -7,6 +7,7 @@ import '../../review/presentation/review_editor_page.dart';
 import '../../review/presentation/review_detail_page.dart';
 import '../../review/data/review_repository.dart';
 import '../../review/models/review.dart';
+import '../../book_search/presentation/book_search_page.dart';
 import 'ebook_tab.dart';
 
 class LibraryPage extends StatefulWidget {
@@ -230,12 +231,13 @@ class _ReviewTabState extends State<ReviewTab> {
                   label: AppStrings.createReview,
                   isSelected: false,
                   onTap: () async {
+                    // 책 찾기 페이지로 이동하여 감동문 작성 플로우 시작
                     await Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (context) => const ReviewCreationPage(),
+                        builder: (context) => const BookSearchPage(),
                       ),
                     );
-                    // 감동문 작성 후 돌아오면 목록 새로고침
+                    // 돌아오면 목록 새로고침
                     _loadData();
                   },
                   isAction: true,
@@ -344,9 +346,10 @@ class _ReviewTabState extends State<ReviewTab> {
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: () async {
+              // 책 찾기 페이지로 이동하여 감동문 작성 플로우 시작
               await Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (context) => const ReviewCreationPage(),
+                  builder: (context) => const BookSearchPage(),
                 ),
               );
               _loadData();

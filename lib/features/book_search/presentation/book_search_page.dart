@@ -281,10 +281,13 @@ class _BookSearchPageState extends State<BookSearchPage> {
   }
 
   void _selectBook(BookSearchResult book) {
-    // 책 선택 후 책 상세 확인 페이지로 이동
+    // 책 선택 후 AI 대화 페이지로 이동하여 감동문 작성 시작
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => BookDetailPage(book: book),
+        builder: (context) => AiChatPage(
+          bookTitle: book.title,
+          bookAuthor: book.author,
+        ),
       ),
     );
   }
