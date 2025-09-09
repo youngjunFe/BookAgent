@@ -64,66 +64,49 @@ class _HiddenAdminPageState extends State<HiddenAdminPage> {
       final chatSettings = await AdminConfigService.getChatSettings();
       
       setState(() {
-        _aiPromptController.text = chatSettings['ai_chat_prompt'] ?? 
-          '''당신은 독서를 사랑하는 친근한 AI 어시스턴트입니다. 
-사용자가 선택한 책에 대해 깊이 있는 대화를 나누며, 감동문 작성을 도와주세요.
-
-다음과 같은 방식으로 대화하세요:
-1. 책의 주요 내용과 테마에 대해 질문하기
-2. 사용자의 개인적인 감상과 경험 유도하기  
-3. 책에서 인상 깊었던 구절이나 장면 물어보기
-4. 책이 사용자에게 준 깨달음이나 변화 탐색하기
-5. 감정적인 공감과 격려 제공하기
-
-대화는 자연스럽고 따뜻하게, 사용자가 자신의 생각을 깊이 탐구할 수 있도록 도와주세요.''';
-
-        _characterPromptController.text = chatSettings['character_chat_prompt'] ?? 
-          '''당신은 {character_name}입니다. 
-책 "{book_title}"의 등장인물로서 독자와 대화합니다.
-
-다음 특징을 유지하세요:
-- {character_name}의 성격과 말투 반영
-- 책 속 상황과 경험을 바탕으로 대화
-- 독자에게 책의 교훈과 의미 전달
-- 캐릭터다운 따뜻하고 지혜로운 조언
-
-{character_name}가 되어 독자와 의미 있는 대화를 나누세요.''';
-
-        _reviewPromptController.text = chatSettings['review_generation_prompt'] ?? 
-          '''사용자와의 대화 내용을 바탕으로 감동적이고 개인적인 감동문을 작성해주세요.
-
-다음 요소를 포함하세요:
-1. 책에 대한 첫인상과 기대
-2. 읽는 과정에서의 감정 변화
-3. 가장 인상 깊었던 장면이나 구절
-4. 책이 준 깨달음과 교훈
-5. 개인적인 경험과의 연결점
-6. 다른 독자들에게 전하고 싶은 메시지
-
-감동문은 진솔하고 따뜻하며, 독자의 개성이 드러나도록 작성해주세요.
-길이는 200-500자 정도로 적당하게 작성해주세요.''';
-
-        // 인사말 설정 로드
-        _aiWelcomeController.text = chatSettings['ai_welcome_message'] ?? 
-          '''안녕하세요! 📚 저는 당신의 독서 여정을 함께할 AI 친구입니다.
-
-선택하신 책에 대해 깊이 있는 대화를 나누며, 여러분만의 특별한 감동문을 만들어보아요!
-
-책을 읽으면서 어떤 느낌이 드셨나요? 궁금한 점이나 인상 깊었던 부분이 있다면 언제든 말씀해 주세요. 😊''';
-
-        _characterWelcomeController.text = chatSettings['character_welcome_message_template'] ?? 
-          '''안녕하세요! 저는 "{book_title}"에서 온 {character_name}입니다. ✨
-
-이 책을 읽어주셔서 정말 감사해요. 저와 함께 이야기 속 세계를 더 깊이 탐험해보지 않을래요?
-
-책을 읽으면서 궁금했던 점이나 제게 하고 싶은 말이 있다면 편하게 말씀해 주세요! 🌟''';
+        // DB에서 실제 값 로드 (빈 값이 아닌 경우에만)
+        if (chatSettings['ai_chat_prompt']?.isNotEmpty == true) {
+          _aiPromptController.text = chatSettings['ai_chat_prompt']!;
+        }
+        
+        if (chatSettings['character_chat_prompt']?.isNotEmpty == true) {
+          _characterPromptController.text = chatSettings['character_chat_prompt']!;
+        }
+        
+        if (chatSettings['review_generation_prompt']?.isNotEmpty == true) {
+          _reviewPromptController.text = chatSettings['review_generation_prompt']!;
+        }
+        
+        if (chatSettings['ai_welcome_message']?.isNotEmpty == true) {
+          _aiWelcomeController.text = chatSettings['ai_welcome_message']!;
+        }
+        
+        if (chatSettings['character_welcome_message_template']?.isNotEmpty == true) {
+          _characterWelcomeController.text = chatSettings['character_welcome_message_template']!;
+        }
 
         // 대화 설정 로드
         _minChatCountController.text = chatSettings['min_chat_count'].toString();
         _maxChatCountController.text = chatSettings['max_chat_count'].toString();
       });
+      
+      print('✅ DB에서 설정 로드 완료');
+      print('AI 프롬프트 길이: ${_aiPromptController.text.length}');
+      print('최소 대화수: ${_minChatCountController.text}');
+      
     } catch (e) {
-      print('프롬프트 로드 실패: $e');
+      print('❌ 프롬프트 로드 실패: $e');
+      
+      // 에러 발생시 사용자에게 알림
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('설정 로드 실패: $e'),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
     }
   }
 
