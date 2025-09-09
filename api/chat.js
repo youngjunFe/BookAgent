@@ -11,11 +11,17 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { message = '', context = '' } = req.body || {};
+    const { message = '', context = '', systemPrompt: customPrompt, bookTitle, bookAuthor } = req.body || {};
     const userMessage = String(message);
     const chatContext = String(context);
 
-    console.log('Chat request:', { userMessage, hasContext: !!chatContext });
+    console.log('Chat request:', { 
+      userMessage, 
+      hasContext: !!chatContext, 
+      hasCustomPrompt: !!customPrompt,
+      bookTitle,
+      promptLength: customPrompt?.length || 0
+    });
 
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
@@ -23,11 +29,15 @@ module.exports = async (req, res) => {
       return res.status(200).send(getFallbackResponse(userMessage));
     }
 
-    const systemPrompt = 
+    // 클라이언트에서 전달한 프롬프트 사용, 없으면 기본값
+    const systemPrompt = customPrompt || (
       '당신은 친근하고 지식이 풍부한 독서 도우미입니다. ' +
       '사용자와 자연스럽게 대화하며 책에 대해 이야기하세요. ' +
       '발제문이 아닌 일반적인 대화 형식으로 응답하고, ' +
-      '책 추천, 독서 경험 공유, 책 내용 토론 등을 도와주세요.';
+      '책 추천, 독서 경험 공유, 책 내용 토론 등을 도와주세요.'
+    );
+
+    console.log('사용 중인 시스템 프롬프트:', systemPrompt.substring(0, 100) + '...');
 
     const userPrompt = chatContext 
       ? `이전 대화:\n${chatContext}\n\n사용자: ${userMessage}`
