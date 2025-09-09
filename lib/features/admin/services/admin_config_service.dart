@@ -65,14 +65,34 @@ class AdminConfigService {
   // 설정값 저장하기
   static Future<bool> saveConfig(String key, String value, {String? description}) async {
     try {
-      await _supabase
+      // 먼저 기존 설정이 있는지 확인
+      final existing = await _supabase
           .from('admin_configs')
-          .upsert({
-            'config_key': key,
-            'config_value': value,
-            'updated_at': DateTime.now().toIso8601String(),
-            if (description != null) 'description': description,
-          });
+          .select('id')
+          .eq('config_key', key)
+          .maybeSingle();
+
+      if (existing != null) {
+        // 기존 설정 업데이트
+        await _supabase
+            .from('admin_configs')
+            .update({
+              'config_value': value,
+              'updated_at': DateTime.now().toIso8601String(),
+              if (description != null) 'description': description,
+            })
+            .eq('config_key', key);
+      } else {
+        // 새 설정 생성
+        await _supabase
+            .from('admin_configs')
+            .insert({
+              'config_key': key,
+              'config_value': value,
+              'updated_at': DateTime.now().toIso8601String(),
+              if (description != null) 'description': description,
+            });
+      }
 
       return true;
     } catch (e) {
@@ -84,20 +104,18 @@ class AdminConfigService {
   // 여러 설정값 한번에 저장하기
   static Future<bool> saveConfigs(Map<String, String> configs) async {
     try {
-      final List<Map<String, dynamic>> updates = [];
-      
+      // 각 설정을 개별적으로 저장 (중복 키 문제 방지)
       for (final entry in configs.entries) {
-        updates.add({
-          'config_key': entry.key,
-          'config_value': entry.value,
-          'updated_at': DateTime.now().toIso8601String(),
-        });
+        final success = await saveConfig(entry.key, entry.value);
+        if (!success) {
+          throw Exception('설정 저장 실패: ${entry.key}');
+        }
       }
-
-      await _supabase.from('admin_configs').upsert(updates);
+      
+      print('✅ 모든 설정 저장 완료: ${configs.keys.join(", ")}');
       return true;
     } catch (e) {
-      print('설정 저장 실패: $e');
+      print('❌ 설정 저장 실패: $e');
       return false;
     }
   }
