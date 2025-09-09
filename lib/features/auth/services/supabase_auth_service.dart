@@ -1,5 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import '../../../core/utils/web_cleanup_stub.dart'
+    if (dart.library.html) '../../../core/utils/web_cleanup_web.dart';
 import '../../../core/supabase/supabase_client_provider.dart';
 import '../../../core/services/nickname_generator_service.dart';
 
@@ -9,6 +12,7 @@ class SupabaseAuthService {
   SupabaseAuthService._internal();
 
   SupabaseClient get _client => SupabaseClientProvider.client;
+  static bool _isSigningOutCleanup = false; // 탈퇴 직후 세션 정리 중 여부
 
   // 현재 로그인된 사용자
   User? get currentUser => _client.auth.currentUser;
@@ -18,13 +22,19 @@ class SupabaseAuthService {
 
   // 사용자 정보를 UserInfo 형태로 변환 (닉네임 필드 통일)
   UserInfo? get currentUserInfo {
+    if (_isSigningOutCleanup) return null;
     final user = currentUser;
     if (user == null) return null;
-    
-    // nickname 필드가 없는 사용자는 자동으로 설정
-    final currentNickname = user.userMetadata?['nickname'];
-    if (currentNickname == null || currentNickname.toString().isEmpty) {
-      _ensureNicknameExists(user);
+
+    // 탈퇴 직후 세션이 남아있을 수 있으므로 방어적으로 필터링
+    final accountStatus = user.userMetadata?['account_status']?.toString();
+    if (accountStatus == 'deleted') {
+      // 즉시 세션 정리 시도 후 아무 것도 반환하지 않음
+      signOut();
+      if (kIsWeb) {
+        clearWebAuthStorage();
+      }
+      return null;
     }
     
     return UserInfo(
@@ -39,6 +49,7 @@ class SupabaseAuthService {
 
   // nickname 필드가 없는 사용자에게 자동으로 nickname 추가
   Future<void> _ensureNicknameExists(User user) async {
+    if (_isSigningOutCleanup) return; // 세션 정리 중이면 아무 것도 하지 않음
     try {
       final existingName = user.userMetadata?['name'] ?? 
                           user.userMetadata?['full_name'] ?? 
@@ -64,7 +75,18 @@ class SupabaseAuthService {
       // 삭제된 사용자 세션이 남아있는 경우 정리
       if (e.toString().contains('user_not_found') || e.toString().contains('403')) {
         try {
+          _isSigningOutCleanup = true;
           await _client.auth.signOut();
+          if (kIsWeb) {
+            clearWebAuthStorage();
+          }
+          // user가 null이 될 때까지 짧게 대기
+          for (int i = 0; i < 10; i++) {
+            final u = _client.auth.currentUser;
+            if (u == null) break;
+            await Future.delayed(const Duration(milliseconds: 100));
+          }
+          _isSigningOutCleanup = false;
           debugPrint('✅ [_ensureNicknameExists] stale 세션 정리(로그아웃) 완료');
         } catch (_) {}
       }
@@ -124,6 +146,36 @@ class SupabaseAuthService {
     }
 
     return currentUserInfo;
+  }
+
+  // 단일 소스: profiles.nickname → Auth metadata 동기화 (로그인 직후 1회)
+  Future<void> _syncNicknameFromProfile(User user) async {
+    if (_isSigningOutCleanup) return;
+    try {
+      final profile = await _client
+          .from('profiles')
+          .select('nickname')
+          .eq('id', user.id)
+          .maybeSingle();
+
+      final nickname = profile?['nickname'] as String?;
+      if (nickname == null || nickname.isEmpty) return;
+
+      final currentMetaNick = user.userMetadata?['nickname'];
+      if (currentMetaNick == nickname) return;
+
+      await _client.auth.updateUser(
+        UserAttributes(
+          data: {
+            ...user.userMetadata ?? {},
+            'nickname': nickname,
+            'full_name': nickname,
+          }
+        )
+      );
+    } catch (e) {
+      debugPrint('❌ [_syncNicknameFromProfile] 실패: $e');
+    }
   }
 
   // 탈퇴 계정 재가입 처리 (완전 새로고침)
@@ -286,12 +338,10 @@ class SupabaseAuthService {
         debugPrint('⏳ [signUpWithEmail] auth.users 테이블 반영 대기 중...');
         await Future.delayed(Duration(milliseconds: 1500));
         
-        debugPrint('🎯 [signUpWithEmail] 이메일 회원가입 → Edge Function으로 프로필 생성');
-        
-        // Edge Function으로 확실한 프로필 생성
-        await _createProfileWithEdgeFunction(response.user!);
-        
-        debugPrint('✅ [signUpWithEmail] 프로필 생성 완료');
+        debugPrint('🎯 [signUpWithEmail] 이메일 회원가입 → 트리거가 profiles 생성');
+        // 트리거 반영 후 닉네임 동기화(단일 소스)
+        await _syncNicknameFromProfile(response.user!);
+        debugPrint('✅ [signUpWithEmail] 닉네임 동기화 완료');
         return AuthResult.success(_convertToUserInfo(response.user!));
       } else {
         return AuthResult.error('회원가입에 실패했습니다.');
@@ -326,12 +376,9 @@ class SupabaseAuthService {
           debugPrint('🔍 [signInWithGoogle] 사용자 메타데이터: ${user.userMetadata}');
           debugPrint('🔍 [signInWithGoogle] 닉네임 확인 전 사용자 정보: ${_convertToUserInfo(user)}');
           
-          // 프로필 생성 완료까지 대기
-          await _createProfileWithEdgeFunction(user);
-          
-          // 충분한 대기 시간 (DB 반영 + 캐시 업데이트)
+          // 트리거 반영 대기 후 동기화
           await Future.delayed(Duration(milliseconds: 1500));
-          
+          await _syncNicknameFromProfile(user);
           // 업데이트된 사용자 정보 다시 가져오기
           final updatedUser = currentUser;
           debugPrint('🔍 [signInWithGoogle] 닉네임 확인 후 사용자 정보: ${_convertToUserInfo(updatedUser!)}');
@@ -355,7 +402,7 @@ class SupabaseAuthService {
       final user = currentUser;
       if (user != null) {
         debugPrint('🔵 모바일 로그인 성공: ${user.email}');
-          await _createProfileWithEdgeFunction(user); // Edge Function으로 프로필 생성
+        await _syncNicknameFromProfile(user);
         return AuthResult.success(_convertToUserInfo(user));
       } else {
         debugPrint('🔵 모바일 로그인 실패: 사용자 정보 없음');
@@ -403,10 +450,9 @@ class SupabaseAuthService {
           debugPrint('🟡 카카오 웹 로그인 성공: ${user.email}');
           debugPrint('🔍 [signInWithKakao] 사용자 메타데이터: ${user.userMetadata}');
           
-          // 🔧 Edge Function으로 확실한 프로필 생성
-          await _createProfileWithEdgeFunction(user);
-          
+          // 트리거 반영 대기 후 동기화
           // 업데이트된 사용자 정보 다시 가져오기
+          await _syncNicknameFromProfile(user);
           final updatedUser = currentUser;
           debugPrint('🔍 [signInWithKakao] 프로필 생성 후 사용자 정보: ${_convertToUserInfo(updatedUser!)}');
           
@@ -430,9 +476,7 @@ class SupabaseAuthService {
         debugPrint('🟡 카카오 모바일 로그인 성공: ${user.email}');
         debugPrint('🔍 [signInWithKakao] 사용자 메타데이터: ${user.userMetadata}');
         debugPrint('🔍 [signInWithKakao] 닉네임 확인 전 사용자 정보: ${_convertToUserInfo(user)}');
-        
-          await _createProfileWithEdgeFunction(user); // Edge Function으로 프로필 생성
-        
+        await _syncNicknameFromProfile(user);
         // 업데이트된 사용자 정보 다시 가져오기
         final updatedUser = currentUser;
         debugPrint('🔍 [signInWithKakao] 닉네임 확인 후 사용자 정보: ${_convertToUserInfo(updatedUser!)}');
@@ -569,16 +613,46 @@ class SupabaseAuthService {
         if (result.data != null && result.data['success'] == true) {
           debugPrint('✅ [deleteAccount] Edge Function으로 완전 삭제 성공!');
           // 성공 시에도 반드시 세션 정리 (stale JWT 방지)
+          _isSigningOutCleanup = true;
           await _client.auth.signOut();
+          if (kIsWeb) {
+            clearWebAuthStorage();
+          }
+          for (int i = 0; i < 10; i++) {
+            final u = _client.auth.currentUser;
+            if (u == null) break;
+            await Future.delayed(const Duration(milliseconds: 100));
+          }
+          _isSigningOutCleanup = false;
         } else {
           debugPrint('❌ [deleteAccount] Edge Function 삭제 실패: ${result.data}');
           // 실패해도 로그아웃은 진행
+          _isSigningOutCleanup = true;
           await _client.auth.signOut();
+          if (kIsWeb) {
+            clearWebAuthStorage();
+          }
+          for (int i = 0; i < 10; i++) {
+            final u = _client.auth.currentUser;
+            if (u == null) break;
+            await Future.delayed(const Duration(milliseconds: 100));
+          }
+          _isSigningOutCleanup = false;
         }
       } catch (edgeError) {
         debugPrint('❌ [deleteAccount] Edge Function 호출 실패: $edgeError');
         // Edge Function 실패해도 로그아웃은 진행
+        _isSigningOutCleanup = true;
         await _client.auth.signOut();
+        if (kIsWeb) {
+          clearWebAuthStorage();
+        }
+        for (int i = 0; i < 10; i++) {
+          final u = _client.auth.currentUser;
+          if (u == null) break;
+          await Future.delayed(const Duration(milliseconds: 100));
+        }
+        _isSigningOutCleanup = false;
       }
       
       debugPrint('🎉 [deleteAccount] 자동 탈퇴 완료! 재가입시 새로운 계정으로 처리!');

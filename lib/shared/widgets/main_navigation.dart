@@ -7,6 +7,7 @@ import '../../features/library/presentation/library_page.dart';
 import '../../features/auth/services/supabase_auth_service.dart';
 import '../../features/auth/presentation/login_page.dart';
 import '../../features/auth/presentation/nickname_test_page.dart';
+import '../../features/profile/presentation/my_page_v2.dart';
 import '../../core/services/nickname_generator_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/supabase/supabase_client_provider.dart';
@@ -38,7 +39,7 @@ class _MainNavigationState extends State<MainNavigation> {
     _checkAuthenticationStatus();
   }
 
-  // 🚨🚨🚨 최강 인증 체크: 앱 전체 접근 제어 + 탈퇴 계정 차단
+  // 🚨🚨🚨 인증 체크: 로그인 여부만 판단 (게스트 허용)
   Future<void> _checkAuthenticationStatus() async {
     try {
       print('🔒 [MainNavigation] 인증 상태 확인 시작');
@@ -101,14 +102,7 @@ class _MainNavigationState extends State<MainNavigation> {
         _isAuthChecked = true;
       });
       
-      // 🚨 비로그인 사용자만 로그인 페이지로 리다이렉트 (탈퇴 계정은 재가입 허용)
-      if (!finalLoginStatus && mounted) {
-        print('🚨 [MainNavigation] 비인증 사용자 감지 - 로그인 페이지로 리디렉션');
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const LoginPage()),
-        );
-        return;
-      }
+      // 게스트 모드 허용: 비로그인이어도 메인 화면을 보여줍니다
       
       // 🚨 추가 보안: 주기적으로 인증 상태 재확인
       _startPeriodicAuthCheck();
@@ -139,15 +133,7 @@ class _MainNavigationState extends State<MainNavigation> {
         final authService = SupabaseAuthService();
         final currentUser = authService.currentUser;
         
-        if (currentUser == null) {
-          print('🚨 [MainNavigation] 주기적 체크: 세션 만료 감지');
-          if (mounted) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const LoginPage()),
-            );
-          }
-          return;
-        }
+        // 게스트 허용: 세션이 없어도 메인 유지
         
         // 다음 체크 예약
         _startPeriodicAuthCheck();
@@ -171,7 +157,7 @@ class _MainNavigationState extends State<MainNavigation> {
         final isLoggedIn = snapshot.data ?? false;
         
         if (isLoggedIn) {
-          return const MyPage();
+          return const MyPageV2();
         } else {
           return _buildLoginPrompt();
         }
@@ -257,8 +243,8 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
-    // 🚨 인증 체크가 완료되지 않았거나 로그인되지 않은 경우 로딩 화면
-    if (!_isAuthChecked || !_isLoggedIn) {
+    // 🚨 인증 체크가 완료되지 않은 경우 로딩 화면 (게스트 허용)
+    if (!_isAuthChecked) {
       return Scaffold(
         backgroundColor: AppColors.background,
         body: const Center(
