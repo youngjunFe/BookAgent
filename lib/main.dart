@@ -37,6 +37,10 @@ class BookReviewApp extends StatelessWidget {
       theme: AppTheme.theme,
       home: const SplashPage(),
       debugShowCheckedModeBanner: false,
+      routes: {
+        '/login': (context) => const LoginPage(),
+        '/home': (context) => const AuthWrapper(),
+      },
     );
   }
 }

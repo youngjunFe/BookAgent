@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../auth/services/supabase_auth_service.dart';
+import 'settings_page.dart';
 
 class MyPageV2 extends StatelessWidget {
   const MyPageV2({super.key});
@@ -17,7 +18,13 @@ class MyPageV2 extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const SettingsPage(),
+                ),
+              );
+            },
           ),
         ],
       ),
