@@ -13,12 +13,7 @@ class ReviewAiService {
     String? chatHistory,
     String? bookTitle,
   }) async {
-    // DB에서 감동문 생성 프롬프트 가져오기
-    final reviewPrompt = await AdminConfigService.getConfigWithDefault(
-      'review_generation_prompt',
-      '사용자와의 대화 내용을 바탕으로 감동적이고 개인적인 감동문을 작성해주세요.'
-    );
-    print('✅ 감동문 생성 프롬프트 로드: ${reviewPrompt.substring(0, 50)}...');
+    print('🔍 감동문 생성 - 서버에서 DB 프롬프트를 직접 로드합니다');
     if (!SupabaseClientProvider.isReady) {
       return _fallback(bookTitle);
     }
@@ -30,7 +25,7 @@ class ReviewAiService {
         final resp = await http.post(
           uri,
           headers: {'Content-Type': 'application/json'},
-          body: '{"bookTitle": ${_escapeJson(bookTitle)}, "chatHistory": ${_escapeJson(chatHistory)}, "constraints": ${_escapeJson(reviewPrompt)}, "format": "json", "schema": {"title":"string","content":"string"}}',
+          body: '{"bookTitle": ${_escapeJson(bookTitle)}, "chatHistory": ${_escapeJson(chatHistory)}, "format": "json", "schema": {"title":"string","content":"string"}}',
         );
         if (resp.statusCode >= 200 && resp.statusCode < 300 && resp.body.isNotEmpty) {
           print('🔍 Railway API 응답: ${resp.body.substring(0, resp.body.length > 200 ? 200 : resp.body.length)}...');
@@ -61,7 +56,6 @@ class ReviewAiService {
           body: {
             'chat_history': chatHistory ?? '',
             'book_title': bookTitle ?? '',
-            'constraints': reviewPrompt,
           },
         );
 
@@ -86,7 +80,7 @@ class ReviewAiService {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ${AppConfig.supabaseAnonKey}',
           },
-          body: '{"chat_history": ${_escapeJson(chatHistory)}, "book_title": ${_escapeJson(bookTitle)}, "constraints": ${_escapeJson(reviewPrompt)}, "format": "json", "schema": {"title":"string","content":"string"}}',
+          body: '{"chat_history": ${_escapeJson(chatHistory)}, "book_title": ${_escapeJson(bookTitle)}, "format": "json", "schema": {"title":"string","content":"string"}}',
         );
         if (resp.statusCode >= 200 && resp.statusCode < 300) {
           final body = resp.body;

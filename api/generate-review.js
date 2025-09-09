@@ -1,3 +1,5 @@
+import { getConfigWithDefault } from '../agent/utils/supabase.js';
+
 module.exports = async (req, res) => {
   // CORS 헤더 설정
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -13,16 +15,11 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { chat_history = '', book_title = '책', constraints: customPrompt } = req.body || {};
+    const { chat_history = '', book_title = '책' } = req.body || {};
     const chat = String(chat_history);
     const title = String(book_title);
 
-    console.log('Request received:', { 
-      chat, 
-      title, 
-      hasCustomPrompt: !!customPrompt,
-      promptLength: customPrompt?.length || 0
-    });
+    console.log('Request received:', { chat, title });
     console.log('Environment check:', {
       hasApiKey: !!process.env.OPENAI_API_KEY,
       keyLength: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.length : 0
@@ -35,13 +32,14 @@ module.exports = async (req, res) => {
       return res.status(200).send(fallback(title));
     }
 
-    // 클라이언트에서 전달한 프롬프트 사용, 없으면 기본값
-    const systemPrompt = customPrompt || (
+    // 🔥 DB에서 직접 감동문 생성 프롬프트 가져오기
+    const systemPrompt = await getConfigWithDefault(
+      'review_generation_prompt',
       '당신은 독서 모임 발제문 도우미입니다.\n' +
       '입력된 대화 요약과 책 제목을 참고해 6~12문장 한국어 발제문을 작성하고, 마지막에 토론 질문 3개를 불릿으로 제시하세요.'
     );
 
-    console.log('사용 중인 감동문 생성 프롬프트:', systemPrompt.substring(0, 100) + '...');
+    console.log('🔥 DB에서 가져온 감동문 생성 프롬프트:', systemPrompt.substring(0, 100) + '...');
 
     const userPrompt = `책 제목: ${title}\n\n대화 요약:\n${chat || '(없음)'}\n`;
 
