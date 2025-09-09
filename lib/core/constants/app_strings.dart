@@ -25,7 +25,7 @@ class AppStrings {
   
   // Library Page
   static const String myLibrary = '나의 서재';
-  static const String reviewTab = '발제문';
+  static const String reviewTab = '감동문';
   static const String readingTab = '독서 관리';
   
   // Review Status
@@ -47,7 +47,7 @@ class AppStrings {
   static const String reviewWithAI = 'AI와 대화하며 리뷰 작성';
   static const String selectBook = '책 선택하기';
   static const String startConversation = '대화 시작하기';
-  static const String saveReview = '발제문 저장하기';
+  static const String saveReview = '감동문 저장하기';
   static const String selectBackgroundImage = '배경 이미지 선택';
   
   // Chat with AI
@@ -100,8 +100,8 @@ class AppStrings {
   static const String rating = '평점';
   
   // Review Content
-  static const String reviewTitle = '발제문 제목';
-  static const String reviewContent = '발제문 내용';
+  static const String reviewTitle = '감동문 제목';
+  static const String reviewContent = '감동문 내용';
   static const String tags = '태그';
   static const String mood = '감정';
   static const String impression = '인상';

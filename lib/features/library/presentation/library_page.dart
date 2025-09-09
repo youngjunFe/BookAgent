@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../chat/presentation/ai_chat_page.dart';
 import '../../review/presentation/review_creation_page.dart';
 import '../../review/presentation/review_editor_page.dart';
+import '../../review/presentation/review_detail_page.dart';
 import '../../review/data/review_repository.dart';
 import '../../review/models/review.dart';
 import 'ebook_tab.dart';
@@ -70,7 +71,7 @@ class _LibraryPageState extends State<LibraryPage>
   }
 }
 
-// 발제문 탭
+// 감동문 탭
 class ReviewTab extends StatefulWidget {
   const ReviewTab({super.key});
 
@@ -104,7 +105,7 @@ class _ReviewTabState extends State<ReviewTab> {
     });
     
     try {
-      // 발제문 목록과 카운트를 동시에 로드
+      // 감동문 목록과 카운트를 동시에 로드
       final results = await Future.wait([
         _reviewRepo.list(),
         _reviewRepo.counts(),
@@ -130,7 +131,7 @@ class _ReviewTabState extends State<ReviewTab> {
       setState(() {
         _isLoading = false;
       });
-      print('발제문 로드 실패: $e');
+      print('감동문 로드 실패: $e');
       
       // 인증 오류인 경우 로그인 페이지로 이동
       if (e.toString().contains('사용자 인증이 필요합니다')) {
@@ -234,7 +235,7 @@ class _ReviewTabState extends State<ReviewTab> {
                         builder: (context) => const ReviewCreationPage(),
                       ),
                     );
-                    // 발제문 작성 후 돌아오면 목록 새로고침
+                    // 감동문 작성 후 돌아오면 목록 새로고침
                     _loadData();
                   },
                   isAction: true,
@@ -245,7 +246,7 @@ class _ReviewTabState extends State<ReviewTab> {
 
           const SizedBox(height: 24),
 
-          // 발제문 목록 또는 빈 상태
+          // 감동문 목록 또는 빈 상태
           Expanded(
             child: _isLoading 
                 ? const Center(child: CircularProgressIndicator())
@@ -276,7 +277,17 @@ class _ReviewTabState extends State<ReviewTab> {
             return _ReviewCard(
               review: review,
               onTap: () async {
-                // 발제문 편집 페이지로 이동
+                // 감동문 상세 페이지로 이동
+                await Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => ReviewDetailPage(review: review),
+                  ),
+                );
+                // 돌아온 후 목록 새로고침
+                _loadData();
+              },
+              onLongPress: () async {
+                // 길게 누르면 편집 페이지로 이동
                 await Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) => ReviewEditorPage(review: review),
@@ -293,18 +304,18 @@ class _ReviewTabState extends State<ReviewTab> {
   }
 
   Widget _buildEmptyState() {
-    String emptyMessage = '아직 작성한 발제문이 없습니다';
-    String emptySubMessage = 'AI와 대화하며 첫 발제문을 작성해보세요!';
+    String emptyMessage = '아직 작성한 감동문이 없습니다';
+    String emptySubMessage = 'AI와 대화하며 첫 감동문을 작성해보세요!';
     
     if (_selectedFilter == AppStrings.draftReviews) {
-      emptyMessage = '초안 상태의 발제문이 없습니다';
-      emptySubMessage = '새로운 발제문을 작성해보세요!';
+      emptyMessage = '초안 상태의 감동문이 없습니다';
+      emptySubMessage = '새로운 감동문을 작성해보세요!';
     } else if (_selectedFilter == AppStrings.completedReviews) {
-      emptyMessage = '완료된 발제문이 없습니다';
+      emptyMessage = '완료된 감동문이 없습니다';
       emptySubMessage = '초안을 완성해보세요!';
     } else if (_selectedFilter == AppStrings.publishedReviews) {
-      emptyMessage = '게시된 발제문이 없습니다';
-      emptySubMessage = '완성된 발제문을 게시해보세요!';
+      emptyMessage = '게시된 감동문이 없습니다';
+      emptySubMessage = '완성된 감동문을 게시해보세요!';
     }
 
     return Center(
@@ -341,7 +352,7 @@ class _ReviewTabState extends State<ReviewTab> {
               _loadData();
             },
             icon: const Icon(Icons.auto_awesome),
-            label: const Text('발제문 작성하기'),
+            label: const Text('감동문 작성하기'),
           ),
         ],
       ),
@@ -441,10 +452,12 @@ class _FilterChip extends StatelessWidget {
 class _ReviewCard extends StatelessWidget {
   final Review review;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   const _ReviewCard({
     required this.review,
     required this.onTap,
+    this.onLongPress,
   });
 
   // 배경 이미지 ID를 그라디언트로 변환
@@ -525,6 +538,7 @@ class _ReviewCard extends StatelessWidget {
       ),
       child: InkWell(
         onTap: onTap,
+        onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(16),
         child: Container(
           decoration: BoxDecoration(
