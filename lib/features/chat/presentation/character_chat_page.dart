@@ -7,6 +7,7 @@ import '../../../core/constants/app_spacing.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/theme/character_themes.dart';
 import '../models/character.dart';
+import '../../admin/services/admin_config_service.dart';
 
 class CharacterChatPage extends StatefulWidget {
   final Character character;
@@ -35,15 +36,43 @@ class _CharacterChatPageState extends State<CharacterChatPage> {
     _addWelcomeMessage();
   }
 
-  void _addWelcomeMessage() {
-    _messages.add(
-      ChatMessage(
-        text: _getCharacterWelcomeMessage(),
-        isUser: false,
-        timestamp: DateTime.now(),
-        characterName: widget.character.name,
-      ),
-    );
+  void _addWelcomeMessage() async {
+    try {
+      // DB에서 캐릭터 인사말 템플릿 가져오기
+      final welcomeTemplate = await AdminConfigService.getConfigWithDefault(
+        'character_welcome_message_template',
+        '안녕하세요! 저는 "{book_title}"에서 온 {character_name}입니다. ✨'
+      );
+      
+      // 템플릿의 변수 치환
+      final welcomeMessage = welcomeTemplate
+          .replaceAll('{character_name}', widget.character.name)
+          .replaceAll('{book_title}', widget.character.bookTitle ?? '이 책');
+      
+      _messages.add(
+        ChatMessage(
+          text: welcomeMessage,
+          isUser: false,
+          timestamp: DateTime.now(),
+          characterName: widget.character.name,
+        ),
+      );
+      
+      setState(() {});
+      print('✅ 캐릭터 인사말 로드 완료: ${widget.character.name}');
+    } catch (e) {
+      print('❌ 캐릭터 인사말 로드 실패: $e');
+      // fallback to hardcoded message
+      _messages.add(
+        ChatMessage(
+          text: _getCharacterWelcomeMessage(),
+          isUser: false,
+          timestamp: DateTime.now(),
+          characterName: widget.character.name,
+        ),
+      );
+      setState(() {});
+    }
   }
 
   String _getCharacterWelcomeMessage() {

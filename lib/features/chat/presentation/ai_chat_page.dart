@@ -5,6 +5,7 @@ import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/config/app_config.dart';
 import '../../review/presentation/review_creation_page.dart';
+import '../../admin/services/admin_config_service.dart';
 
 class AiChatPage extends StatefulWidget {
   final String? initialContext;
@@ -34,11 +35,32 @@ class _AiChatPageState extends State<AiChatPage> {
   final List<ChatMessage> _messages = [];
   bool _isTyping = false;
   int _remainingTurns = 15;
+  int _maxChatCount = 15;
+  int _minChatCount = 10;
+  String _aiWelcomeMessage = '';
 
   @override
   void initState() {
     super.initState();
-    _addInitialMessage();
+    _loadChatSettings();
+  }
+
+  Future<void> _loadChatSettings() async {
+    try {
+      final settings = await AdminConfigService.getChatSettings();
+      setState(() {
+        _maxChatCount = settings['max_chat_count'] ?? 15;
+        _minChatCount = settings['min_chat_count'] ?? 10;
+        _remainingTurns = _maxChatCount;
+        _aiWelcomeMessage = settings['ai_welcome_message'] ?? '';
+      });
+      
+      print('✅ 채팅 설정 로드: 최소 $_minChatCount, 최대 $_maxChatCount');
+      _addInitialMessage();
+    } catch (e) {
+      print('❌ 채팅 설정 로드 실패: $e');
+      _addInitialMessage();
+    }
   }
 
   void _addInitialMessage() async {
@@ -54,9 +76,11 @@ class _AiChatPageState extends State<AiChatPage> {
   void _addDefaultWelcomeMessage() {
     _messages.add(
       ChatMessage(
-        text: '안녕하세요! 저는 독서 도우미 AI입니다 📚\n\n'
-            '어떤 책에 대해 이야기하고 싶으신가요?\n'
-            '책의 제목을 알려주시면, 함께 깊이 있는 대화를 나눠보아요!',
+        text: _aiWelcomeMessage.isNotEmpty 
+            ? _aiWelcomeMessage
+            : '안녕하세요! 저는 독서 도우미 AI입니다 📚\n\n'
+              '어떤 책에 대해 이야기하고 싶으신가요?\n'
+              '책의 제목을 알려주시면, 함께 깊이 있는 대화를 나눠보아요!',
         isUser: false,
         timestamp: DateTime.now(),
       ),
@@ -228,9 +252,9 @@ class _AiChatPageState extends State<AiChatPage> {
 
   // 진행률 바 (스크린샷 디자인)
   Widget _buildProgressBar() {
-    final completedTurns = 15 - _remainingTurns;
-    final progressPercent = completedTurns / 15;
-    final canGenerateReview = completedTurns >= 10;
+    final completedTurns = _maxChatCount - _remainingTurns;
+    final progressPercent = completedTurns / _maxChatCount;
+    final canGenerateReview = completedTurns >= _minChatCount;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -650,17 +674,17 @@ class _AiChatPageState extends State<AiChatPage> {
 
     _scrollToBottom();
     
-    // 10번째 대화 완료 시 팝업 표시
-    if (_remainingTurns == 5) {
+    // 최소 대화 완료 시 팝업 표시
+    if (_remainingTurns == (_maxChatCount - _minChatCount)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _show10thTurnDialog();
+        _showMinChatCompletedDialog();
       });
     }
     
-    // 15번째 대화 완료 시 AI 완료 메시지
+    // 최대 대화 완료 시 AI 완료 메시지
     if (_remainingTurns == 0) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _add15thCompletionMessage();
+        _addMaxChatCompletionMessage();
       });
       return; // AI 응답 대신 완료 메시지만 표시
     }
@@ -708,9 +732,15 @@ class _AiChatPageState extends State<AiChatPage> {
 
   Future<String> _callRealAiApi(String userMessage) async {
     try {
-      // 임시로 하드코딩
+      // DB에서 AI 프롬프트 가져오기
+      final aiPrompt = await AdminConfigService.getConfigWithDefault(
+        'ai_chat_prompt',
+        '당신은 독서를 사랑하는 친근한 AI 어시스턴트입니다. 사용자가 선택한 책에 대해 깊이 있는 대화를 나누며, 감동문 작성을 도와주세요.'
+      );
+      
       final baseUrl = 'https://bookagent-production.up.railway.app';
       print('🔍 Base URL: $baseUrl');
+      print('🔍 사용 중인 AI 프롬프트: ${aiPrompt.substring(0, 50)}...');
       
       // 이전 메시지들을 컨텍스트로 포함
       final recentMessages = _messages.length > 6 
@@ -726,6 +756,9 @@ class _AiChatPageState extends State<AiChatPage> {
         body: jsonEncode({
           'message': userMessage,
           'context': context,
+          'systemPrompt': aiPrompt,  // DB에서 가져온 프롬프트 전달
+          'bookTitle': widget.bookTitle,
+          'bookAuthor': widget.bookAuthor,
         }),
       ).timeout(const Duration(seconds: 8));
 
@@ -830,7 +863,7 @@ class _AiChatPageState extends State<AiChatPage> {
   }
 
   // 10번째 대화 완료 시 팝업 (첫번째 이미지)
-  void _show10thTurnDialog() {
+  void _showMinChatCompletedDialog() {
     showDialog(
       context: context,
       barrierColor: Colors.black.withOpacity(0.5),
@@ -910,7 +943,7 @@ class _AiChatPageState extends State<AiChatPage> {
   }
 
   // 15번째 대화 완료 시 AI 메시지 (두번째 이미지)
-  void _add15thCompletionMessage() {
+  void _addMaxChatCompletionMessage() {
     setState(() {
       _isTyping = false;
       _messages.add(
