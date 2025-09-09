@@ -156,7 +156,12 @@ class AdminConfigService {
         'max_chat_count',
       ]);
 
-      return {
+      print('🔍 DB에서 로드된 raw 설정값들:');
+      configs.forEach((key, value) {
+        print('  $key: ${value.length > 50 ? value.substring(0, 50) + '...' : value}');
+      });
+
+      final result = {
         'ai_chat_prompt': configs['ai_chat_prompt'] ?? '',
         'ai_welcome_message': configs['ai_welcome_message'] ?? '',
         'character_chat_prompt': configs['character_chat_prompt'] ?? '',
@@ -165,8 +170,14 @@ class AdminConfigService {
         'min_chat_count': int.tryParse(configs['min_chat_count'] ?? '10') ?? 10,
         'max_chat_count': int.tryParse(configs['max_chat_count'] ?? '15') ?? 15,
       };
+
+      print('🔍 파싱된 최종 설정값들:');
+      print('  min_chat_count: ${result['min_chat_count']} (원본: ${configs['min_chat_count']})');
+      print('  max_chat_count: ${result['max_chat_count']} (원본: ${configs['max_chat_count']})');
+
+      return result;
     } catch (e) {
-      print('채팅 설정 로드 실패: $e');
+      print('❌ 채팅 설정 로드 실패: $e');
       return {
         'ai_chat_prompt': '',
         'ai_welcome_message': '',

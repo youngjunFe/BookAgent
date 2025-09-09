@@ -92,7 +92,9 @@ class _HiddenAdminPageState extends State<HiddenAdminPage> {
       
       print('✅ DB에서 설정 로드 완료');
       print('AI 프롬프트 길이: ${_aiPromptController.text.length}');
-      print('최소 대화수: ${_minChatCountController.text}');
+      print('최소 대화수: ${_minChatCountController.text} (DB값: ${chatSettings['min_chat_count']})');
+      print('최대 대화수: ${_maxChatCountController.text} (DB값: ${chatSettings['max_chat_count']})');
+      print('AI 인사말 길이: ${_aiWelcomeController.text.length}');
       
     } catch (e) {
       print('❌ 프롬프트 로드 실패: $e');
