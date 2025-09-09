@@ -8,6 +8,7 @@ import 'features/auth/services/supabase_auth_service.dart';
 import 'features/splash/presentation/splash_page.dart';
 import 'features/admin/presentation/hidden_admin_page.dart';
 import 'shared/widgets/main_navigation.dart';
+import 'package:flutter/foundation.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,6 +29,32 @@ Future<void> main() async {
   runApp(const BookReviewApp());
 }
 
+class AppRouter extends StatelessWidget {
+  const AppRouter({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // 웹에서 URL 체크
+    if (kIsWeb) {
+      final uri = Uri.base;
+      final path = uri.path;
+      final query = uri.queryParameters;
+      
+      // 관리자 페이지 체크 - URL 파라미터 방식
+      if (query.containsKey('admin') && query['admin'] == 'x7k9m2p8q1w5') {
+        return const HiddenAdminPage();
+      }
+      
+      // 관리자 페이지 체크 - 경로 방식
+      if (path.contains('/admin/config/x7k9m2p8q1w5')) {
+        return const HiddenAdminPage();
+      }
+    }
+    
+    return const SplashPage();
+  }
+}
+
 class BookReviewApp extends StatelessWidget {
   const BookReviewApp({super.key});
 
@@ -36,12 +63,11 @@ class BookReviewApp extends StatelessWidget {
     return MaterialApp(
       title: AppStrings.appName,
       theme: AppTheme.theme,
-      home: const SplashPage(),
+      home: const AppRouter(),
       debugShowCheckedModeBanner: false,
       routes: {
         '/login': (context) => const LoginPage(),
         '/home': (context) => const AuthWrapper(),
-        '/admin/config/x7k9m2p8q1w5': (context) => const HiddenAdminPage(),
       },
     );
   }
