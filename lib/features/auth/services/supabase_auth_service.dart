@@ -99,20 +99,136 @@ class SupabaseAuthService {
     // 탈퇴한 계정인지 확인
     final isDeleted = await isDeletedAccount();
     if (isDeleted) {
-      debugPrint('🚨 [getSafeCurrentUserInfo] 탈퇴한 계정으로 로그인 시도 감지!');
-      debugPrint('🔄 [getSafeCurrentUserInfo] 자동 로그아웃 처리...');
+      debugPrint('🔄 [getSafeCurrentUserInfo] 탈퇴한 계정의 재가입 감지!');
+      debugPrint('🎯 [getSafeCurrentUserInfo] 재가입 프로세스 시작...');
       
-      // 탈퇴한 계정이면 강제 로그아웃
       try {
-        await signOut();
-        return null;
+        // 탈퇴 계정 재가입 처리: 프로필 완전 새로고침
+        await _handleReRegistration(user);
+        
+        // 재가입 처리 후 최신 사용자 정보 반환
+        return currentUserInfo;
       } catch (e) {
-        debugPrint('❌ [getSafeCurrentUserInfo] 강제 로그아웃 실패: $e');
+        debugPrint('❌ [getSafeCurrentUserInfo] 재가입 처리 실패: $e');
+        // 재가입 실패 시에만 로그아웃
+        await signOut();
         return null;
       }
     }
 
     return currentUserInfo;
+  }
+
+  // 탈퇴 계정 재가입 처리 (완전 새로고침)
+  Future<void> _handleReRegistration(User user) async {
+    try {
+      debugPrint('🔄 [_handleReRegistration] 재가입 처리 시작: ${user.email}');
+      
+      // 1. 새로운 한국어 닉네임 생성
+      final newNicknameResult = await _client.rpc('generate_korean_nickname');
+      final newNickname = newNicknameResult as String? ?? '독서가${DateTime.now().millisecondsSinceEpoch % 10000}';
+      
+      debugPrint('✨ [_handleReRegistration] 재가입용 새 닉네임 생성: $newNickname');
+      
+      // 2. profiles 테이블에서 기존 데이터 완전 삭제 후 재생성
+      await _client.from('profiles').delete().eq('id', user.id);
+      debugPrint('🗑️ [_handleReRegistration] 기존 프로필 데이터 삭제 완료');
+      
+      // 3. 완전히 새로운 프로필 생성
+      await _client.from('profiles').insert({
+        'id': user.id,
+        'email': user.email,
+        'full_name': newNickname,
+        'nickname': newNickname,
+        'provider': user.appMetadata['provider'] ?? 'email',
+        'created_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toIso8601String(),
+      });
+      
+      // 4. userMetadata도 새로운 닉네임으로 업데이트
+      await _client.auth.updateUser(
+        UserAttributes(
+          data: {
+            'nickname': newNickname,
+            'full_name': newNickname,
+            'is_reregistered': 'true', // 재가입 마커
+            'reregistration_date': DateTime.now().toIso8601String(),
+          }
+        )
+      );
+      
+      debugPrint('✅ [_handleReRegistration] 재가입 처리 완료!');
+      debugPrint('🎯 [_handleReRegistration] 새 닉네임: $newNickname');
+      debugPrint('📅 [_handleReRegistration] 재가입 날짜: ${DateTime.now()}');
+      
+    } catch (e) {
+      debugPrint('❌ [_handleReRegistration] 재가입 처리 실패: $e');
+      rethrow;
+    }
+  }
+
+  // 재가입 여부 확인 
+  bool get isReRegisteredUser {
+    final user = currentUser;
+    if (user == null) return false;
+    
+    final metadata = user.userMetadata;
+    return metadata?['is_reregistered'] == 'true';
+  }
+
+  // 재가입 날짜 가져오기
+  DateTime? get reRegistrationDate {
+    final user = currentUser;
+    if (user == null) return null;
+    
+    final metadata = user.userMetadata;
+    final dateStr = metadata?['reregistration_date'] as String?;
+    if (dateStr != null) {
+      try {
+        return DateTime.parse(dateStr);
+      } catch (e) {
+        debugPrint('❌ 재가입 날짜 파싱 실패: $e');
+      }
+    }
+    return null;
+  }
+
+  // 재가입 환영 메시지 처리 (한 번만 표시)
+  Future<String?> getReRegistrationWelcomeMessage() async {
+    if (!isReRegisteredUser) return null;
+    
+    final user = currentUser;
+    if (user == null) return null;
+    
+    final reRegDate = reRegistrationDate;
+    if (reRegDate == null) return null;
+    
+    // 재가입 후 7일 이내에만 환영 메시지 표시
+    final daysSinceReReg = DateTime.now().difference(reRegDate).inDays;
+    if (daysSinceReReg > 7) return null;
+    
+    final nickname = user.userMetadata?['nickname'] ?? '독서가';
+    return '🎉 ${nickname}님, 다시 돌아오셨군요!\n새로운 마음으로 독서 여행을 시작해보세요.';
+  }
+
+  // 재가입 마커 제거 (환영 메시지 표시 후)
+  Future<void> clearReRegistrationMarker() async {
+    final user = currentUser;
+    if (user == null) return;
+    
+    try {
+      final currentData = Map<String, dynamic>.from(user.userMetadata ?? {});
+      currentData.remove('is_reregistered');
+      currentData.remove('reregistration_date');
+      
+      await _client.auth.updateUser(
+        UserAttributes(data: currentData)
+      );
+      
+      debugPrint('✅ [clearReRegistrationMarker] 재가입 마커 제거 완료');
+    } catch (e) {
+      debugPrint('❌ [clearReRegistrationMarker] 마커 제거 실패: $e');
+    }
   }
 
   // 앱 시작시 로그인 상태 복원 (Supabase가 자동으로 처리)
@@ -435,20 +551,28 @@ class SupabaseAuthService {
       
       debugPrint('✅ [deleteAccount] 메타데이터 삭제 완료');
 
-      // 3. 🔥 핵심 해결: auth.users에서도 완전 삭제!
-      debugPrint('💥 [deleteAccount] auth.users에서 완전 삭제 중...');
+      // 3. 🔥 Edge Function으로 Authentication 완전 삭제
+      debugPrint('💥 [deleteAccount] Edge Function으로 완전 삭제 중...');
       
-      // Supabase Admin API로 사용자 완전 삭제
       try {
-        await _client.auth.admin.deleteUser(user.id);
-        debugPrint('✅ [deleteAccount] Authentication 완전 삭제 성공!');
-      } catch (adminError) {
-        debugPrint('⚠️ [deleteAccount] Admin 삭제 실패, 로그아웃만: $adminError');
-        // Admin 권한이 없으면 로그아웃만
+        final result = await _client.functions.invoke('delete-user', body: {
+          'user_id': user.id,
+        });
+        
+        if (result.data != null && result.data['success'] == true) {
+          debugPrint('✅ [deleteAccount] Edge Function으로 완전 삭제 성공!');
+        } else {
+          debugPrint('❌ [deleteAccount] Edge Function 삭제 실패: ${result.data}');
+          // 실패해도 로그아웃은 진행
+          await _client.auth.signOut();
+        }
+      } catch (edgeError) {
+        debugPrint('❌ [deleteAccount] Edge Function 호출 실패: $edgeError');
+        // Edge Function 실패해도 로그아웃은 진행
         await _client.auth.signOut();
       }
       
-      debugPrint('🎉 [deleteAccount] 완전 탈퇴 성공! 재가입시 완전히 새로운 계정으로 처리!');
+      debugPrint('🎉 [deleteAccount] 자동 탈퇴 완료! 재가입시 새로운 계정으로 처리!');
       return true;
 
     } catch (e) {
@@ -718,36 +842,17 @@ class SupabaseAuthService {
       debugPrint('🎯 [_createUserProfile] 생성된 닉네임: $nickname');
       
       if (existingProfile != null) {
-        // 탈퇴 후 재가입이면 무조건 새로운 닉네임으로 완전 교체
-        debugPrint('🔄 [_createUserProfile] 탈퇴 후 재가입 - 새 닉네임으로 완전 교체');
+        // 기존 프로필이 있다면 단순 업데이트 (재가입은 별도 함수에서 처리)
+        debugPrint('🔄 [_createUserProfile] 기존 프로필 업데이트');
         
-        // 새로운 한국어 닉네임 생성
-        final newNicknameResult = await _client.rpc('generate_korean_nickname');
-        final newNickname = newNicknameResult as String? ?? nickname;
-        
-        debugPrint('🎯 [_createUserProfile] 재가입용 새 닉네임: $newNickname');
-        
-        // profiles 테이블 완전 새로 업데이트
+        // 기본 프로필 정보만 업데이트 (닉네임은 유지)
         await _client.from('profiles').update({
           'email': user.email,
-          'full_name': newNickname,
-          'nickname': newNickname,
           'provider': user.appMetadata['provider'] ?? 'email',
-          'created_at': DateTime.now().toIso8601String(), // 재가입이므로 생성일도 새로
           'updated_at': DateTime.now().toIso8601String(),
         }).eq('id', user.id);
         
-        // userMetadata도 새로운 닉네임으로 업데이트
-        await _client.auth.updateUser(
-          UserAttributes(
-            data: {
-              'nickname': newNickname,
-              'full_name': newNickname,
-            }
-          )
-        );
-        
-        debugPrint('✅ [_createUserProfile] 재가입 프로필 완전 새로고침 완료: $newNickname');
+        debugPrint('✅ [_createUserProfile] 기존 프로필 업데이트 완료');
         
       } else {
         // 프로필이 없으면 새로 생성
