@@ -123,17 +123,16 @@ serve(async (req) => {
     // 요청에서 사용자 정보 가져오기
     const { user_id, email, provider = 'email' } = await req.json();
 
-    if (!user_id || !email) {
-      return new Response(
-        JSON.stringify({ error: '사용자 ID와 이메일이 필요합니다' }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+    if (!user_id) {
+      return new Response(JSON.stringify({ error: '사용자 ID가 필요합니다' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    console.log('프로필 생성 시작:', { user_id, email, provider });
+    const safeEmail: string = email ?? '';
+
+    console.log('프로필 생성 시작:', { user_id, email: safeEmail, provider });
 
     // 중복 체크 및 고유 닉네임 생성
     let nickname = generateKoreanNickname();
@@ -154,10 +153,10 @@ serve(async (req) => {
 
     console.log('생성된 닉네임:', nickname);
 
-    // 프로필 생성/업데이트
-    const { data, error } = await supabase.from('profiles').upsert({
+    // 프로필 생성/업데이트 (이메일이 없을 수 있으므로 safeEmail 사용)
+    const { error: upsertError } = await supabase.from('profiles').upsert({
       id: user_id,
-      email: email,
+      email: safeEmail,
       nickname: nickname,
       full_name: nickname,
       provider: provider,
@@ -165,21 +164,39 @@ serve(async (req) => {
       updated_at: new Date().toISOString(),
     });
 
-    if (error) {
-      console.error('프로필 생성 실패:', error);
-      return new Response(JSON.stringify({ error: error.message }), {
+    if (upsertError) {
+      console.error('프로필 생성 실패:', upsertError);
+      return new Response(JSON.stringify({ error: upsertError.message }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log('프로필 생성 성공:', { nickname, user_id });
+    // Auth 메타데이터 동기화 (nickname / full_name 일치)
+    const { error: adminError } = await supabase.auth.admin.updateUserById(
+      user_id,
+      {
+        user_metadata: {
+          nickname,
+          full_name: nickname,
+        },
+      }
+    );
+
+    if (adminError) {
+      console.warn('Auth 메타데이터 동기화 실패:', adminError);
+    }
+
+    console.log('프로필 생성 성공 및 메타데이터 동기화 완료:', {
+      nickname,
+      user_id,
+    });
 
     return new Response(
       JSON.stringify({
         success: true,
         nickname: nickname,
-        message: '프로필이 성공적으로 생성되었습니다',
+        message: '프로필이 성공적으로 생성/동기화되었습니다',
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -191,4 +208,3 @@ serve(async (req) => {
     });
   }
 });
-

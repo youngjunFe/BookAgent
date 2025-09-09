@@ -61,6 +61,13 @@ class SupabaseAuthService {
       debugPrint('✅ [_ensureNicknameExists] nickname 필드 추가 완료: $existingName');
     } catch (e) {
       debugPrint('❌ [_ensureNicknameExists] nickname 필드 추가 실패: $e');
+      // 삭제된 사용자 세션이 남아있는 경우 정리
+      if (e.toString().contains('user_not_found') || e.toString().contains('403')) {
+        try {
+          await _client.auth.signOut();
+          debugPrint('✅ [_ensureNicknameExists] stale 세션 정리(로그아웃) 완료');
+        } catch (_) {}
+      }
     }
   }
 
@@ -561,6 +568,8 @@ class SupabaseAuthService {
         
         if (result.data != null && result.data['success'] == true) {
           debugPrint('✅ [deleteAccount] Edge Function으로 완전 삭제 성공!');
+          // 성공 시에도 반드시 세션 정리 (stale JWT 방지)
+          await _client.auth.signOut();
         } else {
           debugPrint('❌ [deleteAccount] Edge Function 삭제 실패: ${result.data}');
           // 실패해도 로그아웃은 진행
