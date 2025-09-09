@@ -6,6 +6,7 @@ import 'core/constants/app_strings.dart';
 import 'features/auth/presentation/login_page.dart';
 import 'features/auth/services/supabase_auth_service.dart';
 import 'features/splash/presentation/splash_page.dart';
+import 'features/admin/presentation/hidden_admin_page.dart';
 import 'shared/widgets/main_navigation.dart';
 
 Future<void> main() async {
@@ -40,6 +41,7 @@ class BookReviewApp extends StatelessWidget {
       routes: {
         '/login': (context) => const LoginPage(),
         '/home': (context) => const AuthWrapper(),
+        '/admin/config/x7k9m2p8q1w5': (context) => const HiddenAdminPage(),
       },
     );
   }

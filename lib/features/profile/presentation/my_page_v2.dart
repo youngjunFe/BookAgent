@@ -2,11 +2,65 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../auth/services/supabase_auth_service.dart';
+import '../../review/data/review_repository.dart';
+import '../../review/models/review.dart';
+import '../../ebook/data/ebook_repository.dart';
+import '../../ebook/models/ebook.dart';
 import 'settings_page.dart';
 import 'profile_edit_page.dart';
 
-class MyPageV2 extends StatelessWidget {
+class MyPageV2 extends StatefulWidget {
   const MyPageV2({super.key});
+
+  @override
+  State<MyPageV2> createState() => _MyPageV2State();
+}
+
+class _MyPageV2State extends State<MyPageV2> {
+  final ReviewRepository _reviewRepo = ReviewRepository();
+  final EBookRepository _ebookRepo = EBookRepository();
+  List<Review> _recentReviews = [];
+  List<EBook> _recentEbooks = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // 감동문과 전자책 데이터를 병렬로 로드
+      final results = await Future.wait([
+        _reviewRepo.list(),
+        _ebookRepo.list(),
+      ]);
+
+      if (mounted) {
+        final reviews = results[0] as List<Review>;
+        final ebooks = results[1] as List<EBook>;
+        
+        setState(() {
+          // 최근 4개의 감동문과 6개의 전자책
+          _recentReviews = reviews.take(4).toList();
+          _recentEbooks = ebooks.take(6).toList();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('데이터 로드 실패: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,16 +87,16 @@ class MyPageV2 extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
+          children: [
             _ProfileHeader(),
             SizedBox(height: 32),
-            _SectionTitle('나의 책장'),
-            SizedBox(height: 12),
-            _BookshelfSection(),
-            SizedBox(height: 32),
-            _SectionTitle('나의 대화'),
-            SizedBox(height: 12),
-            _NotesSection(),
+            const _SectionTitle('나의 책장'),
+            const SizedBox(height: 12),
+            _isLoading ? const Center(child: CircularProgressIndicator()) : _BookshelfSection(ebooks: _recentEbooks),
+            const SizedBox(height: 32),
+            const _SectionTitle('나의 대화'),
+            const SizedBox(height: 12),
+            _isLoading ? const Center(child: CircularProgressIndicator()) : _NotesSection(reviews: _recentReviews),
           ],
         ),
       ),
@@ -116,7 +170,9 @@ class _SectionTitle extends StatelessWidget {
 }
 
 class _BookshelfSection extends StatelessWidget {
-  const _BookshelfSection();
+  final List<EBook> ebooks;
+  
+  const _BookshelfSection({required this.ebooks});
 
   @override
   Widget build(BuildContext context) {
@@ -159,11 +215,22 @@ class _BookshelfSection extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
-                children: List.generate(6, (index) => _BookSpine(
-                  title: _getBookTitle(index),
-                  color: _getBookColor(index),
-                  height: _getBookHeight(index),
-                )),
+                children: ebooks.isEmpty
+                    ? List.generate(6, (index) => _BookSpine(
+                        title: _getBookTitle(index),
+                        color: _getBookColor(index),
+                        height: _getBookHeight(index),
+                      ))
+                    : ebooks.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final ebook = entry.value;
+                        return _BookSpine(
+                          title: ebook.title,
+                          color: _getBookColorFromProgress(ebook.progress, index),
+                          height: _getBookHeightFromProgress(ebook.progress, index),
+                          progress: ebook.progress,
+                        );
+                      }).toList(),
               ),
             ),
           ),
@@ -193,17 +260,78 @@ class _BookshelfSection extends StatelessWidget {
     final heights = [140.0, 120.0, 135.0, 125.0, 130.0, 145.0];
     return heights[index % heights.length];
   }
+
+  Color _getBookColorFromProgress(double progress, int index) {
+    // 진행률에 따라 색상 결정
+    if (progress >= 1.0) {
+      // 완독한 책 - 골드 톤
+      return const Color(0xFFB8860B);
+    } else if (progress >= 0.5) {
+      // 절반 이상 읽은 책 - 그린 톤
+      return const Color(0xFF228B22);
+    } else if (progress > 0.0) {
+      // 읽기 시작한 책 - 블루 톤
+      return const Color(0xFF4169E1);
+    } else {
+      // 아직 읽지 않은 책 - 기본 색상
+      return _getBookColor(index);
+    }
+  }
+
+  double _getBookHeightFromProgress(double progress, int index) {
+    final baseHeights = [140.0, 120.0, 135.0, 125.0, 130.0, 145.0];
+    final baseHeight = baseHeights[index % baseHeights.length];
+    
+    // 진행률에 따라 높이 약간 조정 (완독한 책이 더 높게)
+    if (progress >= 1.0) {
+      return baseHeight + 10.0;
+    } else if (progress >= 0.5) {
+      return baseHeight + 5.0;
+    } else {
+      return baseHeight;
+    }
+  }
+
+  Color _getReviewCardColor(Review review) {
+    // 감동문 상태에 따라 배경 색상 결정
+    switch (review.status) {
+      case ReviewStatus.draft:
+        return const Color(0xFFE8F4FD); // 연한 파랑
+      case ReviewStatus.completed:
+        return const Color(0xFFF0E6FF); // 연한 보라
+      case ReviewStatus.published:
+        return const Color(0xFFE8F8E8); // 연한 초록
+      default:
+        return const Color(0xFFFFF7CC); // 연한 노랑
+    }
+  }
+
+  Color _getReviewCharacterColor(Review review) {
+    // 감동문 상태에 따라 텍스트 색상 결정
+    switch (review.status) {
+      case ReviewStatus.draft:
+        return const Color(0xFF2F4F4F); // 다크 그레이
+      case ReviewStatus.completed:
+        return const Color(0xFF800080); // 퍼플
+      case ReviewStatus.published:
+        return const Color(0xFF228B22); // 그린
+      default:
+        return const Color(0xFF8B0000); // 다크 레드
+    }
+  }
 }
 
 class _BookSpine extends StatelessWidget {
   final String title;
   final Color color;
   final double height;
+  final double progress;
 
   const _BookSpine({
     required this.title,
     required this.color,
     required this.height,
+    this.progress = 0.0,
   });
 
   @override
@@ -257,6 +385,24 @@ class _BookSpine extends StatelessWidget {
               color: Colors.black.withOpacity(0.2),
             ),
           ),
+          // 진행률 표시 (하단에서부터)
+          if (progress > 0.0)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: height * progress,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.3),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(2),
+                    topRight: Radius.circular(2),
+                  ),
+                ),
+              ),
+            ),
+          
           // 책 제목 (세로로 회전)
           Positioned.fill(
             child: Center(
@@ -280,6 +426,26 @@ class _BookSpine extends StatelessWidget {
               ),
             ),
           ),
+          
+          // 완독 표시
+          if (progress >= 1.0)
+            Positioned(
+              top: 4,
+              right: 4,
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: Colors.yellow,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.star,
+                  size: 6,
+                  color: Colors.white,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -287,7 +453,9 @@ class _BookSpine extends StatelessWidget {
 }
 
 class _NotesSection extends StatelessWidget {
-  const _NotesSection();
+  final List<Review> reviews;
+  
+  const _NotesSection({required this.reviews});
 
   @override
   Widget build(BuildContext context) {
@@ -310,35 +478,75 @@ class _NotesSection extends StatelessWidget {
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
-          children: [
-            _ChatNoteCard(
-              character: '해리포터',
-              message: '마법의 세계에 대해 이야기해봐요! 호그와트에서의 모험이 궁금해요.',
-              color: const Color(0xFFFFF7CC),
-              characterColor: const Color(0xFF8B0000),
-            ),
-            _ChatNoteCard(
-              character: '셜록홈즈',
-              message: '추리의 기술에 대해 알려드릴까요? 관찰력이 중요합니다.',
-              color: const Color(0xFFE8F4FD),
-              characterColor: const Color(0xFF2F4F4F),
-            ),
-            _ChatNoteCard(
-              character: '어린왕자',
-              message: '정말 중요한 것은 눈에 보이지 않아요. 마음으로 봐야 해요.',
-              color: const Color(0xFFF0E6FF),
-              characterColor: const Color(0xFF800080),
-            ),
-            _ChatNoteCard(
-              character: '앨리스',
-              message: '이상한 나라에서의 모험담을 들려드릴게요!',
-              color: const Color(0xFFE8F8E8),
-              characterColor: const Color(0xFF228B22),
-            ),
-          ],
+          children: reviews.isEmpty
+              ? [
+                  _ChatNoteCard(
+                    character: '해리포터',
+                    message: '마법의 세계에 대해 이야기해봐요! 호그와트에서의 모험이 궁금해요.',
+                    color: const Color(0xFFFFF7CC),
+                    characterColor: const Color(0xFF8B0000),
+                  ),
+                  _ChatNoteCard(
+                    character: '셜록홈즈',
+                    message: '추리의 기술에 대해 알려드릴까요? 관찰력이 중요합니다.',
+                    color: const Color(0xFFE8F4FD),
+                    characterColor: const Color(0xFF2F4F4F),
+                  ),
+                  _ChatNoteCard(
+                    character: '어린왕자',
+                    message: '정말 중요한 것은 눈에 보이지 않아요. 마음으로 봐야 해요.',
+                    color: const Color(0xFFF0E6FF),
+                    characterColor: const Color(0xFF800080),
+                  ),
+                  _ChatNoteCard(
+                    character: '앨리스',
+                    message: '이상한 나라에서의 모험담을 들려드릴게요!',
+                    color: const Color(0xFFE8F8E8),
+                    characterColor: const Color(0xFF228B22),
+                  ),
+                ]
+              : reviews.map((review) {
+                  return _ChatNoteCard(
+                    character: review.bookTitle,
+                    message: review.content.length > 50 
+                        ? '${review.content.substring(0, 50)}...'
+                        : review.content,
+                    color: _getReviewCardColor(review),
+                    characterColor: _getReviewCharacterColor(review),
+                    isReview: true,
+                  );
+                }).toList(),
         ),
       ),
     );
+  }
+
+  Color _getReviewCardColor(Review review) {
+    // 감동문 상태에 따라 배경 색상 결정
+    switch (review.status) {
+      case ReviewStatus.draft:
+        return const Color(0xFFE8F4FD); // 연한 파랑
+      case ReviewStatus.completed:
+        return const Color(0xFFF0E6FF); // 연한 보라
+      case ReviewStatus.published:
+        return const Color(0xFFE8F8E8); // 연한 초록
+      default:
+        return const Color(0xFFFFF7CC); // 연한 노랑
+    }
+  }
+
+  Color _getReviewCharacterColor(Review review) {
+    // 감동문 상태에 따라 텍스트 색상 결정
+    switch (review.status) {
+      case ReviewStatus.draft:
+        return const Color(0xFF2F4F4F); // 다크 그레이
+      case ReviewStatus.completed:
+        return const Color(0xFF800080); // 퍼플
+      case ReviewStatus.published:
+        return const Color(0xFF228B22); // 그린
+      default:
+        return const Color(0xFF8B0000); // 다크 레드
+    }
   }
 }
 
@@ -347,12 +555,14 @@ class _ChatNoteCard extends StatelessWidget {
   final String message;
   final Color color;
   final Color characterColor;
+  final bool isReview;
 
   const _ChatNoteCard({
     required this.character,
     required this.message,
     required this.color,
     required this.characterColor,
+    this.isReview = false,
   });
 
   @override
@@ -377,7 +587,7 @@ class _ChatNoteCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 캐릭터 이름
+          // 캐릭터 이름 또는 책 제목
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
@@ -388,13 +598,29 @@ class _ChatNoteCard extends StatelessWidget {
                 width: 1,
               ),
             ),
-            child: Text(
-              character,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: characterColor,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isReview)
+                  Icon(
+                    Icons.auto_awesome,
+                    size: 10,
+                    color: characterColor,
+                  ),
+                if (isReview) const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    character,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: characterColor,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 12),
