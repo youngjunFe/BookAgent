@@ -107,17 +107,17 @@ class _IntroPageState extends State<IntroPage> {
   Widget _buildSearchDemo() {
     return Column(
       children: [
-        // 실제 검색 입력창
+        // 검색 입력창 (BookSearchPage 스타일)
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
             border: Border.all(color: AppColors.dividerColor),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: '어떤 책을 읽으셨나요?',
+              hintText: '편하고 입력해 주세요',
               border: InputBorder.none,
               suffixIcon: IconButton(
                 icon: _isSearching 
@@ -136,74 +136,14 @@ class _IntroPageState extends State<IntroPage> {
         
         const SizedBox(height: 16),
         
-        // 검색 결과 표시
+        // 검색 결과 표시 (BookSearchPage 스타일)
         if (_searchResults.isNotEmpty) ...[
-          Container(
-            height: 120,
+          Expanded(
             child: ListView.builder(
-              scrollDirection: Axis.horizontal,
               itemCount: _searchResults.length,
               itemBuilder: (context, index) {
                 final book = _searchResults[index];
-                return Container(
-                  width: 200,
-                  margin: const EdgeInsets.only(right: 12),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.dividerColor),
-                  ),
-                  child: InkWell(
-                    onTap: () => _selectBookFromOnboarding(book),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 40,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Icon(
-                            Icons.book,
-                            color: AppColors.primary,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                book.title,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimary,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                book.author,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.textSecondary,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
+                return _buildBookItem(book);
               },
             ),
           ),
@@ -292,6 +232,130 @@ class _IntroPageState extends State<IntroPage> {
         _isSearching = false;
       });
     }
+  }
+
+  Widget _buildBookItem(BookSearchResult book) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.dividerColor.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _selectBookFromOnboarding(book),
+          splashColor: AppColors.primary.withOpacity(0.05),
+          highlightColor: AppColors.primary.withOpacity(0.03),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+            child: Row(
+              children: [
+                // 📚 책 표지 이미지
+                Container(
+                  width: 45,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(6),
+                    color: AppColors.primary.withOpacity(0.1),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: book.image.isNotEmpty
+                        ? Image.network(
+                            book.image,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return _buildSimplePlaceholder(book.title);
+                            },
+                          )
+                        : _buildSimplePlaceholder(book.title),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                
+                // 📖 책 정보
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 출판사
+                      Text(
+                        book.publisher.isNotEmpty ? book.publisher : '출판사',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      
+                      // 책 제목
+                      Text(
+                        book.title,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      
+                      // 저자 정보
+                      Text(
+                        book.author.isNotEmpty ? book.author : '저자 정보 없음',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // 오른쪽 화살표
+                Icon(
+                  Icons.chevron_right,
+                  size: 24,
+                  color: AppColors.textHint,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSimplePlaceholder(String title) {
+    final colors = [
+      AppColors.primary,
+      Colors.orange,
+      Colors.green,
+      Colors.purple,
+      Colors.blue,
+    ];
+    final color = colors[title.hashCode % colors.length];
+    
+    return Container(
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Icon(
+        Icons.book,
+        color: color,
+        size: 24,
+      ),
+    );
   }
 
   void _selectBookFromOnboarding(BookSearchResult book) {
