@@ -132,9 +132,9 @@ class _HomeViewState extends State<HomeView> {
   // 전체 화면을 차지하는 캐러셀 위젯
   Widget _buildFullScreenCarousel() {
     final List<String> slideImages = [
-      'assets/images/slides/Group 26086144.png',
-      'assets/images/slides/Group 26086146.png',
-      'assets/images/slides/onboarding_01.png',
+      'assets/images/slides/slide1.png',
+      'assets/images/slides/slide2.png',
+      'assets/images/slides/slide3.png',
     ];
 
     return Container(
