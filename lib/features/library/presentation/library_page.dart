@@ -264,43 +264,25 @@ class _ReviewTabState extends State<ReviewTab> {
   Widget _buildReviewList() {
     return RefreshIndicator(
       onRefresh: _loadData,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: GridView.builder(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 4,
-            childAspectRatio: 0.6,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-          ),
-          itemCount: _filteredReviews.length,
-          itemBuilder: (context, index) {
-            final review = _filteredReviews[index];
-            return _ReviewCard(
-              review: review,
-              onTap: () async {
-                // 감동문 상세 페이지로 이동
-                await Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => ReviewDetailPage(review: review),
-                  ),
-                );
-                // 돌아온 후 목록 새로고침
-                _loadData();
-              },
-              onLongPress: () async {
-                // 길게 누르면 편집 페이지로 이동
-                await Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => ReviewEditorPage(review: review),
-                  ),
-                );
-                // 편집 후 목록 새로고침
-                _loadData();
-              },
-            );
-          },
-        ),
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        itemCount: _filteredReviews.length,
+        itemBuilder: (context, index) {
+          final review = _filteredReviews[index];
+          return _ReviewListItem(
+            review: review,
+            onTap: () async {
+              // 감동문 상세 페이지로 이동
+              await Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => ReviewDetailPage(review: review),
+                ),
+              );
+              // 돌아온 후 목록 새로고침
+              _loadData();
+            },
+          );
+        },
       ),
     );
   }
@@ -678,5 +660,163 @@ class _ReviewCard extends StatelessWidget {
     } else {
       return '${date.month}/${date.day}';
     }
+  }
+}
+
+class _ReviewListItem extends StatelessWidget {
+  final Review review;
+  final VoidCallback onTap;
+
+  const _ReviewListItem({
+    required this.review,
+    required this.onTap,
+  });
+
+  String _formatDateTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+
+    if (difference.inMinutes < 1) {
+      return '방금';
+    } else if (difference.inHours < 1) {
+      return '${difference.inMinutes}분';
+    } else if (difference.inDays < 1) {
+      return '${difference.inHours}시간';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays}일';
+    } else {
+      return '${dateTime.month}월 ${dateTime.day}일';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[200]!),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 상단 태그
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: review.status == ReviewStatus.draft
+                          ? Colors.grey[100]
+                          : review.status == ReviewStatus.completed
+                              ? Colors.blue[50]
+                              : Colors.green[50],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      review.statusText,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: review.status == ReviewStatus.draft
+                            ? Colors.grey[600]
+                            : review.status == ReviewStatus.completed
+                                ? Colors.blue[700]
+                                : Colors.green[700],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 12),
+              
+              // 감동문 제목/내용
+              Text(
+                review.title.isNotEmpty 
+                    ? review.title
+                    : '${review.bookTitle}의 철학적 사유가 녹아있는 이 책은 처음...',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                  height: 1.4,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              
+              const SizedBox(height: 8),
+              
+              // 감동문 내용 미리보기
+              Text(
+                review.content.isNotEmpty
+                    ? review.content
+                    : '헤르만 헤세의 철학적 사유가 녹아있는 이 책은 처음에 어렵게 다가왔다. \'새는 알에서 나오려고 투쟁한다\'는 문장처럼, 난해한 은유들이 가득했다. 하지만 읽어갈수록 이상하게도 위...',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[700],
+                  height: 1.5,
+                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+              
+              const SizedBox(height: 12),
+              
+              // 하단 정보 (책 제목과 시간)
+              Row(
+                children: [
+                  // 책 아이콘과 제목
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.menu_book,
+                          size: 14,
+                          color: Colors.grey,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          review.bookTitle,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  const Spacer(),
+                  
+                  // 작성 시간
+                  Text(
+                    '${_formatDateTime(review.updatedAt)} 전',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
