@@ -1,10 +1,13 @@
-import { getConfigWithDefault } from '../agent/utils/supabase.js';
+const { getConfigWithDefault } = require('../agent/utils/supabase.js');
 
 module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader(
+      'Access-Control-Allow-Headers',
+      'Content-Type, Authorization'
+    );
     return res.status(204).end();
   }
 
@@ -13,14 +16,19 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { message = '', context = '', bookTitle, bookAuthor } = req.body || {};
+    const {
+      message = '',
+      context = '',
+      bookTitle,
+      bookAuthor,
+    } = req.body || {};
     const userMessage = String(message);
     const chatContext = String(context);
 
-    console.log('Chat request:', { 
-      userMessage, 
-      hasContext: !!chatContext, 
-      bookTitle
+    console.log('Chat request:', {
+      userMessage,
+      hasContext: !!chatContext,
+      bookTitle,
     });
 
     const apiKey = process.env.OPENAI_API_KEY;
@@ -33,21 +41,24 @@ module.exports = async (req, res) => {
     const systemPrompt = await getConfigWithDefault(
       'ai_chat_prompt',
       '당신은 친근하고 지식이 풍부한 독서 도우미입니다. ' +
-      '사용자와 자연스럽게 대화하며 책에 대해 이야기하세요. ' +
-      '발제문이 아닌 일반적인 대화 형식으로 응답하고, ' +
-      '책 추천, 독서 경험 공유, 책 내용 토론 등을 도와주세요.'
+        '사용자와 자연스럽게 대화하며 책에 대해 이야기하세요. ' +
+        '발제문이 아닌 일반적인 대화 형식으로 응답하고, ' +
+        '책 추천, 독서 경험 공유, 책 내용 토론 등을 도와주세요.'
     );
 
-    console.log('🔥 DB에서 가져온 시스템 프롬프트:', systemPrompt.substring(0, 100) + '...');
+    console.log(
+      '🔥 DB에서 가져온 시스템 프롬프트:',
+      systemPrompt.substring(0, 100) + '...'
+    );
 
-    const userPrompt = chatContext 
+    const userPrompt = chatContext
       ? `이전 대화:\n${chatContext}\n\n사용자: ${userMessage}`
       : `사용자: ${userMessage}`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -67,12 +78,12 @@ module.exports = async (req, res) => {
     }
 
     const data = await response.json();
-    const content = data?.choices?.[0]?.message?.content || getFallbackResponse(userMessage);
-    
+    const content =
+      data?.choices?.[0]?.message?.content || getFallbackResponse(userMessage);
+
     console.log('Chat response generated:', content.substring(0, 100) + '...');
     res.setHeader('Access-Control-Allow-Origin', '*');
     return res.status(200).send(content);
-
   } catch (error) {
     console.error('Chat function error:', error);
     res.setHeader('Access-Control-Allow-Origin', '*');
