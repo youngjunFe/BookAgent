@@ -32,7 +32,7 @@ class _HomeViewState extends State<HomeView> {
   int _currentPage = 0;
   final SupabaseAuthService _authService = SupabaseAuthService();
   String? _userNickname;
-  String _timeBasedMessage = '';
+  TimeBasedMessage? _timeBasedMessage;
 
   @override
   void initState() {
@@ -69,7 +69,7 @@ class _HomeViewState extends State<HomeView> {
     );
     
     setState(() {
-      _timeBasedMessage = timeMessage.message1;
+      _timeBasedMessage = timeMessage;
     });
   }
 
@@ -96,7 +96,7 @@ class _HomeViewState extends State<HomeView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _userNickname != null ? '${_userNickname}님' : '사용자님',
+                        _timeBasedMessage?.message1 ?? '안녕하세요!',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -105,7 +105,7 @@ class _HomeViewState extends State<HomeView> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _timeBasedMessage,
+                        _timeBasedMessage?.message2 ?? '오늘도 좋은 하루 보내세요!',
                         style: TextStyle(
                           fontSize: 14,
                           color: AppColors.textSecondary,
