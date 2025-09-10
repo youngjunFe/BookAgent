@@ -132,9 +132,9 @@ class _HomeViewState extends State<HomeView> {
   // 전체 화면을 차지하는 캐러셀 위젯
   Widget _buildFullScreenCarousel() {
     final List<String> slideImages = [
-      'https://picsum.photos/400/600?random=1',
-      'https://picsum.photos/400/600?random=2',
-      'https://picsum.photos/400/600?random=3',
+      'assets/images/slides/slide1.png',
+      'assets/images/slides/slide2.png',
+      'assets/images/slides/slide3.png',
     ];
 
     return Container(
@@ -162,7 +162,7 @@ class _HomeViewState extends State<HomeView> {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
-                  child: Image.network(
+                  child: Image.asset(
                     slideImages[index],
                     fit: BoxFit.cover,
                     width: double.infinity,
