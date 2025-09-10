@@ -72,9 +72,8 @@ class _IntroPageState extends State<IntroPage> {
   void _nextPage() {
     // "AI와 대화하기" 버튼인 경우 책 검색 페이지로 이동
     if (_pages[_currentPage].showAiChatButton == true) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (context) => const BookSearchPage()),
       );
       return;
     }
