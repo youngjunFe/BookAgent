@@ -78,7 +78,7 @@ class TimeBasedMessageService {
       // 오전 (06:00-11:59)
       return TimeBasedMessage(
         message1: '상쾌한 오전이에요!',
-        message2: '치읓ㅕ과의 대화로 감동을 깨워보세요.🌱',
+        message2: '치읓과의 대화로 감동을 깨워보세요.🌱',
       );
     } else if (hour >= 12 && hour < 20) {
       // 오후 (12:00-19:59)

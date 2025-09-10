@@ -118,7 +118,8 @@ class _HomeViewState extends State<HomeView> {
             ),
             
             // 시간별 인사말 섹션
-            Padding(
+            Container(
+              width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -131,6 +132,7 @@ class _HomeViewState extends State<HomeView> {
                       color: Color(0xFF3D3D3D),
                       height: 1.4,
                     ),
+                    textAlign: TextAlign.left,
                   ),
                   Text(
                     _timeBasedMessage?.message2 ?? '오늘도 좋은 하루 보내세요!',
@@ -140,6 +142,7 @@ class _HomeViewState extends State<HomeView> {
                       color: Color(0xFF3D3D3D),
                       height: 1.4,
                     ),
+                    textAlign: TextAlign.left,
                   ),
                 ],
               ),
