@@ -53,7 +53,7 @@ class _BookSearchPageState extends State<BookSearchPage> {
               child: TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: '편하고 입력해 주세요',
+                  hintText: '편하게 입력해 주세요',
                   border: InputBorder.none,
                   suffixIcon: IconButton(
                     icon: _isSearching 

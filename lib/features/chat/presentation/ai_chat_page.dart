@@ -407,7 +407,7 @@ class _AiChatPageState extends State<AiChatPage> {
           ),
           const SizedBox(width: 10),
           Text(
-            '치웃',
+            '치읓',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
@@ -445,7 +445,7 @@ class _AiChatPageState extends State<AiChatPage> {
               child: TextField(
                 controller: _messageController,
                 decoration: InputDecoration(
-                  hintText: '치웃과 감상을 나누어보세요',
+                  hintText: '치읓과 감상을 나누어보세요',
                   hintStyle: TextStyle(
                     color: Colors.grey[500],
                     fontSize: 14,
