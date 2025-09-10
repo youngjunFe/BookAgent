@@ -92,26 +92,13 @@ class _HomeViewState extends State<HomeView> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _timeBasedMessage?.message1 ?? '안녕하세요!',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _timeBasedMessage?.message2 ?? '오늘도 좋은 하루 보내세요!',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    '홈',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                   Container(
                     width: 40,
@@ -124,6 +111,34 @@ class _HomeViewState extends State<HomeView> {
                       Icons.person_outline,
                       color: AppColors.primary,
                       size: 20,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // 시간별 인사말 섹션
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _timeBasedMessage?.message1 ?? '안녕하세요!',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF3D3D3D),
+                      height: 1.4,
+                    ),
+                  ),
+                  Text(
+                    _timeBasedMessage?.message2 ?? '오늘도 좋은 하루 보내세요!',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF3D3D3D),
+                      height: 1.4,
                     ),
                   ),
                 ],
