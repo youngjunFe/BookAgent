@@ -489,7 +489,9 @@ class _AiChatPageState extends State<AiChatPage> {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: message.isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: [
+          // AI 메시지 - 왼쪽 정렬
           if (!message.isUser) ...[
             Container(
               width: 28,
@@ -506,15 +508,31 @@ class _AiChatPageState extends State<AiChatPage> {
             ),
             const SizedBox(width: 12),
           ],
-          Expanded(
+          
+          // 메시지 버블
+          Flexible(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: message.isUser 
+                  ? CrossAxisAlignment.end 
+                  : CrossAxisAlignment.start,
               children: [
                 Container(
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width * 0.7,
+                  ),
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
                     color: message.isUser ? AppColors.primary : Colors.grey[100],
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.only(
+                      topLeft: const Radius.circular(18),
+                      topRight: const Radius.circular(18),
+                      bottomLeft: message.isUser 
+                          ? const Radius.circular(18) 
+                          : const Radius.circular(4),
+                      bottomRight: message.isUser 
+                          ? const Radius.circular(4) 
+                          : const Radius.circular(18),
+                    ),
                   ),
                   child: Text(
                     message.text,
