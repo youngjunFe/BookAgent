@@ -30,6 +30,48 @@ class HomeView extends StatefulWidget {
 class _HomeViewState extends State<HomeView> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  final SupabaseAuthService _authService = SupabaseAuthService();
+  String? _userNickname;
+  String _timeBasedMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData().then((_) => _loadTimeBasedMessage());
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      final userInfo = _authService.currentUserInfo;
+      if (userInfo != null) {
+        if (mounted) {
+          setState(() {
+            _userNickname = userInfo.nickname;
+          });
+        }
+      }
+    } catch (e) {
+      print('사용자 데이터 로딩 실패: $e');
+      if (mounted) {
+        setState(() {
+          _userNickname = '사용자';
+        });
+      }
+    }
+  }
+
+  void _loadTimeBasedMessage() {
+    final isLoggedIn = _authService.isLoggedIn;
+    final nickname = _userNickname ?? '사용자';
+    final timeMessage = TimeBasedMessageService.getMessageForCurrentTime(
+      isLoggedIn: isLoggedIn,
+      nickname: nickname,
+    );
+    
+    setState(() {
+      _timeBasedMessage = timeMessage.message1;
+    });
+  }
 
   @override
   void dispose() {
@@ -50,13 +92,26 @@ class _HomeViewState extends State<HomeView> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    '홈',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _userNickname != null ? '${_userNickname}님' : '사용자님',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _timeBasedMessage,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
                   ),
                   Container(
                     width: 40,
@@ -75,46 +130,7 @@ class _HomeViewState extends State<HomeView> {
               ),
             ),
             
-            // Figma 스타일 인사말
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: FutureBuilder<UserInfo?>(
-                future: Future.value(SupabaseAuthService().currentUserInfo),
-                builder: (context, snapshot) {
-                  final user = snapshot.data;
-                  final isLoggedIn = user != null;
-                  final nickname = user?.nickname ?? '독서가';
-                  
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        isLoggedIn ? '좋은 아침이에요!' : '좋은 아침이에요!',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF3D3D3D),
-                          height: 1.4,
-                        ),
-                      ),
-                      Text(
-                        isLoggedIn 
-                            ? '오늘의 첫 감동 치읓과 함께 하세요☀️'
-                            : '오늘의 첫 감동 치읓과 함께 하세요☀️',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF3D3D3D),
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-            
-            const SizedBox(height: 24),
+            const SizedBox(height: 8),
             
             // 전체 화면을 차지하는 캐러셀 (하단 메뉴바까지)
             Expanded(
