@@ -75,35 +75,42 @@ class _HomeViewState extends State<HomeView> {
               ),
             ),
             
-            // 시간대별 개인화 인사말
+            // Figma 스타일 인사말
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: FutureBuilder<UserInfo?>(
-                  future: Future.value(SupabaseAuthService().currentUserInfo),
-                  builder: (context, snapshot) {
-                    final user = snapshot.data;
-                    final isLoggedIn = user != null;
-                    final nickname = user?.nickname ?? '독서가';
-                    
-                    // 시간대별 메시지 가져오기
-                    final message = TimeBasedMessageService.getMessageForCurrentTime(
-                      isLoggedIn: isLoggedIn,
-                      nickname: nickname,
-                    );
-                    
-                    return Text(
-                      message.fullMessage,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                        height: 1.4,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: FutureBuilder<UserInfo?>(
+                future: Future.value(SupabaseAuthService().currentUserInfo),
+                builder: (context, snapshot) {
+                  final user = snapshot.data;
+                  final isLoggedIn = user != null;
+                  final nickname = user?.nickname ?? '독서가';
+                  
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isLoggedIn ? '좋은 아침이에요!' : '좋은 아침이에요!',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF3D3D3D),
+                          height: 1.4,
+                        ),
                       ),
-                    );
-                  },
-                ),
+                      Text(
+                        isLoggedIn 
+                            ? '오늘의 첫 감동 치읓과 함께 하세요☀️'
+                            : '오늘의 첫 감동 치읓과 함께 하세요☀️',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF3D3D3D),
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
             
@@ -124,10 +131,10 @@ class _HomeViewState extends State<HomeView> {
 
   // 전체 화면을 차지하는 캐러셀 위젯
   Widget _buildFullScreenCarousel() {
-    final List<String> slideImages = [
-      'assets/images/slides/Group 26086144.png',
-      'assets/images/slides/Group 26086146.png',
-      'assets/images/slides/onboarding_01.png',
+    final List<String> tempImages = [
+      'https://picsum.photos/400/600?random=1',
+      'https://picsum.photos/400/600?random=2', 
+      'https://picsum.photos/400/600?random=3',
     ];
 
     return Container(
@@ -146,7 +153,7 @@ class _HomeViewState extends State<HomeView> {
                 _currentPage = index;
               });
             },
-            itemCount: slideImages.length,
+            itemCount: tempImages.length,
             itemBuilder: (context, index) {
               return Container(
                 decoration: BoxDecoration(
@@ -155,8 +162,8 @@ class _HomeViewState extends State<HomeView> {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
-                  child: Image.asset(
-                    slideImages[index],
+                  child: Image.network(
+                    tempImages[index],
                     fit: BoxFit.cover,
                     width: double.infinity,
                     height: double.infinity,
@@ -174,7 +181,7 @@ class _HomeViewState extends State<HomeView> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                '슬라이드 ${index + 1}',
+                                '임시 이미지 ${index + 1}',
                                 style: TextStyle(
                                   color: Colors.grey[600],
                                   fontSize: 16,
@@ -232,7 +239,7 @@ class _HomeViewState extends State<HomeView> {
             child: Center(
               child: GestureDetector(
                 onTap: () {
-                  if (_currentPage < slideImages.length - 1) {
+                  if (_currentPage < tempImages.length - 1) {
                     _pageController.nextPage(
                       duration: const Duration(milliseconds: 300),
                       curve: Curves.easeInOut,
@@ -273,20 +280,23 @@ class _HomeViewState extends State<HomeView> {
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  elevation: 8,
-                  shadowColor: Colors.black.withOpacity(0.3),
+                  backgroundColor: const Color(0xFF3D74B6), // Figma Primary 색상
+                  foregroundColor: const Color(0xFFFCFCFC), // Figma On Primary 색상
+                  elevation: 2,
+                  shadowColor: Colors.black.withOpacity(0.1),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 ),
-                child: Text(
+                child: const Text(
                   '지금 감동을 기록하세요',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: Color(0xFFFCFCFC),
+                    letterSpacing: -0.18,
+                    height: 1.5,
                   ),
                 ),
               ),

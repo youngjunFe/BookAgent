@@ -37,18 +37,23 @@ app.post('/api/chat', async (req, res) => {
       messages: [
         {
           role: 'system',
-          content: '당신은 도서 리뷰와 독서에 도움을 주는 친근한 AI 어시스턴트입니다. 한국어로 답변해주세요.',
+          content:
+            '당신은 도서 리뷰와 독서에 도움을 주는 친근한 AI 어시스턴트입니다. 한국어로 답변해주세요.',
         },
         {
           role: 'user',
-          content: chatContext ? `컨텍스트: ${chatContext}\n\n질문: ${userMessage}` : userMessage,
+          content: chatContext
+            ? `컨텍스트: ${chatContext}\n\n질문: ${userMessage}`
+            : userMessage,
         },
       ],
       max_tokens: 1000,
       temperature: 0.7,
     });
 
-    const aiReply = completion.choices[0]?.message?.content || '죄송합니다. 응답을 생성할 수 없습니다.';
+    const aiReply =
+      completion.choices[0]?.message?.content ||
+      '죄송합니다. 응답을 생성할 수 없습니다.';
 
     res.json({ reply: aiReply });
   } catch (error) {
@@ -61,9 +66,9 @@ app.post('/api/chat', async (req, res) => {
 app.post('/api/character-chat', async (req, res) => {
   try {
     const { character, message } = req.body || {};
-    
+
     const response = {
-      reply: `${character} 캐릭터로서 답변: ${message}`
+      reply: `${character} 캐릭터로서 답변: ${message}`,
     };
 
     res.json(response);
@@ -122,6 +127,14 @@ app.get('/api/search-books', async (req, res) => {
     // 에러 시 목 데이터 반환
     const mockBooks = [
       {
+        title: '데미안',
+        author: '헤르만 헤세',
+        publisher: '민음사',
+        image: 'https://via.placeholder.com/120x180?text=데미안',
+        description: '한 소년의 성장과 자아 발견의 여정을 그린 작품',
+        isbn: '9788937460012',
+      },
+      {
         title: '어린왕자',
         author: '생텍쥐페리',
         publisher: '문학동네',
@@ -145,7 +158,7 @@ app.get('/api/search-books', async (req, res) => {
 app.post('/api/generate-review', async (req, res) => {
   try {
     const { bookTitle, content, chatHistory } = req.body || {};
-    
+
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
       console.error('OpenAI API key not found');
@@ -174,7 +187,8 @@ ${chatHistory || content}
       messages: [
         {
           role: 'system',
-          content: '당신은 독서 발제문 작성 전문가입니다. 독자의 감정과 생각을 잘 정리하여 깊이 있는 발제문을 작성해주세요.',
+          content:
+            '당신은 독서 발제문 작성 전문가입니다. 독자의 감정과 생각을 잘 정리하여 깊이 있는 발제문을 작성해주세요.',
         },
         {
           role: 'user',
@@ -185,7 +199,8 @@ ${chatHistory || content}
       temperature: 0.8,
     });
 
-    const generatedReview = completion.choices[0]?.message?.content || '발제문 생성에 실패했습니다.';
+    const generatedReview =
+      completion.choices[0]?.message?.content || '발제문 생성에 실패했습니다.';
 
     res.json({ review: generatedReview });
   } catch (error) {

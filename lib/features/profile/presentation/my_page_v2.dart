@@ -240,7 +240,7 @@ class _BookshelfSection extends StatelessWidget {
   }
 
   String _getBookTitle(int index) {
-    final titles = ['해리포터', '반지의제왕', '어린왕자', '1984', '위대한개츠비'];
+    final titles = ['해리포터', '반지의제왕', '어린왕자', '1984', '위대한개츠비', '데미안'];
     return titles[index % titles.length];
   }
 
