@@ -110,7 +110,7 @@ class _AiChatPageState extends State<AiChatPage> {
         _messages.add(
           ChatMessage(
             text: '${widget.bookTitle}을 읽으셨다니..! ( \' - \' ) /\n'
-                '$bookSummary 라고 하던데, 지금 무슨 감정을 느끼고 있나요냥?',
+                '$bookSummary 라고 하던데, 지금 무슨 감정을 느끼고 있나요?',
             isUser: false,
             timestamp: DateTime.now(),
           ),
@@ -125,7 +125,7 @@ class _AiChatPageState extends State<AiChatPage> {
         _messages.add(
           ChatMessage(
             text: '${widget.bookTitle}을 읽으셨다니..! ( \' - \' ) /\n'
-                '정말 흥미로운 작품 라고 하던데, 지금 무슨 감정을 느끼고 있나요냥?',
+                '정말 흥미로운 작품 라고 하던데, 지금 무슨 감정을 느끼고 있나요?',
             isUser: false,
             timestamp: DateTime.now(),
           ),
@@ -819,9 +819,9 @@ class _AiChatPageState extends State<AiChatPage> {
     // 감정 관련 키워드
     if (message.contains('슬프') || message.contains('눈물') || message.contains('우울') || message.contains('아프')) {
       final responses = [
-        '그런 감정을 느끼셨군요냥. 책을 읽으면서 마음이 많이 흔들렸을 것 같아요냥. 어떤 장면에서 특히 그런 감정을 느끼셨나요냥?',
-        '마음이 아프셨겠어요냥. 책 속 인물들의 감정이 고스란히 전해진 것 같네요냥. 그 부분을 다시 생각해보면 어떤 기분이 드시나요냥?',
-        '그 슬픔이 어디서 나온 건지 함께 생각해봐요냥. 혹시 자신의 경험과 겹치는 부분이 있었나요냥?',
+        '그런 감정을 느끼셨군요. 책을 읽으면서 마음이 많이 흔들렸을 것 같아요. 어떤 장면에서 특히 그런 감정을 느끼셨나요?',
+        '마음이 아프셨겠어요. 책 속 인물들의 감정이 고스란히 전해진 것 같네요. 그 부분을 다시 생각해보면 어떤 기분이 드시나요?',
+        '그 슬픔이 어디서 나온 건지 함께 생각해봐요. 혹시 자신의 경험과 겹치는 부분이 있었나요?',
       ];
       return responses[DateTime.now().millisecondsSinceEpoch % responses.length];
     }
@@ -829,9 +829,9 @@ class _AiChatPageState extends State<AiChatPage> {
     // 기쁨, 감동 관련 키워드  
     if (message.contains('감동') || message.contains('기쁘') || message.contains('행복') || message.contains('좋았')) {
       final responses = [
-        '정말 좋은 감정을 느끼셨네요냥! 그 감동이 어떤 부분에서 나왔는지 더 자세히 들어보고 싶어요냥.',
-        '책에서 그런 긍정적인 에너지를 받으셨군요냥. 어떤 메시지가 특히 마음에 와닿았나요냥?',
-        '그 기쁨을 느낀 순간이 궁금해요냥. 책의 어떤 부분이 그런 감정을 불러일으켰을까요냥?',
+        '정말 좋은 감정을 느끼셨네요! 그 감동이 어떤 부분에서 나왔는지 더 자세히 들어보고 싶어요.',
+        '책에서 그런 긍정적인 에너지를 받으셨군요. 어떤 메시지가 특히 마음에 와닿았나요?',
+        '그 기쁨을 느낀 순간이 궁금해요. 책의 어떤 부분이 그런 감정을 불러일으켰을까요?',
       ];
       return responses[DateTime.now().millisecondsSinceEpoch % responses.length];
     }
@@ -839,9 +839,9 @@ class _AiChatPageState extends State<AiChatPage> {
     // 생각, 철학 관련 키워드
     if (message.contains('생각') || message.contains('철학') || message.contains('의미') || message.contains('깨달')) {
       final responses = [
-        '정말 깊이 있게 생각해보셨네요냥. 그 깨달음이 일상생활에서 어떤 변화를 가져다줄 것 같나요냥?',
-        '책을 통해 새로운 관점을 얻으신 것 같아요냥. 그 생각을 더 구체적으로 나눠보실 수 있나요냥?',
-        '철학적인 부분에 관심을 갖고 계시는군요냥. 작가의 메시지 중에서 가장 공감되는 부분은 무엇인가요냥?',
+        '정말 깊이 있게 생각해보셨네요. 그 깨달음이 일상생활에서 어떤 변화를 가져다줄 것 같나요?',
+        '책을 통해 새로운 관점을 얻으신 것 같아요. 그 생각을 더 구체적으로 나눠보실 수 있나요?',
+        '철학적인 부분에 관심을 갖고 계시는군요. 작가의 메시지 중에서 가장 공감되는 부분은 무엇인가요?',
       ];
       return responses[DateTime.now().millisecondsSinceEpoch % responses.length];
     }
@@ -849,9 +849,9 @@ class _AiChatPageState extends State<AiChatPage> {
     // 인물, 캐릭터 관련 키워드
     if (message.contains('주인공') || message.contains('인물') || message.contains('캐릭터')) {
       final responses = [
-        '그 인물에 대해 어떤 인상을 받으셨나요? 혹시 닮고 싶거나 이해가 안 되는 부분이 있었나요냥?',
-        '인물의 행동이나 선택에 대해 어떻게 생각하시나요? 만약 같은 상황이라면 어떻게 하셨을까요냥?',
-        '그 캐릭터가 겪은 변화 과정이 흥미로우셨을 것 같아요. 어떤 부분에서 가장 공감하셨나요냥?',
+        '그 인물에 대해 어떤 인상을 받으셨나요? 혹시 닮고 싶거나 이해가 안 되는 부분이 있었나요?',
+        '인물의 행동이나 선택에 대해 어떻게 생각하시나요? 만약 같은 상황이라면 어떻게 하셨을까요?',
+        '그 캐릭터가 겪은 변화 과정이 흥미로우셨을 것 같아요. 어떤 부분에서 가장 공감하셨나요?',
       ];
       return responses[DateTime.now().millisecondsSinceEpoch % responses.length];
     }
@@ -859,22 +859,22 @@ class _AiChatPageState extends State<AiChatPage> {
     // 스토리, 줄거리 관련 키워드
     if (message.contains('스토리') || message.contains('줄거리') || message.contains('사건') || message.contains('전개')) {
       final responses = [
-        '그 부분의 전개가 어떠셨나요? 예상했던 대로였나요, 아니면 의외였나요냥?',
-        '스토리의 흐름에 대해 어떤 생각이 드셨는지 궁금해요. 가장 흥미진진했던 순간은 언제였나요냥?',
-        '그 사건이 이야기 전체에서 어떤 의미를 갖는다고 생각하시나요냥?',
+        '그 부분의 전개가 어떠셨나요? 예상했던 대로였나요, 아니면 의외였나요?',
+        '스토리의 흐름에 대해 어떤 생각이 드셨는지 궁금해요. 가장 흥미진진했던 순간은 언제였나요?',
+        '그 사건이 이야기 전체에서 어떤 의미를 갖는다고 생각하시나요?',
       ];
       return responses[DateTime.now().millisecondsSinceEpoch % responses.length];
     }
     
     // 기본 응답들
     final generalResponses = [
-      '그 부분에 대해 더 자세히 말해보실 수 있나요? 어떤 감정이 들었는지 궁금해요냥.',
-      '정말 흥미로운 관점이네요! 그 장면에서 어떤 생각이 들었나요냥?',
-      '책을 읽으면서 가장 인상 깊었던 부분은 무엇이었나요냥?',
-      '작가의 메시지에 대해 어떻게 생각하시나요냥?',
-      '이 책이 당신에게 어떤 의미로 다가왔는지 궁금해요냥.',
-      '그런 느낌을 받으셨군요. 비슷한 경험이나 생각을 해본 적이 있으신가요냥?',
-      '정말 좋은 포인트네요! 그 부분을 조금 더 깊이 파보면 어떨까요냥?',
+      '그 부분에 대해 더 자세히 말해보실 수 있나요? 어떤 감정이 들었는지 궁금해요.',
+      '정말 흥미로운 관점이네요! 그 장면에서 어떤 생각이 들었나요?',
+      '책을 읽으면서 가장 인상 깊었던 부분은 무엇이었나요?',
+      '작가의 메시지에 대해 어떻게 생각하시나요?',
+      '이 책이 당신에게 어떤 의미로 다가왔는지 궁금해요.',
+      '그런 느낌을 받으셨군요. 비슷한 경험이나 생각을 해본 적이 있으신가요?',
+      '정말 좋은 포인트네요! 그 부분을 조금 더 깊이 파보면 어떨까요?',
     ];
     
     return generalResponses[DateTime.now().millisecondsSinceEpoch % generalResponses.length];
@@ -903,7 +903,7 @@ class _AiChatPageState extends State<AiChatPage> {
               ),
               const SizedBox(height: 16),
               Text(
-                '이제 대화 내용을 정리해 감동문을 만들 수 있어요. 바로 만들어 볼까요냥?',
+                '이제 대화 내용을 정리해 감동문을 만들 수 있어요. 바로 만들어 볼까요?',
                 style: TextStyle(
                   fontSize: 14,
                   color: AppColors.textSecondary,
@@ -966,7 +966,7 @@ class _AiChatPageState extends State<AiChatPage> {
       _isTyping = false;
       _messages.add(
         ChatMessage(
-          text: '즐거운 대화였어요. 감상이 쌓아서 이제 감동문을 만들 수 있어요.\n지금 바로 만들어 드릴까요냥?',
+          text: '즐거운 대화였어요. 감상이 쌓아서 이제 감동문을 만들 수 있어요.\n지금 바로 만들어 드릴까요?',
           isUser: false,
           timestamp: DateTime.now(),
           showActionButtons: true, // 특별한 플래그로 버튼 표시
@@ -1016,7 +1016,7 @@ class _AiChatPageState extends State<AiChatPage> {
               ),
               const SizedBox(height: 16),
               Text(
-                '지금 감상문을 만들지 않고 대화를 종료하면 감상의 기록이 사라져요냥.',
+                '지금 감상문을 만들지 않고 대화를 종료하면 감상의 기록이 사라져요.',
                 style: TextStyle(
                   fontSize: 14,
                   color: AppColors.textSecondary,
