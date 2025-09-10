@@ -732,7 +732,7 @@ class _AiChatPageState extends State<AiChatPage> {
 
   Future<String> _callRealAiApi(String userMessage) async {
     try {
-      final baseUrl = 'https://bookagent-production.up.railway.app';
+      final baseUrl = 'https://book-review-app-alpha.vercel.app';
       print('🔍 Base URL: $baseUrl');
       print('🔍 서버에서 DB 프롬프트를 직접 로드합니다');
       
