@@ -732,9 +732,15 @@ class _AiChatPageState extends State<AiChatPage> {
 
   Future<String> _callRealAiApi(String userMessage) async {
     try {
-      final baseUrl = 'https://book-review-app-alpha.vercel.app';
+      // DB에서 실시간 프롬프트 가져오기
+      final aiPrompt = await AdminConfigService.getConfigWithDefault(
+        'ai_chat_prompt',
+        '당신은 독서를 사랑하는 친근한 AI 어시스턴트입니다.'
+      );
+      
+      final baseUrl = 'https://bookagent-production.up.railway.app';
       print('🔍 Base URL: $baseUrl');
-      print('🔍 서버에서 DB 프롬프트를 직접 로드합니다');
+      print('🔍 사용할 프롬프트: ${aiPrompt.substring(0, 100)}...');
       
       // 이전 메시지들을 컨텍스트로 포함
       final recentMessages = _messages.length > 6 
@@ -750,6 +756,7 @@ class _AiChatPageState extends State<AiChatPage> {
         body: jsonEncode({
           'message': userMessage,
           'context': context,
+          'systemPrompt': aiPrompt,  // DB 프롬프트 전달
           'bookTitle': widget.bookTitle,
           'bookAuthor': widget.bookAuthor,
         }),
