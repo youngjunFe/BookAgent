@@ -3,6 +3,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../auth/presentation/login_page.dart';
 import '../../guest/presentation/guest_demo_page.dart';
 import '../../../shared/widgets/main_navigation.dart';
+import '../../book_search/presentation/book_search_page.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -127,10 +128,18 @@ class _IntroPageState extends State<IntroPage> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : Icon(Icons.search),
-                onPressed: _searchBooksInOnboarding,
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const BookSearchPage()),
+                  );
+                },
               ),
             ),
-            onSubmitted: (_) => _searchBooksInOnboarding(),
+            onSubmitted: (_) {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const BookSearchPage()),
+              );
+            },
           ),
         ),
         
