@@ -349,6 +349,7 @@ class _IntroPageState extends State<IntroPage> {
     );
   }
 
+
   Widget _buildSimplePlaceholder(String title) {
     final colors = [
       AppColors.primary,
