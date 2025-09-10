@@ -71,5 +71,5 @@ module.exports = {
   supabase,
   getConfig,
   getConfigs,
-  getConfigWithDefault
+  getConfigWithDefault,
 };
