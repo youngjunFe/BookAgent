@@ -177,7 +177,7 @@ class _IntroPageState extends State<IntroPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '데미안',
+                        '어린왕자',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,

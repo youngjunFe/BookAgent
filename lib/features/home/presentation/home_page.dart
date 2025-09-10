@@ -124,10 +124,10 @@ class _HomeViewState extends State<HomeView> {
 
   // 전체 화면을 차지하는 캐러셀 위젯
   Widget _buildFullScreenCarousel() {
-    final List<String> tempImages = [
-      'https://picsum.photos/400/600?random=1',
-      'https://picsum.photos/400/600?random=2', 
-      'https://picsum.photos/400/600?random=3',
+    final List<String> slideImages = [
+      'assets/images/slides/Group 26086144.png',
+      'assets/images/slides/Group 26086146.png',
+      'assets/images/slides/onboarding_01.png',
     ];
 
     return Container(
@@ -146,7 +146,7 @@ class _HomeViewState extends State<HomeView> {
                 _currentPage = index;
               });
             },
-            itemCount: tempImages.length,
+            itemCount: slideImages.length,
             itemBuilder: (context, index) {
               return Container(
                 decoration: BoxDecoration(
@@ -155,8 +155,8 @@ class _HomeViewState extends State<HomeView> {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
-                  child: Image.network(
-                    tempImages[index],
+                  child: Image.asset(
+                    slideImages[index],
                     fit: BoxFit.cover,
                     width: double.infinity,
                     height: double.infinity,
@@ -174,7 +174,7 @@ class _HomeViewState extends State<HomeView> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                '임시 이미지 ${index + 1}',
+                                '슬라이드 ${index + 1}',
                                 style: TextStyle(
                                   color: Colors.grey[600],
                                   fontSize: 16,
@@ -232,7 +232,7 @@ class _HomeViewState extends State<HomeView> {
             child: Center(
               child: GestureDetector(
                 onTap: () {
-                  if (_currentPage < tempImages.length - 1) {
+                  if (_currentPage < slideImages.length - 1) {
                     _pageController.nextPage(
                       duration: const Duration(milliseconds: 300),
                       curve: Curves.easeInOut,

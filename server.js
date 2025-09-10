@@ -122,14 +122,6 @@ app.get('/api/search-books', async (req, res) => {
     // 에러 시 목 데이터 반환
     const mockBooks = [
       {
-        title: '데미안',
-        author: '헤르만 헤세',
-        publisher: '민음사',
-        image: 'https://via.placeholder.com/120x180?text=데미안',
-        description: '한 소년의 성장과 자아 발견의 여정을 그린 작품',
-        isbn: '9788937460012',
-      },
-      {
         title: '어린왕자',
         author: '생텍쥐페리',
         publisher: '문학동네',
