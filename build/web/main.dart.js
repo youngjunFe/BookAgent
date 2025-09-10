@@ -47571,12 +47571,12 @@ return A.r(null,r)
 case 1:return A.q(p.at(-1),r)}})
 return A.t($async$Cf,r)},
 r7(a){return this.acR(a)},
-acR(a3){var s=0,r=A.u(t.N),q,p=2,o=[],n=this,m,l,k,j,i,h,g,f,e,d,c,b,a,a0,a1,a2
-var $async$r7=A.p(function(a4,a5){if(a4===1){o.push(a5)
+acR(a4){var s=0,r=A.u(t.N),q,p=2,o=[],n=this,m,l,k,j,i,h,g,f,e,d,c,b,a,a0,a1,a2,a3
+var $async$r7=A.p(function(a5,a6){if(a5===1){o.push(a6)
 s=p}while(true)switch(s){case 0:p=4
 s=7
 return A.m(A.MS("ai_chat_prompt","\ub2f9\uc2e0\uc740 \ub3c5\uc11c\ub97c \uc0ac\ub791\ud558\ub294 \uce5c\uadfc\ud55c AI \uc5b4\uc2dc\uc2a4\ud134\ud2b8\uc785\ub2c8\ub2e4."),$async$r7)
-case 7:m=a5
+case 7:m=a6
 l=u.Y
 A.af("\ud83d\udd0d Base URL: "+A.h(l))
 A.af("\ud83d\udd0d \uc0ac\uc6a9\ud560 \ud504\ub86c\ud504\ud2b8: "+J.Ax(m,0,100)+"...")
@@ -47588,10 +47588,11 @@ j=new A.a8(d,new A.auh(),A.a7(d).i("a8<1,l>")).bf(0,"\n")
 d=A.cR(A.h(l)+"/api/chat",0,null)
 c=t.N
 b=A.a0(["Content-Type","application/json"],c,c)
-a=n.a
+a=A.h(m)
+a0=n.a
 s=8
-return A.m(A.qv(d,B.a_.pD(A.a0(["message",a3,"context",j,"systemPrompt",m,"bookTitle",a.d,"bookAuthor",a.e],c,t.T),null),null,b).zd(0,B.Mf),$async$r7)
-case 8:i=a5
+return A.m(A.qv(d,B.a_.pD(A.a0(["message",a+"\n\n\uc0ac\uc6a9\uc790 \uba54\uc2dc\uc9c0: "+a4,"context",j,"systemPrompt",m,"bookTitle",a0.d,"bookAuthor",a0.e],c,t.T),null),null,b).zd(0,B.Mf),$async$r7)
+case 8:i=a6
 A.af("\ud83d\udd0d API \uc751\ub2f5 \uc0c1\ud0dc\ucf54\ub4dc: "+i.b)
 b=i
 A.af("\ud83d\udd0d API \uc751\ub2f5 \ubcf8\ubb38: "+A.d0(A.d_(b.e)).aP(0,b.w))
@@ -47601,8 +47602,8 @@ A.af("\ud83d\udd0d \ud30c\uc2f1\ub41c JSON: "+A.h(h))
 d=J.a_(h,"response")
 if(d==null)d=J.a_(h,"message")
 if(d==null)d=J.a_(h,"reply")
-a0=d==null?J.a_(h,"answer"):d
-g=a0==null?J.a_(h,"content"):a0
+a1=d==null?J.a_(h,"answer"):d
+g=a1==null?J.a_(h,"content"):a1
 A.af("\ud83d\udd0d \ucd94\ucd9c\ub41c AI \uc751\ub2f5: "+A.h(g))
 if(g!=null&&g.length!==0){q=g
 s=1
@@ -47617,10 +47618,10 @@ throw A.e(d)}p=2
 s=6
 break
 case 4:p=3
-a2=o.pop()
-f=A.V(a2)
+a3=o.pop()
+f=A.V(a3)
 A.af("\u274c AI API \ud638\ucd9c \uc2e4\ud328: "+A.h(f))
-throw a2
+throw a3
 s=6
 break
 case 3:s=2

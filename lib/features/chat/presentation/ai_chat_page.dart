@@ -754,7 +754,7 @@ class _AiChatPageState extends State<AiChatPage> {
         Uri.parse('$baseUrl/api/chat'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'message': userMessage,
+          'message': '$aiPrompt\n\n사용자 메시지: $userMessage',  // 프롬프트를 메시지에 직접 포함
           'context': context,
           'systemPrompt': aiPrompt,  // DB 프롬프트 전달
           'bookTitle': widget.bookTitle,
