@@ -136,6 +136,11 @@ class _HomeViewState extends State<HomeView> {
       'assets/images/slides/slide2.png',
       'assets/images/slides/slide3.png',
     ];
+    
+    print('🖼️ 슬라이드 이미지 경로들:');
+    for (int i = 0; i < slideImages.length; i++) {
+      print('  $i: ${slideImages[i]}');
+    }
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -168,6 +173,8 @@ class _HomeViewState extends State<HomeView> {
                     width: double.infinity,
                     height: double.infinity,
                     errorBuilder: (context, error, stackTrace) {
+                      print('❌ 이미지 로딩 실패: ${slideImages[index]}');
+                      print('❌ 에러: $error');
                       return Container(
                         color: Colors.grey[300],
                         child: Center(
@@ -181,7 +188,7 @@ class _HomeViewState extends State<HomeView> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                '임시 이미지 ${index + 1}',
+                                '이미지 로딩 실패\n${slideImages[index]}',
                                 style: TextStyle(
                                   color: Colors.grey[600],
                                   fontSize: 16,
