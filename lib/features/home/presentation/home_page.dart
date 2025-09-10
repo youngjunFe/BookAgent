@@ -132,9 +132,9 @@ class _HomeViewState extends State<HomeView> {
   // 전체 화면을 차지하는 캐러셀 위젯
   Widget _buildFullScreenCarousel() {
     final List<String> slideImages = [
-      'assets/images/slides/slide1.png',
-      'assets/images/slides/slide2.png',
-      'assets/images/slides/slide3.png',
+      'https://via.placeholder.com/400x600/3D74B6/FFFFFF?text=Slide+1',
+      'https://via.placeholder.com/400x600/AEC9E6/3D3D3D?text=Slide+2',
+      'https://via.placeholder.com/400x600/FCFCFC/3D74B6?text=Slide+3',
     ];
     
     print('🖼️ 슬라이드 이미지 경로들:');
@@ -167,7 +167,7 @@ class _HomeViewState extends State<HomeView> {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
-                  child: Image.asset(
+                  child: Image.network(
                     slideImages[index],
                     fit: BoxFit.cover,
                     width: double.infinity,
