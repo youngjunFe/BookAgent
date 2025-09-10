@@ -3,6 +3,7 @@ import '../../../core/constants/app_colors.dart';
 import '../models/review.dart';
 import '../../chat/presentation/character_selection_page.dart';
 import 'review_editor_page.dart';
+import 'chat_history_page.dart';
 
 class ReviewDetailPage extends StatelessWidget {
   final Review review;
@@ -15,196 +16,178 @@ class ReviewDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text(
-          '나의 서재',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+      backgroundColor: Colors.white,
+      body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 상단 버튼들
-            Row(
-              children: [
-                _buildTopButton(
-                  context,
-                  label: '데이안',
-                  isSelected: false,
-                  onTap: () => _showComingSoon(context, '데이안'),
-                ),
-                const SizedBox(width: 12),
-                _buildTopButton(
-                  context,
-                  label: '완료',
-                  isSelected: true,
-                  onTap: () => _showComingSoon(context, '완료'),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            // 책 제목과 감동문 제목
-            Text(
-              '${review.bookTitle}의 철학적 사유가 녹아있는 이 책은 처음에 어렵게 다가왔다.',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-                height: 1.4,
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // 작성 시간
-            Text(
-              '${_formatDateTime(review.updatedAt)} 전 작성',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-
-            const SizedBox(height: 32),
-
-            // 감동문 내용 박스
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF8E1), // 연한 노란색 배경
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: const Color(0xFFFFE0B2).withOpacity(0.5),
-                  width: 1,
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            // 헤더
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
                 children: [
-                  // 감동문 제목
-                  Text(
-                    review.title.isNotEmpty 
-                        ? review.title 
-                        : '헤르만 헤세의 철학적 사유가 녹아있는 이 책은 처음에 어렵게 다가왔다.',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF5D4E37), // 어두운 갈색
-                      height: 1.4,
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_ios, size: 20),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                  const Expanded(
+                    child: Text(
+                      '나의 서재',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
+                      ),
                     ),
                   ),
-
-                  const SizedBox(height: 20),
-
-                  // 감동문 내용
-                  Text(
-                    review.content.isNotEmpty 
-                        ? review.content 
-                        : '''헤르만 헤세의 철학적 사유가 녹아있는 이 책은 처음에 어렵게 다가왔다. '새는 알에서 나오려고 투쟁한다'는 문장처럼, 난해한 은유들이 가득했다. 하지만 읽어갈수록 이상하게도 위로받는 기분이 들었다.
-
-지금의 나 역시 무언가를 깨고 나와야 하는 시기를 보내고 있지 때문일까. 주인공 싱클레어를 이끌어주는 데미안의 모습에서, 내게도 그런 조력자가 있었으면 하는 바람과 동시에 나 또한 누군가의 데미안이 되고 싶다는 생각이 들었다. 이 책은 진정한 '나'를 찾아가는 여정에 대한 이야기다.''',
-                    style: const TextStyle(
-                      fontSize: 15,
-                      color: Color(0xFF5D4E37),
-                      height: 1.6,
-                      letterSpacing: -0.2,
-                    ),
-                  ),
+                  const SizedBox(width: 48), // AppBar leading과 균형 맞추기
                 ],
               ),
             ),
+            
+            // 스크롤 가능한 콘텐츠
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 상단 태그들
+                    Row(
+                      children: [
+                        _buildTag('📖 데미안', false),
+                        const SizedBox(width: 8),
+                        _buildTag('완료', true),
+                      ],
+                    ),
+                    
+                    const SizedBox(height: 24),
+                    
+                    // 제목
+                    const Text(
+                      '헤르만 헤세의 철학적 사유가 녹아있는 이 책은 처음에 어렵게 다가왔다.',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black,
+                        height: 1.4,
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 12),
+                    
+                    // 작성 시간
+                    const Text(
+                      '10시간 전 작성',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 32),
+                    
+                    // 감동문 내용 박스
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF8E1), // 연한 노란색 배경
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            '헤르만 헤세의 철학적 사유가 녹아있는 이 책은 처음에 어렵게 다가왔다.',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF4A4A4A),
+                              height: 1.5,
+                            ),
+                          ),
+                          
+                          const SizedBox(height: 20),
+                          
+                          Text(
+                            review.content.isNotEmpty 
+                                ? review.content 
+                                : '''헤르만 헤세의 철학적 사유가 녹아있는 이 책은 처음에 어렵게 다가왔다. '새는 알에서 나오려고 투쟁한다'는 문장처럼, 난해한 은유들이 가득했다. 하지만 읽어갈수록 이상하게도 위로받는 기분이 들었다.
 
-            const SizedBox(height: 40),
-
-            // 하단 버튼들
-            Row(
-              children: [
-                Expanded(
-                  child: _buildBottomButton(
-                    context,
-                    label: '대화내역',
-                    onTap: () => _navigateToChat(context),
-                  ),
+지금의 나 역시 무언가를 깨고 나와야 하는 시기를 보내고 있지 때문일까. 주인공 싱클레어를 이끌어주는 데미안의 모습에서, 내게도 그런 조력자가 있었으면 하는 바람과 동시에 나 또한 누군가의 데미안이 되고 싶다는 생각이 들었다. 이 책은 진정한 '나'를 찾아가는 여정에 대한 이야기다.''',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              color: Color(0xFF4A4A4A),
+                              height: 1.6,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 40),
+                    
+                    // 하단 버튼들
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildActionButton(
+                            '대화내역',
+                            onTap: () => _navigateToChat(context),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildActionButton(
+                            '감동문 공유',
+                            onTap: () => _shareReview(context),
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                    const SizedBox(height: 60),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildBottomButton(
-                    context,
-                    label: '감동문 공유',
-                    onTap: () => _shareReview(context),
-                  ),
-                ),
-              ],
+              ),
             ),
-
-            const SizedBox(height: 60),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTopButton(
-    BuildContext context, {
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF9BB5D6) : AppColors.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? const Color(0xFF9BB5D6) : AppColors.dividerColor,
-            width: 1,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: isSelected ? Colors.white : AppColors.textSecondary,
-          ),
+  Widget _buildTag(String label, bool isSelected) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: isSelected ? const Color(0xFF9BB5D6) : Colors.grey[100],
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: isSelected ? Colors.white : Colors.grey[700],
         ),
       ),
     );
   }
 
-  Widget _buildBottomButton(
-    BuildContext context, {
-    required String label,
-    required VoidCallback onTap,
-  }) {
+  Widget _buildActionButton(String label, {required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: Colors.grey[50],
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: AppColors.dividerColor,
+            color: Colors.grey[300]!,
             width: 1,
           ),
         ),
@@ -214,7 +197,7 @@ class ReviewDetailPage extends StatelessWidget {
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: Colors.black87,
           ),
         ),
       ),
@@ -254,7 +237,7 @@ class ReviewDetailPage extends StatelessWidget {
   void _navigateToChat(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => const CharacterSelectionPage(),
+        builder: (context) => ChatHistoryPage(review: review),
       ),
     );
   }
