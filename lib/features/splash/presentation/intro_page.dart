@@ -217,8 +217,14 @@ class _IntroPageState extends State<IntroPage> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        print('🔍 API Response: $data'); // 디버깅용
+        
         final books = (data['books'] as List)
-            .map((book) => BookSearchResult.fromJson(book))
+            .map((book) {
+              final result = BookSearchResult.fromJson(book);
+              print('📚 Book: ${result.title}, Image: ${result.image}'); // 이미지 URL 확인
+              return result;
+            })
             .toList();
         
         setState(() {
@@ -227,6 +233,14 @@ class _IntroPageState extends State<IntroPage> {
       }
     } catch (e) {
       print('Search error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('검색 중 오류가 발생했습니다.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } finally {
       setState(() {
         _isSearching = false;
