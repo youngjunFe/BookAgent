@@ -9,6 +9,7 @@ import '../../ebook/models/ebook.dart';
 import 'settings_page.dart';
 import 'profile_edit_page.dart';
 import '../../review/presentation/review_detail_page.dart';
+import '../../ebook/presentation/ebook_reader_page.dart';
 
 class MyPageV2 extends StatefulWidget {
   const MyPageV2({super.key});
@@ -225,11 +226,20 @@ class _BookshelfSection extends StatelessWidget {
                     : ebooks.asMap().entries.map((entry) {
                         final index = entry.key;
                         final ebook = entry.value;
-                        return _BookSpine(
-                          title: ebook.title,
-                          color: _getBookColorFromProgress(ebook.progress, index),
-                          height: _getBookHeightFromProgress(ebook.progress, index),
-                          progress: ebook.progress,
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => EBookReaderPage(ebook: ebook),
+                              ),
+                            );
+                          },
+                          child: _BookSpine(
+                            title: ebook.title,
+                            color: _getBookColorFromProgress(ebook.progress, index),
+                            height: _getBookHeightFromProgress(ebook.progress, index),
+                            progress: ebook.progress,
+                          ),
                         );
                       }).toList(),
               ),
