@@ -99,16 +99,41 @@ class ChatHistoryPage extends StatelessWidget {
   }
 
   Widget _buildChatHistory() {
-    // 실제로는 JSON 파싱해서 대화 목록을 보여줘야 함
-    // 임시로 더미 데이터 사용
-    final chatMessages = [
-      {'role': 'user', 'message': '데미안이라는 책에 대해 어떻게 생각해?'},
-      {'role': 'ai', 'message': '헤르만 헤세의 "데미안"은 성장과 자아 발견에 대한 깊이 있는 작품입니다. 주인공 싱클레어가 데미안을 통해 진정한 자아를 찾아가는 과정이 인상적이죠.'},
-      {'role': 'user', 'message': '특히 인상깊었던 구절이 있어. "새는 알에서 나오려고 투쟁한다"는 부분 말이야.'},
-      {'role': 'ai', 'message': '정말 의미깊은 구절이네요! 이 문장은 우리가 기존의 틀을 벗어나 새로운 자아로 태어나기 위해서는 고통스러운 투쟁이 필요하다는 것을 상징적으로 표현하고 있어요. 어떤 부분에서 특히 공감하셨나요?'},
-      {'role': 'user', 'message': '지금의 내 상황과 비슷해서 그런 것 같아. 무언가를 깨고 나와야 하는 시기를 보내고 있거든.'},
-      {'role': 'ai', 'message': '그런 시기를 보내고 계시는군요. 변화의 과정은 쉽지 않지만, 그 과정 자체가 성장의 증거라고 생각해요. 데미안처럼 당신을 이끌어줄 조력자나 멘토가 있으신가요?'},
-    ];
+    // 실제 chatHistory 데이터 파싱
+    List<Map<String, String>> chatMessages = [];
+    
+    if (review.chatHistory != null && review.chatHistory!.isNotEmpty) {
+      try {
+        // chatHistory는 "사용자: 메시지\n\nAI: 메시지" 형태로 저장됨
+        final lines = review.chatHistory!.split('\n\n');
+        for (final line in lines) {
+          if (line.trim().isEmpty) continue;
+          
+          if (line.startsWith('사용자: ')) {
+            chatMessages.add({
+              'role': 'user',
+              'message': line.substring(4), // "사용자: " 제거
+            });
+          } else if (line.startsWith('AI: ')) {
+            chatMessages.add({
+              'role': 'ai', 
+              'message': line.substring(4), // "AI: " 제거
+            });
+          }
+        }
+      } catch (e) {
+        print('대화내역 파싱 실패: $e');
+        // 파싱 실패 시 원본 텍스트를 하나의 메시지로 표시
+        chatMessages = [
+          {'role': 'ai', 'message': review.chatHistory!}
+        ];
+      }
+    }
+    
+    // 대화내역이 없으면 빈 상태 표시
+    if (chatMessages.isEmpty) {
+      return _buildEmptyState();
+    }
 
     return ListView.builder(
       padding: const EdgeInsets.all(20),

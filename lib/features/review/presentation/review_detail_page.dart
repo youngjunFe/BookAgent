@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'dart:ui' as ui;
+import 'dart:typed_data';
+import 'dart:html' as html;
 import '../../../core/constants/app_colors.dart';
 import '../models/review.dart';
 import '../../chat/presentation/character_selection_page.dart';
@@ -7,6 +12,7 @@ import 'chat_history_page.dart';
 
 class ReviewDetailPage extends StatelessWidget {
   final Review review;
+  static final GlobalKey _repaintKey = GlobalKey();
 
   const ReviewDetailPage({
     super.key,
@@ -88,29 +94,78 @@ class ReviewDetailPage extends StatelessWidget {
                     
                     const SizedBox(height: 32),
                     
-                    // 감동문 내용 박스
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF8E1), // 연한 노란색 배경
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            review.content.isNotEmpty 
-                                ? review.content 
-                                : '${review.bookTitle}에 대한 감동문이 아직 작성되지 않았습니다.',
-                            style: const TextStyle(
-                              fontSize: 15,
-                              color: Color(0xFF4A4A4A),
-                              height: 1.6,
-                              letterSpacing: -0.2,
+                    // 감동문 내용 박스 (이미지 캡처용)
+                    RepaintBoundary(
+                      key: _repaintKey,
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF8E1), // 연한 노란색 배경
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // 책 제목 헤더
+                            Container(
+                              margin: const EdgeInsets.only(bottom: 16),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF4A4A4A).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                '📖 ${review.bookTitle}',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF4A4A4A),
+                                ),
+                              ),
                             ),
-                          ),
-                        ],
+                            
+                            // 감동문 제목
+                            Text(
+                              review.title.isNotEmpty ? review.title : '${review.bookTitle}에 대한 감동문',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF4A4A4A),
+                                height: 1.4,
+                              ),
+                            ),
+                            
+                            const SizedBox(height: 16),
+                            
+                            // 감동문 내용
+                            Text(
+                              review.content.isNotEmpty 
+                                  ? review.content 
+                                  : '${review.bookTitle}에 대한 감동문이 아직 작성되지 않았습니다.',
+                              style: const TextStyle(
+                                fontSize: 15,
+                                color: Color(0xFF4A4A4A),
+                                height: 1.6,
+                                letterSpacing: -0.2,
+                              ),
+                            ),
+                            
+                            // 하단 서명
+                            const SizedBox(height: 20),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                '- 치읓과 함께 -',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: const Color(0xFF4A4A4A).withOpacity(0.7),
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     
@@ -207,15 +262,47 @@ class ReviewDetailPage extends StatelessWidget {
     }
   }
 
-  void _saveAsImage(BuildContext context) {
-    // TODO: 실제 이미지 저장 기능 구현
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('이미지 저장 기능을 준비 중입니다.'),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+  Future<void> _saveAsImage(BuildContext context) async {
+    try {
+      // RepaintBoundary로 감싼 위젯을 이미지로 캡처
+      RenderRepaintBoundary boundary = _repaintKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+      ui.Image image = await boundary.toImage(pixelRatio: 2.0);
+      ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      
+      if (byteData != null) {
+        final bytes = byteData.buffer.asUint8List();
+        
+        // 웹에서 파일 다운로드
+        final blob = html.Blob([bytes]);
+        final url = html.Url.createObjectUrlFromBlob(blob);
+        final anchor = html.document.createElement('a') as html.AnchorElement
+          ..href = url
+          ..style.display = 'none'
+          ..download = '감동문_${review.bookTitle}_${DateTime.now().millisecondsSinceEpoch}.png';
+        
+        html.document.body?.children.add(anchor);
+        anchor.click();
+        html.document.body?.children.remove(anchor);
+        html.Url.revokeObjectUrl(url);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('감동문이 이미지로 저장되었습니다!'),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      print('이미지 저장 실패: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('이미지 저장에 실패했습니다.'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   void _navigateToChat(BuildContext context) {
