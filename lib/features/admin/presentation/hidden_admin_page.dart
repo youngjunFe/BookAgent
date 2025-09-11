@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 import '../services/admin_config_service.dart';
 
@@ -19,6 +20,12 @@ class _HiddenAdminPageState extends State<HiddenAdminPage> {
   final TextEditingController _minChatCountController = TextEditingController();
   final TextEditingController _maxChatCountController = TextEditingController();
   
+  // 책 추가 관련 컨트롤러
+  final TextEditingController _bookTitleController = TextEditingController();
+  final TextEditingController _bookAuthorController = TextEditingController();
+  final TextEditingController _bookDescriptionController = TextEditingController();
+  final TextEditingController _bookContentController = TextEditingController();
+  
   bool _isAuthenticated = false;
   bool _isLoading = false;
   String _selectedPromptType = 'ai_chat';
@@ -38,6 +45,7 @@ class _HiddenAdminPageState extends State<HiddenAdminPage> {
   final Map<String, String> _configTypes = {
     'prompts': '🤖 프롬프트 설정',
     'chat_settings': '💬 대화 설정',
+    'book_management': '📚 책 관리',
   };
 
   @override
@@ -56,6 +64,10 @@ class _HiddenAdminPageState extends State<HiddenAdminPage> {
     _characterWelcomeController.dispose();
     _minChatCountController.dispose();
     _maxChatCountController.dispose();
+    _bookTitleController.dispose();
+    _bookAuthorController.dispose();
+    _bookDescriptionController.dispose();
+    _bookContentController.dispose();
     super.dispose();
   }
 
@@ -493,6 +505,95 @@ class _HiddenAdminPageState extends State<HiddenAdminPage> {
               const Spacer(),
             ],
 
+            // 책 관리 영역 (책 관리일 때만 표시)
+            if (_selectedConfigType == 'book_management') ...[
+              const Text(
+                '새 책 추가',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // 책 제목
+              TextField(
+                controller: _bookTitleController,
+                decoration: InputDecoration(
+                  labelText: '책 제목',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  prefixIcon: const Icon(Icons.book),
+                ),
+              ),
+              const SizedBox(height: 12),
+              
+              // 저자
+              TextField(
+                controller: _bookAuthorController,
+                decoration: InputDecoration(
+                  labelText: '저자',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  prefixIcon: const Icon(Icons.person),
+                ),
+              ),
+              const SizedBox(height: 12),
+              
+              // 책 설명
+              TextField(
+                controller: _bookDescriptionController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  labelText: '책 설명',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  prefixIcon: const Icon(Icons.description),
+                ),
+              ),
+              const SizedBox(height: 12),
+              
+              // 책 내용 (간단한 샘플)
+              TextField(
+                controller: _bookContentController,
+                maxLines: 5,
+                decoration: InputDecoration(
+                  labelText: '책 내용 (샘플 텍스트)',
+                  hintText: '첫 번째 페이지나 프롤로그 내용을 입력하세요...',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  prefixIcon: const Icon(Icons.article),
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // 책 추가 버튼
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton.icon(
+                  onPressed: _isLoading ? null : _addBook,
+                  icon: const Icon(Icons.add),
+                  label: const Text('책 추가'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              
+              const Spacer(),
+            ],
+
             const SizedBox(height: 24),
 
             // 저장 버튼
@@ -622,4 +723,103 @@ class _HiddenAdminPageState extends State<HiddenAdminPage> {
       ),
     );
   }
+
+  Future<void> _addBook() async {
+    if (_bookTitleController.text.trim().isEmpty || 
+        _bookAuthorController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('책 제목과 저자는 필수입니다.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // 간단한 책 내용 생성 (페이지별로 분할)
+      final content = _bookContentController.text.trim().isNotEmpty 
+          ? _bookContentController.text.trim()
+          : '${_bookTitleController.text}의 내용이 여기에 표시됩니다.\n\n이는 ${_bookAuthorController.text} 작가의 작품으로, 독자들에게 깊은 감동을 선사할 것입니다.';
+      
+      // 내용을 페이지별로 분할 (약 500자씩)
+      final pages = <String>[];
+      final words = content.split(' ');
+      String currentPage = '';
+      
+      for (final word in words) {
+        if (currentPage.length + word.length > 500 && currentPage.isNotEmpty) {
+          pages.add(currentPage.trim());
+          currentPage = word + ' ';
+        } else {
+          currentPage += word + ' ';
+        }
+      }
+      
+      if (currentPage.trim().isNotEmpty) {
+        pages.add(currentPage.trim());
+      }
+
+      // Supabase에 책 추가
+      await _supabaseClient.from('ebooks').insert({
+        'title': _bookTitleController.text.trim(),
+        'author': _bookAuthorController.text.trim(),
+        'description': _bookDescriptionController.text.trim().isEmpty 
+            ? '${_bookAuthorController.text}의 ${_bookTitleController.text}'
+            : _bookDescriptionController.text.trim(),
+        'file_type': 'txt',
+        'file_size': content.length,
+        'total_pages': pages.length,
+        'language': 'ko',
+        'status': 'active',
+        'chapters': pages.map((page) => {
+          'title': '페이지 ${pages.indexOf(page) + 1}',
+          'content': page,
+        }).toList(),
+        'metadata': {
+          'addedBy': 'admin',
+          'isPublic': true,
+          'source': 'admin_panel'
+        },
+        'created_by': null, // 관리자가 추가한 책은 created_by를 null로 설정
+      });
+
+      // 입력 필드 초기화
+      _bookTitleController.clear();
+      _bookAuthorController.clear();
+      _bookDescriptionController.clear();
+      _bookContentController.clear();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('책이 성공적으로 추가되었습니다! 모든 사용자가 볼 수 있습니다.'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      print('책 추가 실패: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('책 추가 실패: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  // Supabase 클라이언트 getter 추가
+  static const _supabaseUrl = 'https://gagbvtfrsvheaubbjijb.supabase.co';
+  static const _supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdhZ2J2dGZyc3ZoZWF1YmJqaWpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjEwMTI5MDgsImV4cCI6MjAzNjU4ODkwOH0.PNxYOIUEtGGCmJgMGWCRxSjbSMWnJe4sNUE4aBfhvb8';
+  
+  late final _supabaseClient = SupabaseClient(_supabaseUrl, _supabaseKey);
 }
