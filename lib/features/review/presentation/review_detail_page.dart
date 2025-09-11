@@ -55,18 +55,18 @@ class ReviewDetailPage extends StatelessWidget {
                     // 상단 태그들
                     Row(
                       children: [
-                        _buildTag('📖 데미안', false),
+                        _buildTag('📖 ${review.bookTitle}', false),
                         const SizedBox(width: 8),
-                        _buildTag('완료', true),
+                        _buildTag(review.statusText, true),
                       ],
                     ),
                     
                     const SizedBox(height: 24),
                     
                     // 제목
-                    const Text(
-                      '헤르만 헤세의 철학적 사유가 녹아있는 이 책은 처음에 어렵게 다가왔다.',
-                      style: TextStyle(
+                    Text(
+                      review.title.isNotEmpty ? review.title : '${review.bookTitle}에 대한 감동문',
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
                         color: Colors.black,
@@ -77,9 +77,9 @@ class ReviewDetailPage extends StatelessWidget {
                     const SizedBox(height: 12),
                     
                     // 작성 시간
-                    const Text(
-                      '10시간 전 작성',
-                      style: TextStyle(
+                    Text(
+                      '${_formatDateTime(review.updatedAt)} 전 작성',
+                      style: const TextStyle(
                         fontSize: 14,
                         color: Colors.grey,
                         fontWeight: FontWeight.w400,
@@ -99,24 +99,10 @@ class ReviewDetailPage extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            '헤르만 헤세의 철학적 사유가 녹아있는 이 책은 처음에 어렵게 다가왔다.',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF4A4A4A),
-                              height: 1.5,
-                            ),
-                          ),
-                          
-                          const SizedBox(height: 20),
-                          
                           Text(
                             review.content.isNotEmpty 
                                 ? review.content 
-                                : '''헤르만 헤세의 철학적 사유가 녹아있는 이 책은 처음에 어렵게 다가왔다. '새는 알에서 나오려고 투쟁한다'는 문장처럼, 난해한 은유들이 가득했다. 하지만 읽어갈수록 이상하게도 위로받는 기분이 들었다.
-
-지금의 나 역시 무언가를 깨고 나와야 하는 시기를 보내고 있지 때문일까. 주인공 싱클레어를 이끌어주는 데미안의 모습에서, 내게도 그런 조력자가 있었으면 하는 바람과 동시에 나 또한 누군가의 데미안이 되고 싶다는 생각이 들었다. 이 책은 진정한 '나'를 찾아가는 여정에 대한 이야기다.''',
+                                : '${review.bookTitle}에 대한 감동문이 아직 작성되지 않았습니다.',
                             style: const TextStyle(
                               fontSize: 15,
                               color: Color(0xFF4A4A4A),
@@ -221,15 +207,13 @@ class ReviewDetailPage extends StatelessWidget {
     }
   }
 
-  void _showComingSoon(BuildContext context, String feature) {
+  void _saveAsImage(BuildContext context) {
+    // TODO: 실제 이미지 저장 기능 구현
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$feature 기능은 준비 중입니다.'),
+      const SnackBar(
+        content: Text('이미지 저장 기능을 준비 중입니다.'),
         backgroundColor: AppColors.primary,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
       ),
     );
   }
@@ -264,7 +248,7 @@ class ReviewDetailPage extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             const Text(
-              '감동문 공유하기',
+              '감동문 저장하기',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -273,27 +257,12 @@ class ReviewDetailPage extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             ListTile(
-              leading: const Icon(Icons.link, color: AppColors.primary),
-              title: const Text('링크 복사'),
-              onTap: () {
-                Navigator.pop(context);
-                _showComingSoon(context, '링크 복사');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.share, color: AppColors.primary),
-              title: const Text('다른 앱으로 공유'),
-              onTap: () {
-                Navigator.pop(context);
-                _showComingSoon(context, '다른 앱으로 공유');
-              },
-            ),
-            ListTile(
               leading: const Icon(Icons.image, color: AppColors.primary),
               title: const Text('이미지로 저장'),
+              subtitle: const Text('감동문을 이미지 파일로 저장합니다'),
               onTap: () {
                 Navigator.pop(context);
-                _showComingSoon(context, '이미지로 저장');
+                _saveAsImage(context);
               },
             ),
             const SizedBox(height: 20),
