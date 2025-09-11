@@ -8,6 +8,7 @@ import '../../ebook/data/ebook_repository.dart';
 import '../../ebook/models/ebook.dart';
 import 'settings_page.dart';
 import 'profile_edit_page.dart';
+import '../../review/presentation/review_detail_page.dart';
 
 class MyPageV2 extends StatefulWidget {
   const MyPageV2({super.key});
@@ -506,14 +507,23 @@ class _NotesSection extends StatelessWidget {
                   ),
                 ]
               : reviews.map((review) {
-                  return _ChatNoteCard(
-                    character: review.bookTitle,
-                    message: review.content.length > 50 
-                        ? '${review.content.substring(0, 50)}...'
-                        : review.content,
-                    color: _getReviewCardColor(review),
-                    characterColor: _getReviewCharacterColor(review),
-                    isReview: true,
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => ReviewDetailPage(review: review),
+                        ),
+                      );
+                    },
+                    child: _ChatNoteCard(
+                      character: review.bookTitle,
+                      message: review.content.length > 50 
+                          ? '${review.content.substring(0, 50)}...'
+                          : review.content,
+                      color: _getReviewCardColor(review),
+                      characterColor: _getReviewCharacterColor(review),
+                      isReview: true,
+                    ),
                   );
                 }).toList(),
         ),
