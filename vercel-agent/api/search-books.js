@@ -26,7 +26,10 @@ export default async function handler(req, res) {
     const clientId = process.env.NAVER_CLIENT_ID || 'pXWwOhZQKs1Z2e6DgpYx';
     const clientSecret = process.env.NAVER_CLIENT_SECRET || 'n_OwRWYfjC';
 
-    console.log('📚 Book search request:', { query, clientId: clientId.substring(0, 5) + '...' });
+    console.log('📚 Book search request:', {
+      query,
+      clientId: clientId.substring(0, 5) + '...',
+    });
 
     // 네이버 도서 검색 API 호출
     const naverResponse = await fetch(
@@ -47,9 +50,9 @@ export default async function handler(req, res) {
     }
 
     const naverData = await naverResponse.json();
-    console.log('📚 Naver API response:', { 
-      total: naverData.total, 
-      items: naverData.items?.length || 0 
+    console.log('📚 Naver API response:', {
+      total: naverData.total,
+      items: naverData.items?.length || 0,
     });
 
     // 응답 데이터 변환
