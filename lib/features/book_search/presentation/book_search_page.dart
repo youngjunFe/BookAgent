@@ -245,9 +245,21 @@ class _BookSearchPageState extends State<BookSearchPage> {
     });
 
     try {
-      final response = await http.get(
-        Uri.parse('https://bookagent-production.up.railway.app/api/search-books?query=${_searchController.text}'),
-      );
+      // 먼저 Vercel API 시도, 실패하면 Railway API 시도
+      http.Response? response;
+      
+      try {
+        print('🔍 Vercel API 시도 중...');
+        response = await http.get(
+          Uri.parse('https://book-review-app-alpha.vercel.app/api/search-books?query=${_searchController.text}'),
+        ).timeout(const Duration(seconds: 5));
+      } catch (vercelError) {
+        print('❌ Vercel API 실패: $vercelError');
+        print('🔍 Railway API 시도 중...');
+        response = await http.get(
+          Uri.parse('https://bookagent-production.up.railway.app/api/search-books?query=${_searchController.text}'),
+        ).timeout(const Duration(seconds: 5));
+      }
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
