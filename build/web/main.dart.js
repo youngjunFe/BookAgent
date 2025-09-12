@@ -47253,9 +47253,9 @@ s=p}while(true)switch(s){case 0:f=m.d
 if(B.c.by(f.a.a).length===0){s=1
 break}m.M(new A.avI(m))
 p=4
-A.ap("\ud83d\udd0d Vercel API\ub85c \ucc45 \uac80\uc0c9 \uc911...")
+A.ap("\ud83d\udd0d \ucc45 \uac80\uc0c9 \uc911...")
 s=7
-return A.m(A.aWd(A.dg("https://book-review-app-alpha.vercel.app/api/search-books?query="+f.a.a,0,null),null).z7(0,B.fW),$async$wf)
+return A.m(A.aWd(A.dg("https://bookagent-production.up.railway.app/api/search-books?query="+f.a.a,0,null),null).z7(0,B.fW),$async$wf)
 case 7:l=b
 if(l.b===200){f=l
 k=B.af.b2(0,A.dR(A.dQ(f.e)).b2(0,f.w))
