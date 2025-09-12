@@ -245,73 +245,27 @@ class _BookSearchPageState extends State<BookSearchPage> {
     });
 
     try {
-      // API 서버 문제로 인한 임시 더미 데이터
-      await Future.delayed(const Duration(seconds: 1)); // 검색하는 느낌 연출
-      
-      final query = _searchController.text.trim().toLowerCase();
-      final dummyBooks = [
-        {
-          'title': '데미안',
-          'author': '헤르만 헤세',
-          'publisher': '민음사',
-          'image': 'https://picsum.photos/200/300?random=1',
-          'description': '성장과 자아 발견에 대한 깊이 있는 작품입니다.',
-          'isbn': '9788937460234',
-          'link': '#',
-        },
-        {
-          'title': '어린왕자',
-          'author': '생텍쥐페리',
-          'publisher': '문학동네',
-          'image': 'https://picsum.photos/200/300?random=2',
-          'description': '사랑과 우정에 대한 영원한 고전입니다.',
-          'isbn': '9788954677158',
-          'link': '#',
-        },
-        {
-          'title': '1984',
-          'author': '조지 오웰',
-          'publisher': '민음사',
-          'image': 'https://picsum.photos/200/300?random=3',
-          'description': '디스토피아 소설의 걸작입니다.',
-          'isbn': '9788937460777',
-          'link': '#',
-        },
-        {
-          'title': '위대한 개츠비',
-          'author': 'F. 스콧 피츠제럴드',
-          'publisher': '문학동네',
-          'image': 'https://picsum.photos/200/300?random=4',
-          'description': '미국 문학의 고전 작품입니다.',
-          'isbn': '9788954677890',
-          'link': '#',
-        },
-        {
-          'title': '해리포터와 마법사의 돌',
-          'author': 'J.K. 롤링',
-          'publisher': '문학수첩',
-          'image': 'https://picsum.photos/200/300?random=5',
-          'description': '전 세계를 사로잡은 마법 판타지 소설입니다.',
-          'isbn': '9788983920775',
-          'link': '#',
-        },
-      ];
-      
-      // 검색어에 맞는 책 필터링
-      final filteredBooks = dummyBooks.where((book) => 
-        book['title']!.toLowerCase().contains(query) ||
-        book['author']!.toLowerCase().contains(query) ||
-        query.contains('책') || query.contains('book') || query.contains('app')
-      ).toList();
-      
-      final books = filteredBooks.map((book) => BookSearchResult.fromJson(book)).toList();
-      
-      setState(() {
-        _searchResults = books;
-      });
-      
-      print('🔍 임시 더미 데이터로 ${books.length}권의 책을 찾았습니다.');
-      
+      print('🔍 책 검색 중...');
+      final response = await http.get(
+        Uri.parse('https://bookagent-production.up.railway.app/api/search-books?query=${_searchController.text}'),
+      ).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('🔍 API Response: $data'); // 디버깅용
+        
+        final books = (data['books'] as List)
+            .map((book) {
+              final result = BookSearchResult.fromJson(book);
+              print('📚 Book: ${result.title}, Image: ${result.image}'); // 이미지 URL 확인
+              return result;
+            })
+            .toList();
+        
+        setState(() {
+          _searchResults = books;
+        });
+      }
     } catch (e) {
       print('Search error: $e');
       ScaffoldMessenger.of(context).showSnackBar(
