@@ -247,7 +247,7 @@ class _BookSearchPageState extends State<BookSearchPage> {
     try {
       print('🔍 Vercel API로 책 검색 중...');
       final response = await http.get(
-        Uri.parse('https://vercel-agent-2zw327j5y-jun-fe-6455s-projects.vercel.app/api/search-books?query=${_searchController.text}'),
+        Uri.parse('https://vercel-agent-prctzlt79-n-agent-projects.vercel.app/api/search-books?query=${_searchController.text}'),
       ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
