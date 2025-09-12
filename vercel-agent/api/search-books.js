@@ -1,6 +1,6 @@
 const fetch = require('node-fetch');
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // CORS 헤더 설정
   res.setHeader('Access-Control-Allow-Credentials', false);
   res.setHeader('Access-Control-Allow-Origin', '*');
