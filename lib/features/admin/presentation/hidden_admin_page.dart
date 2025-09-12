@@ -596,11 +596,12 @@ class _HiddenAdminPageState extends State<HiddenAdminPage> {
 
             const SizedBox(height: 24),
 
-            // 저장 버튼
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
+            // 저장 버튼 (책 관리가 아닐 때만 표시)
+            if (_selectedConfigType != 'book_management')
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
                 onPressed: _isLoading ? null : _savePrompts,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
@@ -626,8 +627,8 @@ class _HiddenAdminPageState extends State<HiddenAdminPage> {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
+                ),
               ),
-            ),
           ],
         ),
       ),

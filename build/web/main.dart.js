@@ -46548,10 +46548,9 @@ n=A.fp(!0,B.ar,!1,f,!0,B.t,f,A.fT(),g.at,f,f,f,f,f,2,A.jg(f,new A.e7(4,A.ac(12),
 m=A.fp(!0,B.ar,!1,f,!0,B.t,f,A.fT(),g.ax,f,f,f,f,f,2,A.jg(f,new A.e7(4,A.ac(12),B.cz),f,f,f,f,f,f,!0,f,f,f,f,f,f,f,f,f,f,f,f,f,f,f,f,f,f,f,f,f,f,"\uccab \ubc88\uc9f8 \ud398\uc774\uc9c0\ub098 \ud504\ub864\ub85c\uadf8 \ub0b4\uc6a9\uc744 \uc785\ub825\ud558\uc138\uc694...",f,f,f,f,f,f,f,f,"\ucc45 \ub0b4\uc6a9 (\uc0d8\ud50c \ud14d\uc2a4\ud2b8)",!0,!0,f,B.Ny,f,f,f,f,f,f,f,f,f,f,f),B.D,!0,f,!0,f,!1,f,B.aR,f,f,f,f,f,f,f,5,f,f,!1,e,f,f,f,f,f,!1,f,f,!1,f,!0,f,B.av,f,f,B.aM,B.aE,f,f,f,f,f,f,f,!0,B.a9,f,B.be,f,f,f,f)
 l=g.ch?f:g.gakM()
 B.b.N(p,A.b([B.a44,B.a0,q,B.b3,o,B.b3,n,B.b3,m,B.a0,A.ci(A.oj(B.h2,B.E9,l,A.eX(f,f,B.dB,f,f,f,f,f,f,B.f,f,f,f,f,new A.bp(A.ac(12),B.r),f,f,f,f,f)),48,1/0),B.df],s))}p.push(B.aA)
-s=g.ch?f:g.gap9()
+if(g.cx!=="book_management"){s=g.ch?f:g.gap9()
 q=A.eX(f,f,B.k,f,f,f,0,f,f,B.f,f,f,f,f,new A.bp(A.ac(12),B.r),f,f,f,f,f)
-p.push(A.ci(A.hU(!1,g.ch?B.hD:B.a4p,f,f,f,f,f,f,s,f,q),52,1/0))
-return A.e1(r,B.au,new A.b_(B.by,A.aO(p,B.X,B.l,B.o),f),f)},
+p.push(A.ci(A.hU(!1,g.ch?B.hD:B.a4p,f,f,f,f,f,f,s,f,q),52,1/0))}return A.e1(r,B.au,new A.b_(B.by,A.aO(p,B.X,B.l,B.o),f),f)},
 abW(){var s=null,r=A.ac(16),q=A.b([new A.br(0,B.S,A.V(B.d.ab(25.5),B.n.m()>>>16&255,B.n.m()>>>8&255,B.n.m()&255),B.xM,20)],t.V)
 return A.e1(s,B.au,A.db(A.a9(s,A.aO(A.b([B.Nk,B.aA,B.a48,B.ao,B.a3V,B.bO,A.fp(!0,B.ar,!1,s,!0,B.t,s,A.fT(),this.d,s,s,s,s,s,2,A.jg(s,new A.e7(4,A.ac(12),B.cz),s,s,s,s,s,s,!0,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,"\ud328\uc2a4\uc6cc\ub4dc",!0,!0,s,B.Nm,s,s,s,s,s,s,s,s,s,s,s),B.D,!0,s,!0,s,!1,s,B.aR,s,s,s,s,s,s,s,1,s,s,!0,"\u2022",s,s,s,new A.aAn(this),s,!1,s,s,!1,s,!0,s,B.av,s,s,B.aM,B.aE,s,s,s,s,s,s,s,!0,B.a9,s,B.be,s,s,s,s),B.aA,A.ci(A.hU(!1,B.a3Z,s,s,s,s,s,s,this.gabG(),s,A.eX(s,s,B.k,s,s,s,s,s,s,B.f,s,s,s,s,new A.bp(A.ac(12),B.r),s,s,s,s,s)),48,1/0)],t.p),B.p,B.l,B.ak),B.i,s,s,new A.al(B.O,s,s,r,q,s,B.u),s,s,s,B.LS,s,s,400),s,s),s)},
 Bb(){var s=0,r=A.t(t.H),q,p=2,o=[],n=[],m=this,l,k,j,i,h,g,f,e,d,c,b,a,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1
