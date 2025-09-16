@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../auth/services/supabase_auth_service.dart';
-import 'webview_page.dart';
+import 'dart:html' as html if (dart.library.html) 'dart:html';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -37,26 +38,12 @@ class SettingsPage extends StatelessWidget {
             _buildSettingsItem(
               context,
               title: '자주 묻는 질문',
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const WebViewPage(
-                    title: '자주 묻는 질문',
-                    notionUrl: 'https://laivdata.notion.site/ebd/26a4d0474fac80569275ce41e7559dbd',
-                  ),
-                ),
-              ),
+              onTap: () => _openNotionPage('https://laivdata.notion.site/ebd/26a4d0474fac80569275ce41e7559dbd'),
             ),
             _buildSettingsItem(
               context,
               title: '버그/오류 제보',
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const WebViewPage(
-                    title: '버그/오류 제보',
-                    notionUrl: 'https://laivdata.notion.site/ebd/26c4d0474fac8001a027f9cb7d2e2977',
-                  ),
-                ),
-              ),
+              onTap: () => _openNotionPage('https://laivdata.notion.site/ebd/26c4d0474fac8001a027f9cb7d2e2977'),
             ),
             
             const SizedBox(height: 32),
@@ -66,26 +53,12 @@ class SettingsPage extends StatelessWidget {
             _buildSettingsItem(
               context,
               title: '서비스 이용약관',
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const WebViewPage(
-                    title: '서비스 이용약관',
-                    notionUrl: 'https://laivdata.notion.site/ebd/2704d0474fac80d4b84fd40b5d2cde30',
-                  ),
-                ),
-              ),
+              onTap: () => _openNotionPage('https://laivdata.notion.site/ebd/2704d0474fac80d4b84fd40b5d2cde30'),
             ),
             _buildSettingsItem(
               context,
               title: '개인정보처리방침',
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const WebViewPage(
-                    title: '개인정보처리방침',
-                    notionUrl: 'https://laivdata.notion.site/ebd/2704d0474fac8015a578d6c7bc6cfbdb',
-                  ),
-                ),
-              ),
+              onTap: () => _openNotionPage('https://laivdata.notion.site/ebd/2704d0474fac8015a578d6c7bc6cfbdb'),
             ),
             // _buildSettingsItem(
             //   context,
@@ -427,6 +400,17 @@ class SettingsPage extends StatelessWidget {
           ),
         );
       }
+    }
+  }
+
+  void _openNotionPage(String url) {
+    if (kIsWeb) {
+      // 웹에서 새 탭으로 노션 페이지 열기
+      html.window.open(url, '_blank');
+    } else {
+      // 모바일에서는 URL 런처 사용 (추후 구현)
+      // 현재는 안내 메시지만 표시
+      // TODO: url_launcher 패키지 사용하여 브라우저에서 열기
     }
   }
 }
