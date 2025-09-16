@@ -25,8 +25,8 @@ module.exports = async (req, res) => {
 
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      console.log('No OpenAI API key, returning fallback');
-      return res.status(200).json({ reply: getFallbackResponse(userMessage) });
+      console.log('No OpenAI API key, using smart fallback');
+      return res.status(200).json({ reply: getSmartFallbackResponse(userMessage, bookTitle) });
     }
 
     // 클라이언트에서 전달한 프롬프트 사용 (우선순위)
@@ -78,12 +78,41 @@ module.exports = async (req, res) => {
   }
 };
 
-function getFallbackResponse(userMessage) {
-  if (userMessage.includes('안녕') || userMessage.includes('하이')) {
-    return '안녕하세요! 어떤 책에 대해 이야기해보고 싶으신가요? 📚';
-  } else if (userMessage.includes('책') || userMessage.includes('소설')) {
-    return '흥미로운 선택이네요! 그 책에서 가장 인상 깊었던 부분은 무엇인가요?';
-  } else {
-    return '정말 좋은 관점이네요! 더 자세히 말씀해주시면 함께 이야기해볼 수 있을 것 같아요.';
+function getSmartFallbackResponse(userMessage, bookTitle) {
+  const message = userMessage.toLowerCase();
+  const book = bookTitle || '책';
+  
+  // 인사말
+  if (message.includes('안녕') || message.includes('하이') || message.includes('처음')) {
+    return `안녕하세요! ${book}에 대해 함께 이야기해봐요. 어떤 부분이 가장 기억에 남으시나요? 📚`;
   }
+  
+  // 감정 관련
+  if (message.includes('감동') || message.includes('좋았') || message.includes('인상')) {
+    return `${book}에서 그런 감동을 받으셨군요! 그 장면이나 구절을 더 자세히 설명해주시면 함께 깊이 있게 이야기해볼 수 있을 것 같아요. ✨`;
+  }
+  
+  // 질문이나 궁금증
+  if (message.includes('?') || message.includes('궁금') || message.includes('어떻게')) {
+    return `좋은 질문이네요! ${book}에 대한 궁금증을 함께 풀어보죠. 어떤 관점에서 접근해보고 싶으신가요? 🤔`;
+  }
+  
+  // 캐릭터나 줄거리 관련
+  if (message.includes('주인공') || message.includes('등장인물') || message.includes('줄거리')) {
+    return `${book}의 인물들에 대해 이야기해보는 것도 좋겠네요! 어떤 캐릭터가 가장 인상적이었나요? 그 이유도 함께 들려주세요. 👥`;
+  }
+  
+  // 일반적인 응답
+  const responses = [
+    `${book}에 대한 흥미로운 관점이네요! 더 자세히 들어보고 싶어요.`,
+    `정말 좋은 생각이에요! ${book}의 어떤 부분에서 그런 느낌을 받으셨나요?`,
+    `${book}을 읽으시면서 느끼신 점들을 더 나눠주시면 함께 이야기해볼 수 있을 것 같아요.`,
+    `그런 관점에서 ${book}을 바라보셨군요! 다른 독자들은 어떻게 생각할지도 궁금하네요.`
+  ];
+  
+  return responses[Math.floor(Math.random() * responses.length)];
+}
+
+function getFallbackResponse(userMessage) {
+  return getSmartFallbackResponse(userMessage, '책');
 }
