@@ -756,7 +756,7 @@ class _AiChatPageState extends State<AiChatPage> {
         '당신은 독서를 사랑하는 친근한 AI 어시스턴트입니다.'
       );
       
-      final baseUrl = 'https://bookagent-production.up.railway.app';
+      final baseUrl = 'https://book-review-app-alpha.vercel.app';
       print('🔍 Base URL: $baseUrl');
       print('🔍 사용할 프롬프트: ${aiPrompt.substring(0, 100)}...');
       
