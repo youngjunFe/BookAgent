@@ -11,7 +11,7 @@ class AppConfig {
   }
 
   static String get agentBaseUrl {
-    return 'https://book-review-app-alpha.vercel.app';
+    return 'https://bookagent-production.up.railway.app';
   }
 }
 

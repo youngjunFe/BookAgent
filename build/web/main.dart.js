@@ -30798,7 +30798,7 @@ s=p}while(true)switch(s){case 0:A.ap("\ud83d\udd0d \uac10\ub3d9\ubb38 \uc0dd\uc1
 if(!$.u6){q=A.anp(a4)
 s=1
 break}p=4
-n=A.dg("https://book-review-app-alpha.vercel.app/api/generate-review",0,null)
+n=A.dg("https://bookagent-production.up.railway.app/api/generate-review",0,null)
 c=t.N
 b=A.a_(["Content-Type","application/json"],c,c)
 s=7
@@ -47546,7 +47546,7 @@ s=p}while(true)switch(s){case 0:p=4
 s=7
 return A.m(A.a5K("ai_chat_prompt","\ub2f9\uc2e0\uc740 \ub3c5\uc11c\ub97c \uc0ac\ub791\ud558\ub294 \uce5c\uadfc\ud55c AI \uc5b4\uc2dc\uc2a4\ud134\ud2b8\uc785\ub2c8\ub2e4."),$async$r2)
 case 7:m=a6
-l="https://book-review-app-alpha.vercel.app"
+l="https://bookagent-production.up.railway.app"
 A.ap("\ud83d\udd0d Base URL: "+A.h(l))
 A.ap("\ud83d\udd0d \uc0ac\uc6a9\ud560 \ud504\ub86c\ud504\ud2b8: "+J.a5q(m,0,100)+"...")
 e=n.f
