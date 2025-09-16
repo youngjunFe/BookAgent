@@ -17,7 +17,7 @@ app.use(
 
 app.use(express.json({ limit: '1mb' }));
 
-app.get('/health', (_req, res) => res.status(200).send('ok'));
+app.get('/health', (_req, res) => res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() }));
 
 // 책 검색 API 엔드포인트
 app.get('/api/search-books', async (req, res) => {
