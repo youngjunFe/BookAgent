@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../auth/services/supabase_auth_service.dart';
+import 'webview_page.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -36,12 +37,26 @@ class SettingsPage extends StatelessWidget {
             _buildSettingsItem(
               context,
               title: '자주 묻는 질문',
-              onTap: () => _showComingSoon(context),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const WebViewPage(
+                    title: '자주 묻는 질문',
+                    notionUrl: 'https://laivdata.notion.site/ebd/26a4d0474fac80569275ce41e7559dbd',
+                  ),
+                ),
+              ),
             ),
             _buildSettingsItem(
               context,
               title: '버그/오류 제보',
-              onTap: () => _showComingSoon(context),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const WebViewPage(
+                    title: '버그/오류 제보',
+                    notionUrl: 'https://laivdata.notion.site/ebd/26c4d0474fac8001a027f9cb7d2e2977',
+                  ),
+                ),
+              ),
             ),
             
             const SizedBox(height: 32),
@@ -51,18 +66,32 @@ class SettingsPage extends StatelessWidget {
             _buildSettingsItem(
               context,
               title: '서비스 이용약관',
-              onTap: () => _showComingSoon(context),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const WebViewPage(
+                    title: '서비스 이용약관',
+                    notionUrl: 'https://laivdata.notion.site/ebd/2704d0474fac80d4b84fd40b5d2cde30',
+                  ),
+                ),
+              ),
             ),
             _buildSettingsItem(
               context,
               title: '개인정보처리방침',
-              onTap: () => _showComingSoon(context),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const WebViewPage(
+                    title: '개인정보처리방침',
+                    notionUrl: 'https://laivdata.notion.site/ebd/2704d0474fac8015a578d6c7bc6cfbdb',
+                  ),
+                ),
+              ),
             ),
-            _buildSettingsItem(
-              context,
-              title: '청소년 보호정책',
-              onTap: () => _showComingSoon(context),
-            ),
+            // _buildSettingsItem(
+            //   context,
+            //   title: '청소년 보호정책',
+            //   onTap: () => _showComingSoon(context),
+            // ),
             
             const SizedBox(height: 32),
             
