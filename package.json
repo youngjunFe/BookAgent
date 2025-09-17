@@ -1,4 +1,20 @@
 {
+  "name": "book-backend",
+  "version": "1.0.0",
+  "private": true,
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "openai": "^4.52.7"
+  }
+}
+
+{
   "name": "book-agent-server",
   "version": "1.0.0",
   "description": "Book review AI agent server",
