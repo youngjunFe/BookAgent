@@ -76,13 +76,15 @@ class _AiChatPageState extends State<AiChatPage> {
   void _addDefaultWelcomeMessage() {
     _messages.add(
       ChatMessage(
-        text: _aiWelcomeMessage.isNotEmpty 
+        text: _aiWelcomeMessage.isNotEmpty
             ? _aiWelcomeMessage
             : '안녕하세요! 저는 독서 도우미 AI입니다 📚\n\n'
               '어떤 책에 대해 이야기하고 싶으신가요?\n'
               '책의 제목을 알려주시면, 함께 깊이 있는 대화를 나눠보아요!',
         isUser: false,
         timestamp: DateTime.now(),
+        isAiResponse: true,
+        hasApiError: false,
       ),
     );
   }
@@ -95,6 +97,8 @@ class _AiChatPageState extends State<AiChatPage> {
           text: '안녕하세요! 저는 독서 도우미 AI입니다 📚',
           isUser: false,
           timestamp: DateTime.now(),
+          isAiResponse: true,
+          hasApiError: false,
         ),
       );
       _isTyping = true;
@@ -113,6 +117,8 @@ class _AiChatPageState extends State<AiChatPage> {
                 '$bookSummary 라고 하던데, 지금 무슨 감정을 느끼고 있나요?',
             isUser: false,
             timestamp: DateTime.now(),
+            isAiResponse: true,
+            hasApiError: false,
           ),
         );
         _isTyping = false;
@@ -128,6 +134,8 @@ class _AiChatPageState extends State<AiChatPage> {
                 '정말 흥미로운 작품 라고 하던데, 지금 무슨 감정을 느끼고 있나요?',
             isUser: false,
             timestamp: DateTime.now(),
+            isAiResponse: true,
+            hasApiError: false,
           ),
         );
         _isTyping = false;
@@ -143,8 +151,16 @@ class _AiChatPageState extends State<AiChatPage> {
 
     try {
       final response = await _callRealAiApi(prompt);
+      // Map에서 메시지 추출
+      String responseText = '';
+      if (response is Map<String, dynamic>) {
+        responseText = response['message'] ?? '';
+      } else {
+        responseText = response.toString();
+      }
+
       // AI 응답에서 따옴표나 불필요한 문구 제거
-      String cleanSummary = response
+      String cleanSummary = responseText
           .replaceAll('"', '')
           .replaceAll("'", '')
           .replaceAll('"', '')
@@ -497,12 +513,24 @@ class _AiChatPageState extends State<AiChatPage> {
               width: 28,
               height: 28,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: message.hasApiError
+                  ? Colors.orange.withOpacity(0.1)
+                  : message.isAiResponse
+                    ? AppColors.primary.withOpacity(0.1)
+                    : Colors.grey.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                Icons.auto_awesome,
-                color: AppColors.primary,
+                message.hasApiError
+                  ? Icons.warning_amber
+                  : message.isAiResponse
+                    ? Icons.auto_awesome
+                    : Icons.psychology_alt,
+                color: message.hasApiError
+                  ? Colors.orange[700]
+                  : message.isAiResponse
+                    ? AppColors.primary
+                    : Colors.grey[600],
                 size: 14,
               ),
             ),
@@ -522,17 +550,28 @@ class _AiChatPageState extends State<AiChatPage> {
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
-                    color: message.isUser ? AppColors.primary : Colors.grey[100],
+                    color: message.isUser
+                      ? AppColors.primary
+                      : message.hasApiError
+                        ? Colors.orange[50]
+                        : message.isAiResponse
+                          ? Colors.green[50]
+                          : Colors.grey[100],
                     borderRadius: BorderRadius.only(
                       topLeft: const Radius.circular(18),
                       topRight: const Radius.circular(18),
-                      bottomLeft: message.isUser 
-                          ? const Radius.circular(18) 
+                      bottomLeft: message.isUser
+                          ? const Radius.circular(18)
                           : const Radius.circular(4),
-                      bottomRight: message.isUser 
-                          ? const Radius.circular(4) 
+                      bottomRight: message.isUser
+                          ? const Radius.circular(4)
                           : const Radius.circular(18),
                     ),
+                    border: message.hasApiError
+                      ? Border.all(color: Colors.orange[200]!, width: 1)
+                      : message.isAiResponse && !message.isUser
+                        ? Border.all(color: Colors.green[200]!, width: 1)
+                        : null,
                   ),
                   child: Text(
                     message.text,
@@ -683,6 +722,8 @@ class _AiChatPageState extends State<AiChatPage> {
           text: text,
           isUser: true,
           timestamp: DateTime.now(),
+          isAiResponse: true,
+          hasApiError: false,
         ),
       );
       _messageController.clear();
@@ -713,42 +754,48 @@ class _AiChatPageState extends State<AiChatPage> {
   void _simulateAiResponse(String userMessage) async {
     try {
       print('🤖 AI API 호출 시작: $userMessage');
-      // 더 짧은 타임아웃으로 빠른 fallback
-      String aiResponse = await _callRealAiApi(userMessage).timeout(
+      // API 호출 결과를 구분하기 위한 구조체
+      final result = await _callRealAiApi(userMessage).timeout(
         const Duration(seconds: 10),
         onTimeout: () => throw Exception('API 타임아웃'),
       );
-      print('🤖 AI API 성공: ${aiResponse.length > 50 ? aiResponse.substring(0, 50) + '...' : aiResponse}');
-      
+
       setState(() {
         _isTyping = false;
         _messages.add(
           ChatMessage(
-            text: aiResponse,
+            text: result['message'] ?? result.toString(),
             isUser: false,
             timestamp: DateTime.now(),
+            isAiResponse: result['isRealAI'] ?? false,
+            hasApiError: result['hasError'] ?? false,
           ),
         );
       });
     } catch (e) {
-      print('❌ AI API 실패: $e');
-      // 명확한 에러 메시지 표시
+      print('❌ AI API 전체 실패: $e');
+      // 완전한 실패 시 명확한 에러 메시지
       setState(() {
         _isTyping = false;
         _messages.add(
           ChatMessage(
-            text: '죄송합니다. 현재 AI 서버와의 통신에 문제가 있어 응답을 받을 수 없습니다. 잠시 후 다시 시도해 주세요. 🔧',
+            text: '⚠️ AI 서버에 연결할 수 없습니다.\n\n'
+                '현재 기술적 문제로 인해 AI와의 대화가 어려운 상황입니다. '
+                '잠시 후 다시 시도해 주시거나, 페이지를 새로고침 해보세요.\n\n'
+                '불편을 드려 죄송합니다. 🔧',
             isUser: false,
             timestamp: DateTime.now(),
+            isAiResponse: false,
+            hasApiError: true,
           ),
         );
       });
     }
-    
+
     _scrollToBottom();
   }
 
-  Future<String> _callRealAiApi(String userMessage) async {
+  Future<Map<String, dynamic>> _callRealAiApi(String userMessage) async {
     try {
       // DB에서 실시간 프롬프트 가져오기
       final aiPrompt = await AdminConfigService.getConfigWithDefault(
@@ -794,12 +841,17 @@ class _AiChatPageState extends State<AiChatPage> {
                               data['content'];
 
           if (aiResponse != null && aiResponse.isNotEmpty && !aiResponse.contains('error')) {
-            print('✅ Primary API 성공: ${aiResponse.substring(0, 50)}...');
-            return aiResponse;
+            print('✅ Railway API 성공: ${aiResponse.substring(0, 50)}...');
+            return {
+              'message': aiResponse,
+              'isRealAI': true,
+              'hasError': false,
+              'source': 'Railway'
+            };
           }
         }
       } catch (e) {
-        print('❌ Primary API 실패: $e');
+        print('❌ Railway API 실패: $e');
       }
 
       // Secondary: Vercel API 시도
@@ -839,7 +891,12 @@ class _AiChatPageState extends State<AiChatPage> {
 
               if (aiResponse != null && aiResponse.isNotEmpty && !aiResponse.contains('error')) {
                 print('✅ Vercel API 성공: ${aiResponse.substring(0, 50)}...');
-                return aiResponse;
+                return {
+                  'message': aiResponse,
+                  'isRealAI': true,
+                  'hasError': false,
+                  'source': 'Vercel'
+                };
               }
             }
           } catch (e) {
@@ -852,12 +909,25 @@ class _AiChatPageState extends State<AiChatPage> {
       }
 
       // Fallback: 로컬 스마트 응답 생성
-      print('🔄 Fallback: 스마트 응답 생성');
-      return _generateSmartAiResponse(userMessage);
+      print('🔄 Fallback: API 실패로 로컬 응답 생성');
+      return {
+        'message': '⚠️ AI 서버 연결 실패\n\n${_generateSmartAiResponse(userMessage)}\n\n'
+                  '💡 위는 임시 응답입니다. 실제 AI 대화를 위해 페이지를 새로고침하거나 잠시 후 다시 시도해 주세요.',
+        'isRealAI': false,
+        'hasError': true,
+        'source': 'Local'
+      };
 
     } catch (e) {
       print('❌ AI API 전체 실패: $e');
-      return _generateSmartAiResponse(userMessage);
+      return {
+        'message': '⚠️ 기술적 오류 발생\n\n'
+                  '현재 AI 시스템에 문제가 발생했습니다. 페이지를 새로고침하거나 잠시 후 다시 시도해 주세요.\n\n'
+                  '지속적인 문제 시 관리자에게 문의하시기 바랍니다.',
+        'isRealAI': false,
+        'hasError': true,
+        'source': 'Error'
+      };
     }
   }
 
@@ -1019,6 +1089,8 @@ class _AiChatPageState extends State<AiChatPage> {
           isUser: false,
           timestamp: DateTime.now(),
           showActionButtons: true, // 특별한 플래그로 버튼 표시
+          isAiResponse: true,
+          hasApiError: false,
         ),
       );
     });
@@ -1193,11 +1265,15 @@ class ChatMessage {
   final bool isUser;
   final DateTime timestamp;
   final bool showActionButtons;
+  final bool isAiResponse;
+  final bool hasApiError;
 
   ChatMessage({
     required this.text,
     required this.isUser,
     required this.timestamp,
     this.showActionButtons = false,
+    this.isAiResponse = true,
+    this.hasApiError = false,
   });
 }
