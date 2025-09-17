@@ -4,5 +4,11 @@
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "functions": {
+    "api/**": {
+      "memory": 256,
+      "maxDuration": 10
+    }
+  }
 }

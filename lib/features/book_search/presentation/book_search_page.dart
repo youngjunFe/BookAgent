@@ -328,10 +328,12 @@ class _BookSearchPageState extends State<BookSearchPage> {
   
   /// 🔄 여러 프록시 서비스를 순차적으로 시도
   Widget _buildImageWithMultiProxy(BookSearchResult book, int proxyIndex) {
-    // 사용 가능한 프록시 서비스들
+    // 사용 가능한 프록시 서비스들 (1순위: 자체 프록시)
+    final encoded = Uri.encodeComponent(book.image);
     final proxyServices = [
-      'https://api.allorigins.win/raw?url=${Uri.encodeComponent(book.image)}',
-      'https://corsproxy.io/?${Uri.encodeComponent(book.image)}',
+      'https://${Uri.base.host}/api/image-proxy?url=$encoded',
+      'https://api.allorigins.win/raw?url=$encoded',
+      'https://corsproxy.io/?$encoded',
       'https://cors-anywhere.herokuapp.com/${book.image}',
       book.image, // 마지막에 원본 URL 시도
     ];

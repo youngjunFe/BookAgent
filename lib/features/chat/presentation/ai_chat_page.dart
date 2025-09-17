@@ -797,6 +797,7 @@ class _AiChatPageState extends State<AiChatPage> {
 
   Future<Map<String, dynamic>> _callRealAiApi(String userMessage) async {
     try {
+      bool primaryFailed = false;
       // DB에서 실시간 프롬프트 가져오기
       final aiPrompt = await AdminConfigService.getConfigWithDefault(
         'ai_chat_prompt',
@@ -849,9 +850,12 @@ class _AiChatPageState extends State<AiChatPage> {
               'source': 'Railway'
             };
           }
+        } else {
+          primaryFailed = true;
         }
       } catch (e) {
         print('❌ Railway API 실패: $e');
+        primaryFailed = true;
       }
 
       // Secondary: Vercel API 시도
@@ -891,10 +895,13 @@ class _AiChatPageState extends State<AiChatPage> {
 
               if (aiResponse != null && aiResponse.isNotEmpty && !aiResponse.contains('error')) {
                 print('✅ Vercel API 성공: ${aiResponse.substring(0, 50)}...');
+                final warningPrefix = primaryFailed
+                    ? '⚠️ 주 서버(Railway)에서 오류가 발생하여 보조 서버로 연결했어요.\n\n'
+                    : '';
                 return {
-                  'message': aiResponse,
+                  'message': warningPrefix + aiResponse,
                   'isRealAI': true,
-                  'hasError': false,
+                  'hasError': primaryFailed,
                   'source': 'Vercel'
                 };
               }

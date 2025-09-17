@@ -364,17 +364,26 @@ class AppTheme {
       scaffoldBackgroundColor: AppColors.background,
     );
 
-    // 디자인 시스템 - Pretendard 폰트 적용 (웹 폰트 직접 로드)
+    // Web 한글 깨짐 대비: Noto Sans KR 우선, Pretendard 보조
+    final fontFamilyFallback = ['Noto Sans KR', 'Pretendard', 'system-ui', 'Apple SD Gothic Neo', 'Segoe UI'];
+
     return base.copyWith(
       textTheme: base.textTheme.apply(
-        fontFamily: 'Pretendard',
+        fontFamily: 'Noto Sans KR',
+        bodyColor: AppColors.textPrimary,
+        displayColor: AppColors.textPrimary,
+      ).copyWith(
+        bodyMedium: base.textTheme.bodyMedium?.copyWith(fontFamilyFallback: fontFamilyFallback),
+        bodyLarge: base.textTheme.bodyLarge?.copyWith(fontFamilyFallback: fontFamilyFallback),
+        bodySmall: base.textTheme.bodySmall?.copyWith(fontFamilyFallback: fontFamilyFallback),
       ),
       primaryTextTheme: base.primaryTextTheme.apply(
-        fontFamily: 'Pretendard',
+        fontFamily: 'Noto Sans KR',
       ),
       appBarTheme: base.appBarTheme.copyWith(
         titleTextStyle: base.appBarTheme.titleTextStyle?.copyWith(
-          fontFamily: 'Pretendard',
+          fontFamily: 'Noto Sans KR',
+          fontFamilyFallback: fontFamilyFallback,
         ),
       ),
     );
