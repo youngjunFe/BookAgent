@@ -389,3 +389,4 @@ Made with ❤️ and Flutter
 # Force redeploy to apply OPENAI_API_KEY
 # Force deployment #오후
 # Fix Vercel deployment #오후
+# Force rebuild #오후
