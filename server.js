@@ -7,12 +7,37 @@ const PORT = process.env.PORT || 3000;
 // CORS 설정 - 모든 도메인 허용
 app.use(
   cors({
-    origin: '*',
+    origin: true, // 모든 도메인 허용
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Accept',
+      'X-Requested-With',
+    ],
     credentials: false,
+    optionsSuccessStatus: 200,
   })
 );
+
+// 추가 CORS 헤더 설정
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Authorization, Accept, X-Requested-With'
+  );
+
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
+
+// Preflight 요청 처리
+app.options('*', cors());
 
 app.use(express.json());
 
@@ -217,6 +242,6 @@ ${chatHistory || content}
   }
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });

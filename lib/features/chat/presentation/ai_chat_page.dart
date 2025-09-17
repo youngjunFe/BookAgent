@@ -732,12 +732,12 @@ class _AiChatPageState extends State<AiChatPage> {
       });
     } catch (e) {
       print('❌ AI API 실패: $e');
-      // 더 자연스러운 fallback 응답
+      // 명확한 에러 메시지 표시
       setState(() {
         _isTyping = false;
         _messages.add(
           ChatMessage(
-            text: _generateSmartAiResponse(userMessage),
+            text: '죄송합니다. 현재 AI 서버와의 통신에 문제가 있어 응답을 받을 수 없습니다. 잠시 후 다시 시도해 주세요. 🔧',
             isUser: false,
             timestamp: DateTime.now(),
           ),
@@ -756,7 +756,7 @@ class _AiChatPageState extends State<AiChatPage> {
         '당신은 독서를 사랑하는 친근한 AI 어시스턴트입니다.'
       );
       
-      final baseUrl = 'https://bookagent-production.up.railway.app';
+      final baseUrl = 'https://book-review-app-alpha.vercel.app';
       print('🔍 Base URL: $baseUrl');
       print('🔍 사용할 프롬프트: ${aiPrompt.substring(0, 100)}...');
       

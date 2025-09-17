@@ -11,7 +11,7 @@ class AppConfig {
   }
 
   static String get agentBaseUrl {
-    return 'https://bookagent-production.up.railway.app';
+    return 'https://bookagent-production-2f69.up.railway.app';
   }
 }
 

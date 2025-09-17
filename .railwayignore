@@ -1,0 +1,32 @@
+# Flutter/Dart 관련 파일들 무시
+pubspec.yaml
+pubspec.lock
+analysis_options.yaml
+lib/
+test/
+android/
+ios/
+linux/
+macos/
+windows/
+web/
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata
+main.dart.js
+flutter_bootstrap.js
+flutter_service_worker.js
+flutter.js
+canvaskit/
+assets/
+icons/
+manifest.json
+version.json
+index.html
+favicon.png
+
+# 기타 불필요한 파일들
+*.md
+*.sql
