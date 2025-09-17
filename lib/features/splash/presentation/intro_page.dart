@@ -220,7 +220,7 @@ class _IntroPageState extends State<IntroPage> {
 
     try {
       final response = await http.get(
-        Uri.parse('https://book-review-app-alpha.vercel.app/api/search-books?query=${_searchController.text}'),
+        Uri.parse('https://bookagent-production-2f69.up.railway.app/api/search-books?query=${_searchController.text}'),
       );
 
       if (response.statusCode == 200) {
