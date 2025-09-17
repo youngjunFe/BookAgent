@@ -755,60 +755,109 @@ class _AiChatPageState extends State<AiChatPage> {
         'ai_chat_prompt',
         '당신은 독서를 사랑하는 친근한 AI 어시스턴트입니다.'
       );
-      
-      final baseUrl = 'https://book-review-app-alpha.vercel.app';
-      print('🔍 Base URL: $baseUrl');
-      print('🔍 사용할 프롬프트: ${aiPrompt.substring(0, 100)}...');
-      
+
       // 이전 메시지들을 컨텍스트로 포함
-      final recentMessages = _messages.length > 6 
-          ? _messages.sublist(_messages.length - 6) 
+      final recentMessages = _messages.length > 6
+          ? _messages.sublist(_messages.length - 6)
           : _messages;
       final context = recentMessages
           .map((msg) => '${msg.isUser ? '사용자' : 'AI'}: ${msg.text}')
           .join('\n');
-      
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/chat'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'message': '$aiPrompt\n\n사용자 메시지: $userMessage',  // 프롬프트를 메시지에 직접 포함
-          'context': context,
-          'systemPrompt': aiPrompt,  // DB 프롬프트 전달
-          'bookTitle': widget.bookTitle,
-          'bookAuthor': widget.bookAuthor,
-        }),
-      ).timeout(const Duration(seconds: 8));
 
-      print('🔍 API 응답 상태코드: ${response.statusCode}');
-      print('🔍 API 응답 본문: ${response.body}');
-      
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        print('🔍 파싱된 JSON: $data');
-        
-        // 다양한 응답 형태 시도
-        String? aiResponse = data['response'] ?? 
-                            data['message'] ?? 
-                            data['reply'] ?? 
-                            data['answer'] ??
-                            data['content'];
-        
-        print('🔍 추출된 AI 응답: $aiResponse');
-        
-        if (aiResponse != null && aiResponse.isNotEmpty) {
-          return aiResponse;
-        } else {
-          print('❌ 응답 필드를 찾을 수 없음. 전체 응답을 반환.');
-          // JSON 전체가 문자열인 경우
-          return response.body.isNotEmpty ? response.body : '응답을 처리할 수 없습니다.';
+      // Primary: Railway API 시도
+      try {
+        final baseUrl = 'https://bookagent-production-2f69.up.railway.app';
+        print('🔍 Primary API 시도: $baseUrl');
+
+        final response = await http.post(
+          Uri.parse('$baseUrl/api/chat'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'message': userMessage,
+            'context': context,
+            'systemPrompt': aiPrompt,
+            'bookTitle': widget.bookTitle,
+            'bookAuthor': widget.bookAuthor,
+          }),
+        ).timeout(const Duration(seconds: 4));
+
+        print('🔍 Primary API 응답: ${response.statusCode} - ${response.body}');
+
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+
+          // Railway API는 'reply' 필드 사용
+          String? aiResponse = data['reply'] ??
+                              data['response'] ??
+                              data['message'] ??
+                              data['answer'] ??
+                              data['content'];
+
+          if (aiResponse != null && aiResponse.isNotEmpty && !aiResponse.contains('error')) {
+            print('✅ Primary API 성공: ${aiResponse.substring(0, 50)}...');
+            return aiResponse;
+          }
         }
-      } else {
-        throw Exception('HTTP ${response.statusCode}');
+      } catch (e) {
+        print('❌ Primary API 실패: $e');
       }
+
+      // Secondary: Vercel API 시도
+      try {
+        // 현재 앱이 배포된 도메인을 동적으로 감지
+        final vercelUrls = [
+          'https://${Uri.base.host}/api/chat',
+          'https://book-review-app-omega.vercel.app/api/chat',
+        ];
+
+        for (final url in vercelUrls) {
+          try {
+            print('🔄 Vercel API 시도: $url');
+
+            final response = await http.post(
+              Uri.parse(url),
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({
+                'message': userMessage,
+                'context': context,
+                'systemPrompt': aiPrompt,
+                'bookTitle': widget.bookTitle,
+                'bookAuthor': widget.bookAuthor,
+              }),
+            ).timeout(const Duration(seconds: 4));
+
+            print('🔍 Vercel API 응답: ${response.statusCode}');
+
+            if (response.statusCode == 200) {
+              final data = jsonDecode(response.body);
+
+              String? aiResponse = data['reply'] ??
+                                  data['response'] ??
+                                  data['message'] ??
+                                  data['answer'] ??
+                                  data['content'];
+
+              if (aiResponse != null && aiResponse.isNotEmpty && !aiResponse.contains('error')) {
+                print('✅ Vercel API 성공: ${aiResponse.substring(0, 50)}...');
+                return aiResponse;
+              }
+            }
+          } catch (e) {
+            print('❌ Vercel URL $url 실패: $e');
+            continue;
+          }
+        }
+      } catch (e) {
+        print('❌ Vercel API 전체 실패: $e');
+      }
+
+      // Fallback: 로컬 스마트 응답 생성
+      print('🔄 Fallback: 스마트 응답 생성');
+      return _generateSmartAiResponse(userMessage);
+
     } catch (e) {
-      print('❌ AI API 호출 실패: $e');
-      rethrow;
+      print('❌ AI API 전체 실패: $e');
+      return _generateSmartAiResponse(userMessage);
     }
   }
 

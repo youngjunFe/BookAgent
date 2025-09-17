@@ -49,51 +49,112 @@ app.get('/', (req, res) => {
 // Chat endpoint
 app.post('/api/chat', async (req, res) => {
   try {
-    const { message = '', context = '' } = req.body || {};
+    const { message = '', context = '', systemPrompt, bookTitle, bookAuthor } = req.body || {};
     const userMessage = String(message);
     const chatContext = String(context);
 
-    console.log('Chat request:', { userMessage, hasContext: !!chatContext });
+    console.log('🔥 Chat request:', {
+      userMessage: userMessage.substring(0, 100),
+      hasContext: !!chatContext,
+      hasSystemPrompt: !!systemPrompt,
+      bookTitle,
+      bookAuthor
+    });
 
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      console.error('OpenAI API key not found');
-      return res.status(500).json({ error: 'OpenAI API key not configured' });
+      console.log('❌ OpenAI API key not found, using fallback');
+      return res.json({ reply: getSmartFallbackResponse(userMessage, bookTitle) });
     }
 
-    // OpenAI API 호출
-    const OpenAI = require('openai');
-    const openai = new OpenAI({ apiKey });
-
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [
-        {
-          role: 'system',
-          content:
-            '당신은 도서 리뷰와 독서에 도움을 주는 친근한 AI 어시스턴트입니다. 한국어로 답변해주세요.',
+    try {
+      // OpenAI API 호출
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
         },
-        {
-          role: 'user',
-          content: chatContext
-            ? `컨텍스트: ${chatContext}\n\n질문: ${userMessage}`
-            : userMessage,
-        },
-      ],
-      max_tokens: 1000,
-      temperature: 0.7,
-    });
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: systemPrompt || '당신은 도서 리뷰와 독서에 도움을 주는 친근한 AI 어시스턴트입니다. 한국어로 자연스럽게 대화하듯 답변해주세요.'
+            },
+            {
+              role: 'user',
+              content: chatContext
+                ? `이전 대화: ${chatContext}\n\n현재 질문: ${userMessage}`
+                : userMessage,
+            },
+          ],
+          max_tokens: 500,
+          temperature: 0.7,
+        }),
+      });
 
-    const aiReply =
-      completion.choices[0]?.message?.content ||
-      '죄송합니다. 응답을 생성할 수 없습니다.';
+      if (!response.ok) {
+        console.log(`❌ OpenAI API error: ${response.status}`);
+        return res.json({ reply: getSmartFallbackResponse(userMessage, bookTitle) });
+      }
 
-    res.json({ reply: aiReply });
+      const data = await response.json();
+      const aiReply = data?.choices?.[0]?.message?.content || getSmartFallbackResponse(userMessage, bookTitle);
+
+      console.log('✅ Chat response generated:', aiReply.substring(0, 100) + '...');
+      res.json({ reply: aiReply });
+
+    } catch (openaiError) {
+      console.error('❌ OpenAI API call failed:', openaiError);
+      res.json({ reply: getSmartFallbackResponse(userMessage, bookTitle) });
+    }
+
   } catch (error) {
-    console.error('Chat API error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('❌ Chat API error:', error);
+    res.json({ reply: getSmartFallbackResponse(req.body?.message || '', req.body?.bookTitle) });
   }
 });
+
+function getSmartFallbackResponse(userMessage, bookTitle) {
+  const message = userMessage.toLowerCase();
+  const book = bookTitle || '책';
+
+  // 인사말
+  if (message.includes('안녕') || message.includes('하이') || message.includes('처음')) {
+    return `안녕하세요! ${book}에 대해 함께 이야기해봐요. 어떤 부분이 가장 기억에 남으시나요? 📚`;
+  }
+
+  // 감정 관련
+  if (message.includes('감동') || message.includes('좋았') || message.includes('인상')) {
+    return `${book}에서 그런 감동을 받으셨군요! 그 장면이나 구절을 더 자세히 설명해주시면 함께 깊이 있게 이야기해볼 수 있을 것 같아요. ✨`;
+  }
+
+  if (message.includes('슬프') || message.includes('아프') || message.includes('우울')) {
+    return `그런 감정을 느끼셨군요. ${book}을 읽으면서 마음이 많이 흔들렸을 것 같아요. 어떤 장면에서 특히 그런 감정을 느끼셨나요?`;
+  }
+
+  // 질문이나 궁금증
+  if (message.includes('?') || message.includes('궁금') || message.includes('어떻게')) {
+    return `좋은 질문이네요! ${book}에 대한 궁금증을 함께 풀어보죠. 어떤 관점에서 접근해보고 싶으신가요? 🤔`;
+  }
+
+  // 캐릭터나 줄거리 관련
+  if (message.includes('주인공') || message.includes('등장인물') || message.includes('줄거리')) {
+    return `${book}의 인물들에 대해 이야기해보는 것도 좋겠네요! 어떤 캐릭터가 가장 인상적이었나요? 그 이유도 함께 들려주세요. 👥`;
+  }
+
+  // 일반적인 응답
+  const responses = [
+    `${book}에 대한 흥미로운 관점이네요! 더 자세히 들어보고 싶어요.`,
+    `정말 좋은 생각이에요! ${book}의 어떤 부분에서 그런 느낌을 받으셨나요?`,
+    `${book}을 읽으시면서 느끼신 점들을 더 나눠주시면 함께 이야기해볼 수 있을 것 같아요.`,
+    `그런 관점에서 ${book}을 바라보셨군요! 다른 독자들은 어떻게 생각할지도 궁금하네요.`,
+    `${book}에서 가장 인상 깊었던 순간은 언제였나요? 그 감정을 좀 더 자세히 나눠보실 수 있을까요?`
+  ];
+
+  return responses[Math.floor(Math.random() * responses.length)];
+}
 
 // Character chat endpoint
 app.post('/api/character-chat', async (req, res) => {
