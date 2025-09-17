@@ -1,27 +1,11 @@
 {
-  "name": "book-agent-server",
+  "name": "book-frontend",
   "version": "1.0.0",
-  "description": "Book review AI agent server",
-  "main": "server.js",
+  "description": "Book review app frontend",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "npx serve . -p $PORT -s"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "openai": "^4.20.1"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "keywords": [
-    "book",
-    "review",
-    "ai",
-    "openai",
-    "express"
-  ],
-  "author": "jun_fe",
-  "license": "MIT"
+    "serve": "^14.2.1"
+  }
 }
