@@ -827,7 +827,7 @@ class _AiChatPageState extends State<AiChatPage> {
             'bookTitle': widget.bookTitle,
             'bookAuthor': widget.bookAuthor,
           }),
-        ).timeout(const Duration(seconds: 4));
+        ).timeout(const Duration(seconds: 12));
 
         print('🔍 Primary API 응답: ${response.statusCode} - ${response.body}');
 
@@ -888,7 +888,7 @@ class _AiChatPageState extends State<AiChatPage> {
                 'bookTitle': widget.bookTitle,
                 'bookAuthor': widget.bookAuthor,
               }),
-            ).timeout(const Duration(seconds: 4));
+            ).timeout(const Duration(seconds: 10));
 
             print('🔍 Vercel API 응답: ${response.statusCode}');
 
