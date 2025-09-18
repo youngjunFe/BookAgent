@@ -6,6 +6,7 @@ import '../../auth/presentation/login_page.dart';
 import '../../review/presentation/review_creation_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'intro_page.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -162,8 +163,12 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // 무지개 아이콘
-                    _buildRainbowIcon(),
+                    // 브랜드 로고 (SVG)
+                    SvgPicture.asset(
+                      'assets/images/splash_logo.svg',
+                      width: 120,
+                      height: 120,
+                    ),
                     
                     const SizedBox(height: 60),
                     
@@ -188,64 +193,5 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     );
   }
 
-  // 무지개 아이콘 구현
-  Widget _buildRainbowIcon() {
-    return SizedBox(
-      width: 120,
-      height: 80,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // 가장 큰 반원 (외곽)
-          Container(
-            width: 120,
-            height: 60,
-            decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(60)),
-              border: Border.all(
-                color: const Color(0xFFFF6B6B), // 빨간색
-                width: 6,
-              ),
-            ),
-          ),
-          // 두 번째 반원
-          Container(
-            width: 100,
-            height: 50,
-            decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(50)),
-              border: Border.all(
-                color: const Color(0xFFFFE66D), // 노란색
-                width: 5,
-              ),
-            ),
-          ),
-          // 세 번째 반원
-          Container(
-            width: 80,
-            height: 40,
-            decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
-              border: Border.all(
-                color: const Color(0xFF4ECDC4), // 청록색
-                width: 4,
-              ),
-            ),
-          ),
-          // 가장 작은 반원 (중앙)
-          Container(
-            width: 60,
-            height: 30,
-            decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-              border: Border.all(
-                color: const Color(0xFF45B7D1), // 파란색
-                width: 3,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // 기존 커스텀 레인보우 아이콘은 제거
 }
