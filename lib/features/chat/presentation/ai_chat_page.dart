@@ -114,7 +114,7 @@ class _AiChatPageState extends State<AiChatPage> {
         _messages.add(
           ChatMessage(
             text: '${widget.bookTitle}을 읽으셨다니..! ( \' - \' ) /\n'
-                '$bookSummary 라고 하던데, 지금 무슨 감정을 느끼고 있나요?',
+                '많은 분들이 "$bookSummary"라고 하더라고요.\n지금 어떤 감정을 느끼고 있나요?',
             isUser: false,
             timestamp: DateTime.now(),
             isAiResponse: true,
@@ -131,7 +131,7 @@ class _AiChatPageState extends State<AiChatPage> {
         _messages.add(
           ChatMessage(
             text: '${widget.bookTitle}을 읽으셨다니..! ( \' - \' ) /\n'
-                '정말 흥미로운 작품 라고 하던데, 지금 무슨 감정을 느끼고 있나요?',
+                '많은 분들이 "인상 깊은 작품"이라고 하더라고요.\n지금 어떤 감정을 느끼고 있나요?',
             isUser: false,
             timestamp: DateTime.now(),
             isAiResponse: true,
@@ -150,31 +150,36 @@ class _AiChatPageState extends State<AiChatPage> {
         '\n예시: "정말 감동적인 이야기", "마음을 울리는 작품", "생각할 거리가 많은 책"';
 
     try {
-      final response = await _callRealAiApi(prompt);
+      final result = await _callRealAiApi(prompt);
       // Map에서 메시지 추출
       String responseText = '';
-      if (response is Map<String, dynamic>) {
-        responseText = response['message'] ?? '';
+      if (result is Map<String, dynamic>) {
+        responseText = (result['message'] ?? '').toString();
       } else {
-        responseText = response.toString();
+        responseText = result.toString();
       }
 
-      // AI 응답에서 따옴표나 불필요한 문구 제거
-      String cleanSummary = responseText
+      // 경고/오류 프리픽스 제거 및 첫 줄만 요약 사용
+      String sanitized = responseText
+          .split('\n')
+          .where((line) => !line.trim().startsWith('⚠️') && !line.contains('AI 서버 오류'))
+          .join(' ')
+          .trim();
+
+      // 따옴표 및 불필요한 접두어 제거
+      String cleanSummary = sanitized
           .replaceAll('"', '')
           .replaceAll("'", '')
-          .replaceAll('"', '')
-          .replaceAll('"', '')
           .replaceAll('한줄평:', '')
           .replaceAll('요약:', '')
           .trim();
-      
-      // 길이가 너무 길면 자르기
+
+      if (cleanSummary.isEmpty) cleanSummary = '인상 깊은 작품';
+      // 길이 제한
       if (cleanSummary.length > 30) {
         cleanSummary = cleanSummary.substring(0, 30) + '...';
       }
-      
-      return cleanSummary.isNotEmpty ? cleanSummary : '인상 깊은 작품';
+      return cleanSummary;
     } catch (e) {
       print('❌ AI 한줄평 생성 실패: $e');
       return '인상 깊은 작품';
