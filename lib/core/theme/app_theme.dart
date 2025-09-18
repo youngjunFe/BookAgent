@@ -49,6 +49,16 @@ class AppTheme {
         onInverseSurface: AppColors.background,
         inversePrimary: AppColors.primaryLight,
       ),
+      // Disable route animations to avoid carousel-like effect
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: _NoAnimationTransitionsBuilder(),
+          TargetPlatform.iOS: _NoAnimationTransitionsBuilder(),
+          TargetPlatform.macOS: _NoAnimationTransitionsBuilder(),
+          TargetPlatform.windows: _NoAnimationTransitionsBuilder(),
+          TargetPlatform.linux: _NoAnimationTransitionsBuilder(),
+        },
+      ),
       
       // App Bar Theme
       appBarTheme: const AppBarTheme(
@@ -387,5 +397,19 @@ class AppTheme {
         ),
       ),
     );
+  }
+}
+
+class _NoAnimationTransitionsBuilder extends PageTransitionsBuilder {
+  const _NoAnimationTransitionsBuilder();
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    return child; // No animated transitions
   }
 }
