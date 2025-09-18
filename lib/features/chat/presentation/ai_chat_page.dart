@@ -851,7 +851,16 @@ class _AiChatPageState extends State<AiChatPage> {
             };
           }
         } else {
-          primaryFailed = true;
+          // Railway에서 명시적 에러 전달 시 사용자에게 안내
+          final status = response.statusCode;
+          final msg = '⚠️ AI 서버 오류 ($status)\n주 서버에 문제가 있어요. 잠시 후 다시 시도해 주세요.';
+          print('❌ Railway API 오류: $status');
+          return {
+            'message': msg,
+            'isRealAI': false,
+            'hasError': true,
+            'source': 'Railway'
+          };
         }
       } catch (e) {
         print('❌ Railway API 실패: $e');

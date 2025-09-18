@@ -63,8 +63,8 @@ app.post('/api/chat', async (req, res) => {
 
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      console.log('❌ OpenAI API key not found, using fallback');
-      return res.json({ reply: getSmartFallbackResponse(userMessage, bookTitle) });
+      console.log('❌ OpenAI API key not found');
+      return res.status(401).json({ error: 'OPENAI_API_KEY missing' });
     }
 
     try {
@@ -96,7 +96,7 @@ app.post('/api/chat', async (req, res) => {
 
       if (!response.ok) {
         console.log(`❌ OpenAI API error: ${response.status}`);
-        return res.json({ reply: getSmartFallbackResponse(userMessage, bookTitle) });
+        return res.status(response.status).json({ error: 'OpenAI API error', status: response.status });
       }
 
       const data = await response.json();
@@ -107,12 +107,12 @@ app.post('/api/chat', async (req, res) => {
 
     } catch (openaiError) {
       console.error('❌ OpenAI API call failed:', openaiError);
-      res.json({ reply: getSmartFallbackResponse(userMessage, bookTitle) });
+      return res.status(502).json({ error: 'Upstream OpenAI error' });
     }
 
   } catch (error) {
     console.error('❌ Chat API error:', error);
-    res.json({ reply: getSmartFallbackResponse(req.body?.message || '', req.body?.bookTitle) });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
