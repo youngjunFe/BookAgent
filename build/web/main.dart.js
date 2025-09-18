@@ -47622,7 +47622,7 @@ case 8:s=4
 break
 case 11:p=14
 a8=A.yo()
-b=A.b(["https://"+a8.gko(a8)+"/api/chat","https://book-review-app-omega.vercel.app/api/chat"],t.s)
+b=A.b(["https://"+a8.gko(a8)+"/api/chat"],t.s)
 a8=b,a9=a8.length,b0=t.N,b1=t.T,b4=t.z,b5=0
 case 17:if(!(b5<a8.length)){s=19
 break}a=a8[b5]

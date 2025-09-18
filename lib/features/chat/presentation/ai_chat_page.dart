@@ -872,7 +872,6 @@ class _AiChatPageState extends State<AiChatPage> {
         // 현재 앱이 배포된 도메인을 동적으로 감지
         final vercelUrls = [
           'https://${Uri.base.host}/api/chat',
-          'https://book-review-app-omega.vercel.app/api/chat',
         ];
 
         for (final url in vercelUrls) {
