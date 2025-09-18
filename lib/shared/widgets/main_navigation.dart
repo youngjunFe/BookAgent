@@ -263,8 +263,16 @@ class _MainNavigationState extends State<MainNavigation> {
     return Scaffold(
       body: _pages[_currentIndex],
       bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: ElevationLevels.level2, // Level2 Elevation - 메인 인터랙션 요소
+        decoration: const BoxDecoration(
+          // 더 옅은 상단 그림자 (모바일 지향)
+          boxShadow: [
+            BoxShadow(
+              offset: Offset(0, -2),
+              blurRadius: 10,
+              spreadRadius: 0,
+              color: Color.fromRGBO(0, 0, 0, 0.06),
+            ),
+          ],
         ),
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
