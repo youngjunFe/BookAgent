@@ -498,7 +498,7 @@ class _AiChatPageState extends State<AiChatPage> {
     );
   }
 
-  // 메시지 버블 (디자이너 스타일)
+  // 메시지 버블 (모바일 지향, 단일 톤)
   Widget _buildMessageBubble(ChatMessage message) {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -507,35 +507,8 @@ class _AiChatPageState extends State<AiChatPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: message.isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: [
-          // AI 메시지 - 왼쪽 정렬
-          if (!message.isUser) ...[
-            Container(
-              width: 28,
-              height: 28,
-              decoration: BoxDecoration(
-                color: message.hasApiError
-                  ? Colors.orange.withOpacity(0.1)
-                  : message.isAiResponse
-                    ? AppColors.primary.withOpacity(0.1)
-                    : Colors.grey.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                message.hasApiError
-                  ? Icons.warning_amber
-                  : message.isAiResponse
-                    ? Icons.auto_awesome
-                    : Icons.psychology_alt,
-                color: message.hasApiError
-                  ? Colors.orange[700]
-                  : message.isAiResponse
-                    ? AppColors.primary
-                    : Colors.grey[600],
-                size: 14,
-              ),
-            ),
-            const SizedBox(width: 12),
-          ],
+          // 좌측 여백만 유지 (아바타 제거로 미니멀)
+          if (!message.isUser) const SizedBox(width: 8),
           
           // 메시지 버블
           Flexible(
@@ -550,28 +523,31 @@ class _AiChatPageState extends State<AiChatPage> {
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
-                    color: message.isUser
-                      ? AppColors.primary
-                      : message.hasApiError
-                        ? Colors.orange[50]
-                        : message.isAiResponse
-                          ? Colors.green[50]
-                          : Colors.grey[100],
+                    color: message.isUser ? AppColors.primary : Colors.white,
                     borderRadius: BorderRadius.only(
-                      topLeft: const Radius.circular(18),
-                      topRight: const Radius.circular(18),
+                      topLeft: const Radius.circular(16),
+                      topRight: const Radius.circular(16),
                       bottomLeft: message.isUser
-                          ? const Radius.circular(18)
-                          : const Radius.circular(4),
+                          ? const Radius.circular(16)
+                          : const Radius.circular(6),
                       bottomRight: message.isUser
-                          ? const Radius.circular(4)
-                          : const Radius.circular(18),
+                          ? const Radius.circular(6)
+                          : const Radius.circular(16),
                     ),
-                    border: message.hasApiError
-                      ? Border.all(color: Colors.orange[200]!, width: 1)
-                      : message.isAiResponse && !message.isUser
-                        ? Border.all(color: Colors.green[200]!, width: 1)
-                        : null,
+                    border: Border.all(
+                      color: message.isUser
+                          ? AppColors.primary
+                          : Colors.grey[300]!,
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      if (!message.isUser)
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.03),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                    ],
                   ),
                   child: Text(
                     message.text,
@@ -629,22 +605,7 @@ class _AiChatPageState extends State<AiChatPage> {
               ],
             ),
           ),
-          if (message.isUser) ...[
-            const SizedBox(width: 12),
-            Container(
-              width: 28,
-              height: 28,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.person,
-                color: Colors.grey[600],
-                size: 14,
-              ),
-            ),
-          ],
+          if (message.isUser) const SizedBox(width: 8),
         ],
       ),
     );

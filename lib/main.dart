@@ -65,6 +65,15 @@ class BookReviewApp extends StatelessWidget {
       theme: AppTheme.theme,
       home: const AppRouter(),
       debugShowCheckedModeBanner: false,
+      builder: (context, child) {
+        // Global max-width 360 for mobile-first layout
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 360),
+            child: child ?? const SizedBox.shrink(),
+          ),
+        );
+      },
       routes: {
         '/login': (context) => const LoginPage(),
         '/home': (context) => const AuthWrapper(),
