@@ -6,6 +6,9 @@ import '../../../shared/widgets/main_navigation.dart';
 import '../../book_search/presentation/book_search_page.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
 
 class IntroPage extends StatefulWidget {
   const IntroPage({super.key});
@@ -609,6 +612,25 @@ class _IntroPageState extends State<IntroPage> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  // 사업자 정보 링크 (첫 페이지에만 노출, 작게)
+                  if (_currentPage == 0)
+                    InkWell(
+                      onTap: () {
+                        if (kIsWeb) {
+                          html.window.open('https://laivdata.notion.site/ebd/2734d0474fac80a78c39d382b48b8350', '_blank');
+                        }
+                      },
+                      child: Text(
+                        '사업자 정보',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textHint,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                  
                 ],
               ),
             ),
