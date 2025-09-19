@@ -52,6 +52,11 @@ class SettingsPage extends StatelessWidget {
             _buildSectionHeader('정보'),
             _buildSettingsItem(
               context,
+              title: '사업자 정보',
+              onTap: () => _openNotionPage('https://laivdata.notion.site/ebd/2734d0474fac80a78c39d382b48b8350'),
+            ),
+            _buildSettingsItem(
+              context,
               title: '서비스 이용약관',
               onTap: () => _openNotionPage('https://laivdata.notion.site/ebd/2704d0474fac80d4b84fd40b5d2cde30'),
             ),
