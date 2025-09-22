@@ -97,16 +97,7 @@ class _IntroPageState extends State<IntroPage> {
 
   Widget _buildFirstIntroPage() {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFE8F1FF), // 연한 블루
-            Color(0xFFFFEFEA), // 연한 코랄
-          ],
-        ),
-      ),
+      // 상위 Scaffold에서 전체 그라데이션 적용 중
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Column(
@@ -180,6 +171,23 @@ class _IntroPageState extends State<IntroPage> {
                     color: AppColors.textSecondary,
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            // 첫 페이지에서 둘러보기 아래에 사업자 정보 링크 배치
+            InkWell(
+              onTap: () {
+                if (kIsWeb) {
+                  html.window.open('https://laivdata.notion.site/ebd/2734d0474fac80a78c39d382b48b8350', '_blank');
+                }
+              },
+              child: Text(
+                '사업자 정보',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textHint,
+                  decoration: TextDecoration.underline,
+                ),
               ),
             ),
             const SizedBox(height: 60),
@@ -498,9 +506,19 @@ class _IntroPageState extends State<IntroPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Column(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFE8F1FF), // 연한 블루
+              Color(0xFFFFEFEA), // 연한 코랄
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
           children: [
             // 헤더 - 건너뛰기/둘러보기 버튼
             Padding(
@@ -635,107 +653,10 @@ class _IntroPageState extends State<IntroPage> {
                 },
               ),
             ),
-
-            // 하단 영역
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  // 페이지 인디케이터
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(
-                      _pages.length,
-                      (index) => Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: index == _currentPage
-                              ? AppColors.primary
-                              : AppColors.textHint,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // 둘러보기 버튼 (조건부 표시)
-                  if (_pages[_currentPage].showBrowseButton == true) ...[
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: OutlinedButton(
-                        onPressed: _startBrowsing,
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: AppColors.primary, width: 2),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: Text(
-                          '둘러보기',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                  
-                  // 다음/시작하기 버튼
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: _nextPage,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: Text(
-                        _pages[_currentPage].buttonText,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  // 사업자 정보 링크 (첫 페이지에만 노출, 작게)
-                  if (_currentPage == 0)
-                    InkWell(
-                      onTap: () {
-                        if (kIsWeb) {
-                          html.window.open('https://laivdata.notion.site/ebd/2734d0474fac80a78c39d382b48b8350', '_blank');
-                        }
-                      },
-                      child: Text(
-                        '사업자 정보',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textHint,
-                          decoration: TextDecoration.underline,
-                        ),
-                      ),
-                    ),
-                  
-                ],
-              ),
-            ),
           ],
         ),
       ),
+    ),
     );
   }
 
