@@ -26,14 +26,15 @@ class _IntroPageState extends State<IntroPage> {
 
   final List<IntroPageData> _pages = [
     IntroPageData(
-      title: '책을 읽는 순간의 그 감동',
-      description: '사라지기 전에 AI와 대화하세요',
+      title: '책을 덮는 순간의 감동',
+      description: '사라지기 전에 대화하세요',
       features: [
-        '책을 읽는 순간의 그 감동',
-        '사라지기 전에 AI와 대화하세요',
+        '책을 덮는 순간의 감동',
+        '사라지기 전에 대화하세요',
       ],
-      buttonText: '다음',
-      showBrowseButton: false,
+      buttonText: '치읓과 대화하기',
+      showBrowseButton: true,
+      showAiChatButton: true,
     ),
     IntroPageData(
       title: 'AI 지혜와 5분 대화로 당신의 감동을',
@@ -92,6 +93,100 @@ class _IntroPageState extends State<IntroPage> {
         MaterialPageRoute(builder: (context) => const LoginPage()),
       );
     }
+  }
+
+  Widget _buildFirstIntroPage() {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFE8F1FF), // 연한 블루
+            Color(0xFFFFEFEA), // 연한 코랄
+          ],
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(height: 60),
+            Text(
+              '책을 덮는 순간의 감동\n사라지기 전에 대화하세요',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 26,
+                height: 1.4,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF244B74),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'AI 치읓과 대화하면 당신의 감동을\n에세이로 만들어 드릴게요',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                height: 1.5,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 40),
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const BookSearchPage()),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 0,
+                ),
+                child: const Text(
+                  '치읓과 대화하기',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: _startBrowsing,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '둘러볼게요',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    size: 14,
+                    color: AppColors.textSecondary,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 60),
+          ],
+        ),
+      ),
+    );
   }
 
   void _skipToLogin() {
@@ -443,6 +538,10 @@ class _IntroPageState extends State<IntroPage> {
                 itemCount: _pages.length,
                 itemBuilder: (context, index) {
                   final page = _pages[index];
+                  // 첫 페이지는 별도 디자인 적용
+                  if (index == 0) {
+                    return _buildFirstIntroPage();
+                  }
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: Column(
