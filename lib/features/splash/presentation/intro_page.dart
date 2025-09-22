@@ -223,7 +223,6 @@ class _IntroPageState extends State<IntroPage> {
           child: TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: '편하게 입력해 주세요',
               border: InputBorder.none,
               suffixIcon: IconButton(
                 icon: _isSearching 

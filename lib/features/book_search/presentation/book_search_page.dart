@@ -53,7 +53,7 @@ class _BookSearchPageState extends State<BookSearchPage> {
               child: TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: '편하게 입력해 주세요',
+                  // hintText: '편하게 입력해 주세요',
                   border: InputBorder.none,
                   suffixIcon: IconButton(
                     icon: _isSearching 
@@ -282,13 +282,10 @@ class _BookSearchPageState extends State<BookSearchPage> {
   }
 
   void _selectBook(BookSearchResult book) {
-    // 책 선택 후 AI 대화 페이지로 이동하여 감동문 작성 시작
+    // 책 상세보기 페이지로 이동
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => AiChatPage(
-          bookTitle: book.title,
-          bookAuthor: book.author,
-        ),
+        builder: (context) => BookDetailPage(book: book),
       ),
     );
   }
