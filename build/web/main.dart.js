@@ -50048,19 +50048,22 @@ break
 case 4:q.Bu()
 case 3:return A.q(null,r)}})
 return A.r($async$wd,r)},
-wM(){var s=0,r=A.t(t.N),q,p=2,o=[],n=this,m,l,k,j,i,h,g,f,e,d,c,b
-var $async$wM=A.o(function(a,a0){if(a===1){o.push(a0)
+wM(){var s=0,r=A.t(t.N),q,p=2,o=[],n=this,m,l,k,j,i,h,g,f,e,d,c,b,a,a0
+var $async$wM=A.o(function(a1,a2){if(a1===1){o.push(a2)
 s=p}while(true)switch(s){case 0:p=4
 h=n.z
 if(!(h.length!==0)){g=n.a.d
-h='\ub2f9\uc2e0\uc740 \ub3c5\uc11c \ub3c4\uc6b0\ubbf8 "\ucc45\ubc97"\uc785\ub2c8\ub2e4. \uc0ac\uc6a9\uc790\uac00 '+g+"\uc5d0 \ub300\ud574 \uc774\uc57c\uae30\ud558\uace0 \uc2f6\uc5b4\ud569\ub2c8\ub2e4. \ub530\ub73b\ud558\uace0 \uce5c\uadfc\ud55c \ud658\uc601 \uba54\uc2dc\uc9c0\ub97c \uc791\uc131\ud574\uc8fc\uc138\uc694."}m=h
+h='\ub2f9\uc2e0\uc740 \ub3c5\uc11c \ub3c4\uc6b0\ubbf8 "\uce58\uc753"\uc785\ub2c8\ub2e4. \uc0ac\uc6a9\uc790\uac00 '+g+"\uc5d0 \ub300\ud574 \uc774\uc57c\uae30\ud558\uace0 \uc2f6\uc5b4\ud569\ub2c8\ub2e4. \ub530\ub73b\ud558\uace0 \uce5c\uadfc\ud55c \ud658\uc601 \uba54\uc2dc\uc9c0\ub97c \uc791\uc131\ud574\uc8fc\uc138\uc694."}m=h
 g=A.df("https://bookagent-production-2f69.up.railway.app/api/chat",0,null)
 f=t.N
 e=A.a0(["Content-Type","application/json"],f,f)
 d=n.a
+c=d.d
+d=d.e
+b=d!=null?" (\uc800\uc790: "+d+")":""
 s=7
-return A.m(A.rz(g,B.a4.ql(A.a0(["message","\ud658\uc601 \uba54\uc2dc\uc9c0\ub97c \uc0dd\uc131\ud574\uc8fc\uc138\uc694","context","","systemPrompt",m,"bookTitle",d.d,"bookAuthor",d.e],f,t.T),null),null,e).rd(0,B.e2),$async$wM)
-case 7:l=a0
+return A.m(A.rz(g,B.a4.ql(A.a0(["message",'\uc0ac\uc6a9\uc790\uac00 "'+c+'"'+b+" \ucc45\uc744 \uc120\ud0dd\ud588\uc2b5\ub2c8\ub2e4. \uc774 \ucc45\uc5d0 \ub300\ud55c \ud658\uc601 \uba54\uc2dc\uc9c0\ub97c \uc0dd\uc131\ud574\uc8fc\uc138\uc694.","context","","systemPrompt",m,"bookTitle",c,"bookAuthor",d],f,t.T),null),null,e).rd(0,B.e2),$async$wM)
+case 7:l=a2
 if(l.b===200){g=l
 k=B.a4.oa(0,A.e_(A.dZ(g.e)).aZ(0,g.w),null)
 j=J.a3(k,"reply")
@@ -50070,8 +50073,8 @@ break}}p=2
 s=6
 break
 case 4:p=3
-b=o.pop()
-i=A.V(b)
+a0=o.pop()
+i=A.V(a0)
 A.ak("\u274c AI \ud658\uc601 \uba54\uc2dc\uc9c0 \uc0dd\uc131 \uc2e4\ud328: "+A.f(i))
 s=6
 break
