@@ -31,78 +31,79 @@ class ChatInputField extends StatelessWidget {
 
   // 모던 스타일 (AI 채팅용)
   Widget _buildModernStyle(BuildContext context, Color primaryColor) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            controller: controller,
+            decoration: InputDecoration(
+              hintText: hintText,
+              hintStyle: TextStyle(
+                color: Colors.grey[500],
+                fontSize: 15,
+              ),
+              border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(
+                borderSide: BorderSide(
                   color: Colors.grey[300]!,
                   width: 1,
                 ),
               ),
-              child: TextField(
-                controller: controller,
-                decoration: InputDecoration(
-                  hintText: hintText,
-                  hintStyle: TextStyle(
-                    color: Colors.grey[500],
-                    fontSize: 15,
-                  ),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.zero,
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+                borderSide: BorderSide(
+                  color: Colors.grey[300]!,
+                  width: 1,
                 ),
-                style: const TextStyle(
-                  fontSize: 15,
-                  color: Colors.black87,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+                borderSide: BorderSide(
+                  color: primaryColor,
+                  width: 2,
                 ),
-                maxLines: null,
-                textInputAction: TextInputAction.send,
-                onSubmitted: (_) => onSend(),
+              ),
+              filled: true,
+              fillColor: Colors.grey[50],
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: primaryColor,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: primaryColor.withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+            style: const TextStyle(
+              fontSize: 15,
+              color: Colors.black87,
             ),
-            child: IconButton(
-              onPressed: onSend,
-              icon: const Icon(
-                Icons.send_rounded,
-                color: Colors.white,
-                size: 20,
+            maxLines: null,
+            textInputAction: TextInputAction.send,
+            onSubmitted: (_) => onSend(),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: primaryColor,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: primaryColor.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
+            ],
+          ),
+          child: IconButton(
+            onPressed: onSend,
+            icon: const Icon(
+              Icons.send_rounded,
+              color: Colors.white,
+              size: 20,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
