@@ -47,7 +47,7 @@ class _BookSearchPageState extends State<BookSearchPage> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                border: Border.all(color: AppColors.dividerColor),
+                // border: Border.all(color: AppColors.dividerColor), // 이중 테두리 제거
                 borderRadius: BorderRadius.circular(12),
               ),
               child: TextField(

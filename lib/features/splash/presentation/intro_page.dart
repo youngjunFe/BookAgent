@@ -8,7 +8,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 // ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
+import 'dart:html' as html if (dart.library.html) 'dart:html';
 
 class IntroPage extends StatefulWidget {
   const IntroPage({super.key});
@@ -178,7 +178,7 @@ class _IntroPageState extends State<IntroPage> {
             InkWell(
               onTap: () {
                 if (kIsWeb) {
-                  html.window.open('https://laivdata.notion.site/ebd/2734d0474fac80a78c39d382b48b8350', '_blank');
+                  _openWebUrl('https://laivdata.notion.site/ebd/2734d0474fac80a78c39d382b48b8350');
                 }
               },
               child: Text(
@@ -217,7 +217,7 @@ class _IntroPageState extends State<IntroPage> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
-            border: Border.all(color: AppColors.dividerColor),
+            // border: Border.all(color: AppColors.dividerColor), // 이중 테두리 제거
             borderRadius: BorderRadius.circular(12),
           ),
           child: TextField(
@@ -500,6 +500,17 @@ class _IntroPageState extends State<IntroPage> {
     _pageController.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  // 웹에서만 사용되는 URL 열기 함수
+  void _openWebUrl(String url) {
+    if (kIsWeb) {
+      try {
+        html.window.open(url, '_blank');
+      } catch (e) {
+        print('웹 URL 열기 오류: $e');
+      }
+    }
   }
 
   @override
