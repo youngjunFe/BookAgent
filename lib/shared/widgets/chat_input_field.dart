@@ -50,7 +50,7 @@ class ChatInputField extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.grey[50],
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.grey[300]!),
+                // border: Border.all(color: Colors.grey[300]!), // 테두리 제거
               ),
               child: TextField(
                 controller: controller,
