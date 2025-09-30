@@ -32,25 +32,29 @@ class ChatInputField extends StatelessWidget {
   // 모던 스타일 (AI 채팅용)
   Widget _buildModernStyle(BuildContext context, Color primaryColor) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: Colors.grey[200]!,
-            width: 1,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
           ),
-        ),
+        ],
       ),
       child: Row(
         children: [
           Expanded(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(20),
-                // border: Border.all(color: Colors.grey[300]!), // 테두리 제거
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: Colors.grey[300]!,
+                  width: 1,
+                ),
               ),
               child: TextField(
                 controller: controller,
@@ -58,12 +62,15 @@ class ChatInputField extends StatelessWidget {
                   hintText: hintText,
                   hintStyle: TextStyle(
                     color: Colors.grey[500],
-                    fontSize: 14,
+                    fontSize: 15,
                   ),
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.zero,
                 ),
-                style: const TextStyle(fontSize: 14),
+                style: const TextStyle(
+                  fontSize: 15,
+                  color: Colors.black87,
+                ),
                 maxLines: null,
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) => onSend(),
@@ -72,16 +79,23 @@ class ChatInputField extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Container(
-            width: 44,
-            height: 44,
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
               color: primaryColor,
               shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: primaryColor.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: IconButton(
               onPressed: onSend,
               icon: const Icon(
-                Icons.keyboard_arrow_up,
+                Icons.send_rounded,
                 color: Colors.white,
                 size: 20,
               ),
