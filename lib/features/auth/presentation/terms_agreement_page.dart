@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 import '../services/supabase_auth_service.dart';
 import '../../../shared/widgets/main_navigation.dart';
@@ -228,17 +229,15 @@ class _TermsAgreementPageState extends State<TermsAgreementPage> {
         ),
       );
 
-      // Supabase에 약관 동의 상태 저장
-      final user = SupabaseClientProvider.client.auth.currentUser;
-      if (user != null) {
-        await SupabaseClientProvider.client
-            .from('user_profiles')
-            .update({
-              'terms_agreed': true,
-              'terms_agreed_at': DateTime.now().toIso8601String(),
-            })
-            .eq('user_id', user.id);
-      }
+      // Supabase Authentication user metadata에 약관 동의 상태 저장
+      await SupabaseClientProvider.client.auth.updateUser(
+        UserAttributes(
+          data: {
+            'terms_agreed': true,
+            'terms_agreed_at': DateTime.now().toIso8601String(),
+          },
+        ),
+      );
 
       if (context.mounted) {
         Navigator.of(context).pop(); // 로딩 닫기

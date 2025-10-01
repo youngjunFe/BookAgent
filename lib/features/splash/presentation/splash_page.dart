@@ -143,15 +143,13 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
       final user = SupabaseClientProvider.client.auth.currentUser;
       if (user == null) return false;
       
-      final response = await SupabaseClientProvider.client
-          .from('user_profiles')
-          .select('terms_agreed')
-          .eq('user_id', user.id)
-          .maybeSingle();
+      // user metadata에서 약관 동의 여부 확인
+      final metadata = user.userMetadata;
+      final termsAgreed = metadata?['terms_agreed'] == true;
       
-      if (response == null) return false;
+      print('🔍 약관 동의 상태: $termsAgreed');
       
-      return response['terms_agreed'] == true;
+      return termsAgreed;
     } catch (e) {
       print('❌ 약관 동의 확인 실패: $e');
       return false; // 에러 시 약관 동의 페이지로 이동
