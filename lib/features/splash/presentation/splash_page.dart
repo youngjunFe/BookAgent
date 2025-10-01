@@ -3,10 +3,12 @@ import '../../../core/constants/app_colors.dart';
 import '../../../shared/widgets/main_navigation.dart';
 import '../../auth/services/supabase_auth_service.dart';
 import '../../auth/presentation/login_page.dart';
+import '../../auth/presentation/terms_agreement_page.dart';
 import '../../review/presentation/review_creation_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'intro_page.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../../core/supabase/supabase_client_provider.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -76,6 +78,17 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     final isLoggedIn = await authService.restoreLoginState();
     
     if (isLoggedIn) {
+      // 약관 동의 여부 확인
+      final hasAgreedTerms = await _checkTermsAgreement();
+      
+      if (!hasAgreedTerms) {
+        // 약관 미동의 사용자 - 약관 동의 페이지로 이동
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const TermsAgreementPage()),
+        );
+        return;
+      }
+      
       // 로그인된 사용자 - 임시 저장된 발제문 확인
       final hasTempReview = await _checkTempReview();
       
@@ -123,6 +136,26 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     // 비로그인 사용자는 항상 온보딩 표시 (강제)
     print('🔍 온보딩 체크: 항상 false 반환 (온보딩 강제 표시)');
     return false;
+  }
+
+  Future<bool> _checkTermsAgreement() async {
+    try {
+      final user = SupabaseClientProvider.client.auth.currentUser;
+      if (user == null) return false;
+      
+      final response = await SupabaseClientProvider.client
+          .from('user_profiles')
+          .select('terms_agreed')
+          .eq('user_id', user.id)
+          .maybeSingle();
+      
+      if (response == null) return false;
+      
+      return response['terms_agreed'] == true;
+    } catch (e) {
+      print('❌ 약관 동의 확인 실패: $e');
+      return false; // 에러 시 약관 동의 페이지로 이동
+    }
   }
 
   Future<bool> _checkTempReview() async {
