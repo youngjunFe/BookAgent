@@ -45,13 +45,10 @@ class _TermsAgreementPageState extends State<TermsAgreementPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 로고
-              Text(
-                '대대대',
-                style: TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
-                ),
+              Image.asset(
+                'assets/images/loading_logo.png',
+                width: 80,
+                height: 80,
               ),
               
               const SizedBox(height: 24),
