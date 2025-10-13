@@ -180,118 +180,107 @@ class _HomeViewState extends State<HomeView> {
             alignment: Alignment.topCenter,
             child: AspectRatio(
               aspectRatio: 328 / 476, // 디자인 비율
-              child: PageView.builder(
-                controller: _pageController,
-                onPageChanged: (index) {
-                  setState(() {
-                    _currentPage = index;
-                  });
-                },
-                itemCount: slideImages.length,
-                itemBuilder: (context, index) {
-                  return ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Image.network(
-                      slideImages[index],
-                      fit: BoxFit.contain, // 비율 유지하면서 전체 이미지 표시
-                      alignment: Alignment.topCenter, // 상단 정렬
-                      errorBuilder: (context, error, stackTrace) {
-                        print('❌ 이미지 로딩 실패: ${slideImages[index]}');
-                        print('❌ 에러: $error');
-                        return Container(
-                          decoration: BoxDecoration(
-                            color: Colors.grey[100],
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.image,
-                                  size: 48,
-                                  color: Colors.grey[400],
+              child: Stack(
+                children: [
+                  // 슬라이드 이미지
+                  PageView.builder(
+                    controller: _pageController,
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentPage = index;
+                      });
+                    },
+                    itemCount: slideImages.length,
+                    itemBuilder: (context, index) {
+                      return ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Image.network(
+                          slideImages[index],
+                          fit: BoxFit.contain, // 비율 유지하면서 전체 이미지 표시
+                          alignment: Alignment.topCenter, // 상단 정렬
+                          errorBuilder: (context, error, stackTrace) {
+                            print('❌ 이미지 로딩 실패: ${slideImages[index]}');
+                            print('❌ 에러: $error');
+                            return Container(
+                              decoration: BoxDecoration(
+                                color: Colors.grey[100],
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.image,
+                                      size: 48,
+                                      color: Colors.grey[400],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      '이미지 로딩 실패',
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  '이미지 로딩 실패',
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                  
+                  // 이전 버튼 - 슬라이드 중앙 좌측
+                  Positioned(
+                    left: 16,
+                    top: 0,
+                    bottom: 0,
+                    child: Center(
+                      child: GestureDetector(
+                        onTap: () {
+                          if (_currentPage > 0) {
+                            _pageController.previousPage(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                          }
+                        },
+                        child: Icon(
+                          Icons.chevron_left,
+                          color: Color(0xFF3D3D3D),
+                          size: 32,
+                        ),
+                      ),
                     ),
-                  );
-                },
-              ),
-            ),
-          ),
-          
-          // 이전 버튼 (배경 제거)
-          Positioned(
-            left: 16,
-            top: 0,
-            bottom: 0,
-            child: Center(
-              child: GestureDetector(
-                onTap: () {
-                  if (_currentPage > 0) {
-                    _pageController.previousPage(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    );
-                  }
-                },
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    // 흰색 배경 제거
                   ),
-                  child: Icon(
-                    Icons.chevron_left,
-                    color: Color(0xFF3D3D3D),
-                    size: 32,
+                  
+                  // 다음 버튼 - 슬라이드 중앙 우측
+                  Positioned(
+                    right: 16,
+                    top: 0,
+                    bottom: 0,
+                    child: Center(
+                      child: GestureDetector(
+                        onTap: () {
+                          if (_currentPage < slideImages.length - 1) {
+                            _pageController.nextPage(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                          }
+                        },
+                        child: Icon(
+                          Icons.chevron_right,
+                          color: Color(0xFF3D3D3D),
+                          size: 32,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ),
-          ),
-          
-          // 다음 버튼 (배경 제거)
-          Positioned(
-            right: 16,
-            top: 0,
-            bottom: 0,
-            child: Center(
-              child: GestureDetector(
-                onTap: () {
-                  if (_currentPage < slideImages.length - 1) {
-                    _pageController.nextPage(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    );
-                  }
-                },
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    // 흰색 배경 제거
-                  ),
-                  child: Icon(
-                    Icons.chevron_right,
-                    color: Color(0xFF3D3D3D),
-                    size: 32,
-                  ),
-                ),
+                ],
               ),
             ),
           ),
