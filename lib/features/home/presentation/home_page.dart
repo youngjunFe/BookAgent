@@ -173,14 +173,11 @@ class _HomeViewState extends State<HomeView> {
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: Colors.grey[200],
-      ),
       child: Stack(
         children: [
-          // PageView - 328:476 비율 유지
-          Center(
+          // PageView - 328:476 비율 유지 및 상단 정렬
+          Align(
+            alignment: Alignment.topCenter,
             child: AspectRatio(
               aspectRatio: 328 / 476, // 디자인 비율
               child: PageView.builder(
@@ -192,46 +189,42 @@ class _HomeViewState extends State<HomeView> {
                 },
                 itemCount: slideImages.length,
                 itemBuilder: (context, index) {
-                  return Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      color: Colors.grey[300],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Image.network(
-                        slideImages[index],
-                        fit: BoxFit.contain, // 비율 유지하면서 전체 이미지 표시
-                        alignment: Alignment.topCenter, // 상단 정렬
-                        errorBuilder: (context, error, stackTrace) {
-                          print('❌ 이미지 로딩 실패: ${slideImages[index]}');
-                          print('❌ 에러: $error');
-                          return Container(
-                            color: Colors.grey[300],
-                            child: Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.image,
-                                    size: 48,
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Image.network(
+                      slideImages[index],
+                      fit: BoxFit.contain, // 비율 유지하면서 전체 이미지 표시
+                      alignment: Alignment.topCenter, // 상단 정렬
+                      errorBuilder: (context, error, stackTrace) {
+                        print('❌ 이미지 로딩 실패: ${slideImages[index]}');
+                        print('❌ 에러: $error');
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.image,
+                                  size: 48,
+                                  color: Colors.grey[400],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  '이미지 로딩 실패',
+                                  style: TextStyle(
                                     color: Colors.grey[600],
+                                    fontSize: 14,
                                   ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    '이미지 로딩 실패\n${slideImages[index]}',
-                                    style: TextStyle(
-                                      color: Colors.grey[600],
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                          );
-                        },
-                      ),
+                          ),
+                        );
+                      },
                     ),
                   );
                 },
