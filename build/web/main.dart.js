@@ -8283,10 +8283,14 @@ _.a=a
 _.b=b
 _.c=c
 _.d=d},
-b72(a,b,c,d,e){return new A.rR(b,a,null)},
-rR:function rR(a,b,c){this.d=a
-this.e=b
-this.a=c},
+b72(a,b,c,d,e,f,g,h){return new A.rR(e,a,d,c,b,null)},
+rR:function rR(a,b,c,d,e,f){var _=this
+_.d=a
+_.e=b
+_.f=c
+_.r=d
+_.w=e
+_.a=f},
 Jv:function Jv(a,b,c){var _=this
 _.d=a
 _.e=b
@@ -50173,9 +50177,8 @@ A.aaI.prototype={
 $0(){A.aC(this.b,!1).kk(A.cI(new A.aaG(this.a),null,t.z))},
 $S:0}
 A.aaG.prototype={
-$1(a){var s=this.a.c,r=s.a
-s=s.b
-return A.b72(s,r,"\uc120\ud0dd\ud55c \ucc45: "+r+" ("+s+")\n\n\uc774 \ucc45\uc5d0 \ub300\ud574 \ub300\ud654\ud574\ubcf4\uc138\uc694!",!1,null)},
+$1(a){var s=this.a.c,r=s.a,q=s.b
+return A.b72(q,s.e,s.f,s.c,r,"\uc120\ud0dd\ud55c \ucc45: "+r+" ("+q+")\n\n\uc774 \ucc45\uc5d0 \ub300\ud574 \ub300\ud654\ud574\ubcf4\uc138\uc694!",!1,null)},
 $S:457}
 A.aaF.prototype={
 $3(a,b,c){A.ak("\u2705 ["+this.a.a+"] Image loaded successfully with proxy "+(this.b+1))
@@ -50383,7 +50386,7 @@ f=t.N
 e=A.a0(["Content-Type","application/json"],f,f)
 d=n.a
 s=7
-return A.m(A.rG(g,B.a5.qy(A.a0(["message","\ud658\uc601 \uba54\uc2dc\uc9c0\ub97c \uc0dd\uc131\ud574\uc8fc\uc138\uc694","context","","systemPrompt",m,"bookTitle",d.d,"bookAuthor",d.e],f,t.T),null),null,e).rp(0,B.e5),$async$x4)
+return A.m(A.rG(g,B.a5.qy(A.a0(["message","\ud658\uc601 \uba54\uc2dc\uc9c0\ub97c \uc0dd\uc131\ud574\uc8fc\uc138\uc694","context","","systemPrompt",m,"bookTitle",d.d,"bookAuthor",d.e,"bookPublisher",d.f,"bookIsbn",d.r,"bookDescription",d.w],f,t.T),null),null,e).rp(0,B.e5),$async$x4)
 case 7:l=a0
 if(l.b===200){g=l
 k=B.a5.om(0,A.e1(A.e0(g.e)).aZ(0,g.w),null)
@@ -50542,7 +50545,7 @@ a9=t.N
 b0=A.a0(["Content-Type","application/json"],a9,a9)
 b1=n.a
 s=12
-return A.m(A.rG(a8,B.a5.qy(A.a0(["message",c5,"context",j,"systemPrompt",l,"bookTitle",b1.d,"bookAuthor",b1.e],a9,t.T),null),null,b0).rp(0,B.Pc),$async$td)
+return A.m(A.rG(a8,B.a5.qy(A.a0(["message",c5,"context",j,"systemPrompt",l,"bookTitle",b1.d,"bookAuthor",b1.e,"bookPublisher",b1.f,"bookIsbn",b1.r,"bookDescription",b1.w],a9,t.T),null),null,b0).rp(0,B.Pc),$async$td)
 case 12:h=c7
 b0=h
 A.ak("\ud83d\udd0d Primary API \uc751\ub2f5: "+h.b+" - "+A.e1(A.e0(b0.e)).aZ(0,b0.w))
@@ -50592,7 +50595,7 @@ b8=A.dg(a,0,null)
 b9=A.a0(["Content-Type","application/json"],b0,b0)
 c0=n.a
 s=24
-return A.m(A.rG(b8,B.a5.qy(A.a0(["message",c5,"context",j,"systemPrompt",l,"bookTitle",c0.d,"bookAuthor",c0.e],b0,b1),null),null,b9).rp(0,B.e5),$async$td)
+return A.m(A.rG(b8,B.a5.qy(A.a0(["message",c5,"context",j,"systemPrompt",l,"bookTitle",c0.d,"bookAuthor",c0.e,"bookPublisher",c0.f,"bookIsbn",c0.r,"bookDescription",c0.w],b0,b1),null),null,b9).rp(0,B.e5),$async$td)
 case 24:a0=c7
 b6="\ud83d\udd0d Vercel API \uc751\ub2f5: "+a0.b
 b7=$.C4

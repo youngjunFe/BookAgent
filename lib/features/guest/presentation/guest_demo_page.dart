@@ -228,6 +228,10 @@ class _GuestDemoPageState extends State<GuestDemoPage> {
     return AiChatPage(
       initialContext: '선택한 책: ${_selectedBook?.title} (${_selectedBook?.author})\n\n이 책에 대해 대화해보세요!',
       bookTitle: _selectedBook?.title ?? '선택한 책',
+      bookAuthor: _selectedBook?.author,
+      bookPublisher: _selectedBook?.publisher,
+      bookIsbn: _selectedBook?.isbn,
+      bookDescription: _selectedBook?.description,
       isGuestMode: true,
       onChatCompleteWithHistory: (chatHistory) {
         // AI 대화 내용을 받아서 발제문 생성

@@ -12,6 +12,9 @@ class AiChatPage extends StatefulWidget {
   final String? initialContext;
   final String? bookTitle;
   final String? bookAuthor;
+  final String? bookPublisher;
+  final String? bookIsbn;
+  final String? bookDescription;
   final bool isGuestMode;
   final VoidCallback? onChatComplete;
   final Function(String)? onChatCompleteWithHistory;
@@ -21,6 +24,9 @@ class AiChatPage extends StatefulWidget {
     this.initialContext,
     this.bookTitle,
     this.bookAuthor,
+    this.bookPublisher,
+    this.bookIsbn,
+    this.bookDescription,
     this.isGuestMode = false,
     this.onChatComplete,
     this.onChatCompleteWithHistory,
@@ -92,6 +98,9 @@ class _AiChatPageState extends State<AiChatPage> {
           'systemPrompt': welcomePrompt,
           'bookTitle': widget.bookTitle,
           'bookAuthor': widget.bookAuthor,
+          'bookPublisher': widget.bookPublisher,
+          'bookIsbn': widget.bookIsbn,
+          'bookDescription': widget.bookDescription,
         }),
       ).timeout(const Duration(seconds: 10));
       
@@ -810,6 +819,9 @@ class _AiChatPageState extends State<AiChatPage> {
             'systemPrompt': aiPrompt,
             'bookTitle': widget.bookTitle,
             'bookAuthor': widget.bookAuthor,
+            'bookPublisher': widget.bookPublisher,
+            'bookIsbn': widget.bookIsbn,
+            'bookDescription': widget.bookDescription,
           }),
         ).timeout(const Duration(seconds: 12));
 
@@ -872,6 +884,9 @@ class _AiChatPageState extends State<AiChatPage> {
                 'systemPrompt': aiPrompt,
                 'bookTitle': widget.bookTitle,
                 'bookAuthor': widget.bookAuthor,
+                'bookPublisher': widget.bookPublisher,
+                'bookIsbn': widget.bookIsbn,
+                'bookDescription': widget.bookDescription,
               }),
             ).timeout(const Duration(seconds: 10));
 

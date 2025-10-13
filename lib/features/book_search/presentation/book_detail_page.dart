@@ -122,6 +122,9 @@ class BookDetailPage extends StatelessWidget {
                           initialContext: '선택한 책: ${book.title} (${book.author})\n\n이 책에 대해 대화해보세요!',
                           bookTitle: book.title,
                           bookAuthor: book.author,
+                          bookPublisher: book.publisher,
+                          bookIsbn: book.isbn,
+                          bookDescription: book.description,
                         ),
                       ),
                     );

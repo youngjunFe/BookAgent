@@ -55,6 +55,9 @@ app.post('/api/chat', async (req, res) => {
       systemPrompt,
       bookTitle,
       bookAuthor,
+      bookPublisher,
+      bookIsbn,
+      bookDescription,
     } = req.body || {};
     const userMessage = String(message);
     const chatContext = String(context);
@@ -68,6 +71,9 @@ app.post('/api/chat', async (req, res) => {
         : 'none',
       bookTitle,
       bookAuthor,
+      bookPublisher,
+      bookIsbn,
+      bookDescription: bookDescription ? bookDescription.substring(0, 50) + '...' : 'none',
     });
 
     const apiKey = process.env.OPENAI_API_KEY;
@@ -77,6 +83,25 @@ app.post('/api/chat', async (req, res) => {
     }
 
     try {
+      // 시스템 프롬프트의 모든 플레이스홀더 치환
+      let finalSystemPrompt = systemPrompt || '당신은 도서 리뷰와 독서에 도움을 주는 친근한 AI 어시스턴트입니다. 한국어로 자연스럽게 대화하듯 답변해주세요.';
+      
+      // 모든 플레이스홀더 치환
+      finalSystemPrompt = finalSystemPrompt
+        .replace(/\{book_title\}/g, bookTitle || '책')
+        .replace(/\{bookTitle\}/g, bookTitle || '책')
+        .replace(/\{book_author\}/g, bookAuthor || '작가')
+        .replace(/\{bookAuthor\}/g, bookAuthor || '작가')
+        .replace(/\{author\}/g, bookAuthor || '작가')
+        .replace(/\{publisher\}/g, bookPublisher || '출판사')
+        .replace(/\{bookPublisher\}/g, bookPublisher || '출판사')
+        .replace(/\{isbn\}/g, bookIsbn || 'ISBN 정보 없음')
+        .replace(/\{bookIsbn\}/g, bookIsbn || 'ISBN 정보 없음')
+        .replace(/\{description\}/g, bookDescription || '책 소개 정보가 없습니다.')
+        .replace(/\{bookDescription\}/g, bookDescription || '책 소개 정보가 없습니다.');
+
+      console.log('✅ System prompt after replacement:', finalSystemPrompt.substring(0, 300) + '...');
+
       // OpenAI API 호출
       const response = await fetch(
         'https://api.openai.com/v1/chat/completions',
@@ -91,11 +116,7 @@ app.post('/api/chat', async (req, res) => {
             messages: [
               {
                 role: 'system',
-                content: systemPrompt
-                  ? systemPrompt
-                      .replace('{book_title}', bookTitle || '책')
-                      .replace('{book_author}', bookAuthor || '작가')
-                  : '당신은 도서 리뷰와 독서에 도움을 주는 친근한 AI 어시스턴트입니다. 한국어로 자연스럽게 대화하듯 답변해주세요.',
+                content: finalSystemPrompt,
               },
               {
                 role: 'user',
