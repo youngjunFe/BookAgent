@@ -3,7 +3,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'dart:ui' as ui;
 import 'dart:typed_data';
-import 'dart:html' as html;
+import 'dart:html' as html if (dart.library.html) 'dart:html';
 import '../../../core/constants/app_colors.dart';
 import '../models/review.dart';
 import '../../chat/presentation/character_selection_page.dart';
@@ -273,17 +273,7 @@ class ReviewDetailPage extends StatelessWidget {
         final bytes = byteData.buffer.asUint8List();
         
         // 웹에서 파일 다운로드
-        final blob = html.Blob([bytes]);
-        final url = html.Url.createObjectUrlFromBlob(blob);
-        final anchor = html.document.createElement('a') as html.AnchorElement
-          ..href = url
-          ..style.display = 'none'
-          ..download = '감동문_${review.bookTitle}_${DateTime.now().millisecondsSinceEpoch}.png';
-        
-        html.document.body?.children.add(anchor);
-        anchor.click();
-        html.document.body?.children.remove(anchor);
-        html.Url.revokeObjectUrl(url);
+        _downloadImageWeb(bytes, review.bookTitle);
         
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -357,5 +347,24 @@ class ReviewDetailPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  // 웹에서만 사용되는 이미지 다운로드 함수
+  static void _downloadImageWeb(Uint8List bytes, String bookTitle) {
+    try {
+      final blob = html.Blob([bytes]);
+      final url = html.Url.createObjectUrlFromBlob(blob);
+      final anchor = html.document.createElement('a') as html.AnchorElement
+        ..href = url
+        ..style.display = 'none'
+        ..download = '감동문_${bookTitle}_${DateTime.now().millisecondsSinceEpoch}.png';
+      
+      html.document.body?.children.add(anchor);
+      anchor.click();
+      html.document.body?.children.remove(anchor);
+      html.Url.revokeObjectUrl(url);
+    } catch (e) {
+      print('웹 다운로드 오류: $e');
+    }
   }
 }

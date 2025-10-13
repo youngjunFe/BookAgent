@@ -216,16 +216,15 @@ app.post('/generate-review', async (req, res) => {
     });
 
     if (!resp.ok) {
-      return res.status(200).type('text/plain').send(fallback(title));
+      return res.status(200).json({ review: fallback(title) });
     }
     const data = await resp.json();
     const content = data?.choices?.[0]?.message?.content || fallback(title);
-    return res.status(200).type('text/plain').send(content);
+    return res.status(200).json({ review: content });
   } catch (e) {
     return res
       .status(200)
-      .type('text/plain')
-      .send(fallback(String(req.body?.book_title || '책')));
+      .json({ review: fallback(String(req.body?.book_title || '책')) });
   }
 });
 

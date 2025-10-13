@@ -25,7 +25,7 @@ class ReviewAiService {
         final resp = await http.post(
           uri,
           headers: {'Content-Type': 'application/json'},
-          body: '{"bookTitle": ${_escapeJson(bookTitle)}, "chatHistory": ${_escapeJson(chatHistory)}, "format": "json", "schema": {"title":"string","content":"string"}}',
+          body: '{"book_title": ${_escapeJson(bookTitle)}, "chat_history": ${_escapeJson(chatHistory)}, "format": "json", "schema": {"title":"string","content":"string"}}',
         );
         if (resp.statusCode >= 200 && resp.statusCode < 300 && resp.body.isNotEmpty) {
           print('🔍 Railway API 응답: ${resp.body.substring(0, resp.body.length > 200 ? 200 : resp.body.length)}...');

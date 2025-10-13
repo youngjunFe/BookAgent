@@ -6,6 +6,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/config/app_config.dart';
 import '../../review/presentation/review_creation_page.dart';
 import '../../admin/services/admin_config_service.dart';
+import '../../../shared/widgets/chat_input_field.dart';
 
 class AiChatPage extends StatefulWidget {
   final String? initialContext;
@@ -56,6 +57,7 @@ class _AiChatPageState extends State<AiChatPage> {
       });
       
       print('✅ 채팅 설정 로드: 최소 $_minChatCount, 최대 $_maxChatCount');
+      print('🔍 AI 환영 메시지: ${_aiWelcomeMessage.isNotEmpty ? _aiWelcomeMessage.substring(0, 50) + '...' : '비어있음'}');
       _addInitialMessage();
     } catch (e) {
       print('❌ 채팅 설정 로드 실패: $e');
@@ -73,20 +75,91 @@ class _AiChatPageState extends State<AiChatPage> {
     }
   }
 
-  void _addDefaultWelcomeMessage() {
-    _messages.add(
-      ChatMessage(
-        text: _aiWelcomeMessage.isNotEmpty
-            ? _aiWelcomeMessage
-            : '안녕하세요! 저는 독서 도우미 AI입니다 📚\n\n'
-              '어떤 책에 대해 이야기하고 싶으신가요?\n'
-              '책의 제목을 알려주시면, 함께 깊이 있는 대화를 나눠보아요!',
-        isUser: false,
-        timestamp: DateTime.now(),
-        isAiResponse: true,
-        hasApiError: false,
-      ),
-    );
+  Future<String> _generateWelcomeMessage() async {
+    try {
+      // 환영 메시지 전용 프롬프트 사용
+      final welcomePrompt = _aiWelcomeMessage.isNotEmpty 
+          ? _aiWelcomeMessage 
+          : '당신은 독서 도우미 "치읓"입니다. 사용자가 ${widget.bookTitle ?? "책"}에 대해 이야기하고 싶어합니다. 따뜻하고 친근한 환영 메시지를 작성해주세요.';
+      
+      // Railway API 직접 호출
+      final response = await http.post(
+        Uri.parse('https://bookagent-production-2f69.up.railway.app/api/chat'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'message': '환영 메시지를 생성해주세요',
+          'context': '',
+          'systemPrompt': welcomePrompt,
+          'bookTitle': widget.bookTitle,
+          'bookAuthor': widget.bookAuthor,
+        }),
+      ).timeout(const Duration(seconds: 10));
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final aiResponse = data['reply'];
+        if (aiResponse != null && aiResponse.isNotEmpty) {
+          return aiResponse;
+        }
+      }
+    } catch (e) {
+      print('❌ AI 환영 메시지 생성 실패: $e');
+    }
+    
+    // 실패 시 기본 메시지
+    return widget.bookTitle != null
+        ? '안녕하세요! 저는 독서 도우미 "책벗"이에요 📚\n\n${widget.bookTitle}에 대해 이야기해보아요!'
+        : '안녕하세요! 저는 독서 도우미 "책벗"이에요 📚\n\n어떤 책에 대해 이야기하고 싶으신가요?';
+  }
+
+  void _addDefaultWelcomeMessage() async {
+    // 로딩 메시지 추가
+    setState(() {
+      _messages.add(
+        ChatMessage(
+          text: '안녕하세요! 저는 독서 도우미 AI입니다 📚',
+          isUser: false,
+          timestamp: DateTime.now(),
+          isAiResponse: true,
+          hasApiError: false,
+        ),
+      );
+      _isTyping = true;
+    });
+
+    try {
+      // AI가 환영 메시지 생성
+      final welcomeMessage = await _generateWelcomeMessage();
+      
+      setState(() {
+        _messages.removeLast();
+        _messages.add(
+          ChatMessage(
+            text: welcomeMessage,
+            isUser: false,
+            timestamp: DateTime.now(),
+            isAiResponse: true,
+            hasApiError: false,
+          ),
+        );
+        _isTyping = false;
+      });
+    } catch (e) {
+      print('❌ 기본 환영 메시지 생성 실패: $e');
+      setState(() {
+        _messages.removeLast();
+        _messages.add(
+          ChatMessage(
+            text: '안녕하세요! 저는 독서 도우미 "책벗"이에요 📚\n\n어떤 책에 대해 이야기하고 싶으신가요?',
+            isUser: false,
+            timestamp: DateTime.now(),
+            isAiResponse: true,
+            hasApiError: false,
+          ),
+        );
+        _isTyping = false;
+      });
+    }
   }
 
   Future<void> _addBookBasedMessage() async {
@@ -105,16 +178,15 @@ class _AiChatPageState extends State<AiChatPage> {
     });
 
     try {
-      // AI에게 책에 대한 한줄평 요청
-      final bookSummary = await _generateBookSummary(widget.bookTitle!, widget.bookAuthor);
+      // AI에게 환영 메시지 생성 요청
+      final welcomeMessage = await _generateWelcomeMessage();
       
       // 기존 로딩 메시지 제거하고 새 메시지 추가
       setState(() {
         _messages.removeLast();
         _messages.add(
           ChatMessage(
-            text: '${widget.bookTitle}을 읽으셨다니..! ( \' - \' ) /\n'
-                '많은 분들이 "$bookSummary"라고 하더라고요.\n지금 어떤 감정을 느끼고 있나요?',
+            text: welcomeMessage,
             isUser: false,
             timestamp: DateTime.now(),
             isAiResponse: true,
@@ -229,7 +301,15 @@ class _AiChatPageState extends State<AiChatPage> {
                         },
                       ),
                     ),
-                    _buildMessageInput(),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      child: ChatInputField(
+                        controller: _messageController,
+                        hintText: '치읓과 감상을 나누어보세요',
+                        onSend: _sendMessage,
+                        style: ChatInputStyle.modern,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -440,68 +520,6 @@ class _AiChatPageState extends State<AiChatPage> {
     );
   }
 
-  // 메시지 입력창 (디자이너 스타일)
-  Widget _buildMessageInput() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: Colors.grey[200]!,
-            width: 1,
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.grey[300]!),
-              ),
-              child: TextField(
-                controller: _messageController,
-                decoration: InputDecoration(
-                  hintText: '치읓과 감상을 나누어보세요',
-                  hintStyle: TextStyle(
-                    color: Colors.grey[500],
-                    fontSize: 14,
-                  ),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.zero,
-                ),
-                style: const TextStyle(fontSize: 14),
-                maxLines: null,
-                textInputAction: TextInputAction.send,
-                onSubmitted: (_) => _sendMessage(),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              shape: BoxShape.circle,
-            ),
-            child: IconButton(
-              onPressed: _sendMessage,
-              icon: const Icon(
-                Icons.keyboard_arrow_up,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   // 메시지 버블 (모바일 지향, 단일 톤)
   Widget _buildMessageBubble(ChatMessage message) {
@@ -808,7 +826,8 @@ class _AiChatPageState extends State<AiChatPage> {
                               data['content'];
 
           if (aiResponse != null && aiResponse.isNotEmpty && !aiResponse.contains('error')) {
-            print('✅ Railway API 성공: ${aiResponse.substring(0, 50)}...');
+            print('✅ Railway API 성공: ${aiResponse.length > 50 ? aiResponse.substring(0, 50) + '...' : aiResponse}');
+            print('🔍 Railway API 원본 응답: ${response.body}');
             return {
               'message': aiResponse,
               'isRealAI': true,

@@ -411,11 +411,20 @@ class SettingsPage extends StatelessWidget {
   void _openNotionPage(String url) {
     if (kIsWeb) {
       // 웹에서 새 탭으로 노션 페이지 열기
-      html.window.open(url, '_blank');
+      _openWebUrl(url);
     } else {
       // 모바일에서는 URL 런처 사용 (추후 구현)
       // 현재는 안내 메시지만 표시
       // TODO: url_launcher 패키지 사용하여 브라우저에서 열기
+    }
+  }
+
+  // 웹에서만 사용되는 URL 열기 함수
+  void _openWebUrl(String url) {
+    try {
+      html.window.open(url, '_blank');
+    } catch (e) {
+      print('웹 URL 열기 오류: $e');
     }
   }
 }
