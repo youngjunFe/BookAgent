@@ -148,6 +148,18 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
   Future<void> _generateReview() async {
     if (widget.chatHistory == null) return;
 
+    // 디버깅: 모든 책 정보 출력
+    print('🔍 ReviewCreationPage._generateReview 호출');
+    print('  📚 widget.bookTitle: ${widget.bookTitle}');
+    print('  📚 widget.bookAuthor: ${widget.bookAuthor}');
+    print('  📚 widget.bookPublisher: ${widget.bookPublisher}');
+    print('  📚 widget.bookIsbn: ${widget.bookIsbn}');
+    print('  📚 widget.bookDescription: ${widget.bookDescription != null ? widget.bookDescription!.substring(0, widget.bookDescription!.length > 50 ? 50 : widget.bookDescription!.length) + "..." : "null"}');
+    print('  💬 chatHistory length: ${widget.chatHistory!.length}');
+    print('  💬 chatHistory preview: ${widget.chatHistory!.substring(0, widget.chatHistory!.length > 100 ? 100 : widget.chatHistory!.length)}...');
+    print('  📖 _bookTitle (state): $_bookTitle');
+    print('  ✍️ _bookAuthor (state): $_bookAuthor');
+
     setState(() {
       _isGenerating = true;
     });
@@ -155,8 +167,8 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
     try {
       final content = await ReviewAiService.generateReview(
         chatHistory: widget.chatHistory!,
-        bookTitle: _bookTitle ?? '',
-        bookAuthor: widget.bookAuthor,
+        bookTitle: widget.bookTitle ?? _bookTitle ?? '',
+        bookAuthor: widget.bookAuthor ?? _bookAuthor,
         bookPublisher: widget.bookPublisher,
         bookIsbn: widget.bookIsbn,
         bookDescription: widget.bookDescription,

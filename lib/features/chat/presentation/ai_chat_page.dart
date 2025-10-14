@@ -1121,6 +1121,15 @@ class _AiChatPageState extends State<AiChatPage> {
       '${msg.isUser ? "사용자" : "AI"}: ${msg.text}'
     ).join('\n\n');
     
+    // 디버깅: ReviewCreationPage로 전달되는 값 확인
+    print('🔍 AiChatPage -> ReviewCreationPage 이동');
+    print('  📚 widget.bookTitle: ${widget.bookTitle}');
+    print('  📚 widget.bookAuthor: ${widget.bookAuthor}');
+    print('  📚 widget.bookPublisher: ${widget.bookPublisher}');
+    print('  📚 widget.bookIsbn: ${widget.bookIsbn}');
+    print('  📚 widget.bookDescription: ${widget.bookDescription != null ? widget.bookDescription!.substring(0, widget.bookDescription!.length > 50 ? 50 : widget.bookDescription!.length) + "..." : "null"}');
+    print('  💬 chatHistory length: ${chatHistory.length}');
+    
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (context) => ReviewCreationPage(

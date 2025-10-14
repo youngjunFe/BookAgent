@@ -115,6 +115,14 @@ class BookDetailPage extends StatelessWidget {
                 height: 56,
                 child: ElevatedButton(
                   onPressed: () {
+                    // 디버깅: AiChatPage로 전달되는 책 정보 확인
+                    print('🔍 BookDetailPage -> AiChatPage 이동');
+                    print('  📚 book.title: ${book.title}');
+                    print('  📚 book.author: ${book.author}');
+                    print('  📚 book.publisher: ${book.publisher}');
+                    print('  📚 book.isbn: ${book.isbn}');
+                    print('  📚 book.description: ${book.description.substring(0, book.description.length > 50 ? 50 : book.description.length)}...');
+                    
                     // 채팅 페이지로 이동
                     Navigator.of(context).pushReplacement(
                       MaterialPageRoute(

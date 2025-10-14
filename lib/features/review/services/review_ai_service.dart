@@ -17,10 +17,13 @@ class ReviewAiService {
     String? bookIsbn,
     String? bookDescription,
   }) async {
-    print('🔍 감동문 생성 시작');
-    print('  - 책 제목: $bookTitle');
-    print('  - 저자: $bookAuthor');
-    print('  - 대화 내역 길이: ${chatHistory?.length ?? 0}');
+    print('🔍 ReviewAiService.generateReview 호출');
+    print('  📚 bookTitle: $bookTitle (type: ${bookTitle.runtimeType})');
+    print('  📚 bookAuthor: $bookAuthor (type: ${bookAuthor.runtimeType})');
+    print('  📚 bookPublisher: $bookPublisher (type: ${bookPublisher.runtimeType})');
+    print('  📚 bookIsbn: $bookIsbn');
+    print('  📚 bookDescription: ${bookDescription != null ? bookDescription.substring(0, bookDescription.length > 50 ? 50 : bookDescription.length) + "..." : "null"}');
+    print('  💬 chatHistory length: ${chatHistory?.length ?? 0}');
     
     if (!SupabaseClientProvider.isReady) {
       return _fallback(bookTitle);
