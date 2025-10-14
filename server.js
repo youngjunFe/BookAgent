@@ -313,7 +313,22 @@ app.get('/api/search-books', async (req, res) => {
 // Review generation endpoint
 app.post('/api/generate-review', async (req, res) => {
   try {
-    const { bookTitle, content, chatHistory } = req.body || {};
+    const { 
+      bookTitle, 
+      bookAuthor,
+      bookPublisher,
+      bookIsbn,
+      bookDescription,
+      content, 
+      chatHistory 
+    } = req.body || {};
+
+    console.log('🔥 감동문 생성 요청:', {
+      bookTitle,
+      bookAuthor,
+      bookPublisher,
+      chatHistoryLength: chatHistory ? chatHistory.length : 0,
+    });
 
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
@@ -325,42 +340,81 @@ app.post('/api/generate-review', async (req, res) => {
     const OpenAI = require('openai');
     const openai = new OpenAI({ apiKey });
 
-    const prompt = `다음은 "${bookTitle}"에 대한 독자와 AI의 대화 내용입니다:
+    // 시스템 프롬프트 (여기서 변수 치환)
+    let systemPrompt = `당신은 독서 발제문 작성 전문가입니다.
 
-${chatHistory || content}
+[책 정보]
+- 책 제목: {book_title}
+- 저자: {author}
+- 출판사: {publisher}
+- ISBN: {isbn}
+- 책 소개: {description}
+  ※ 이 정보는 발제문 작성 시 맥락 이해용입니다
+  ※ 발제문에 직접 나열하지 말고, 자연스럽게 녹여내세요
 
-위 대화 내용을 바탕으로 "${bookTitle}"에 대한 깊이 있는 발제문을 작성해주세요. 다음 요소들을 포함해주세요:
+[중요 규칙]
+1. 대화 내용을 바탕으로 독자의 감정과 생각을 진솔하게 표현
+2. 빈 줄로 문단을 구분하세요
+3. 한 문단은 2-3문장 정도로
+4. 마크다운 기호(#, **, *, >, - 등) 사용 금지
+5. "제목:", "서론:", "본론:", "결론:" 같은 머리글 금지
+6. 이모지는 적절히만 사용
 
-1. 책의 핵심 주제와 메시지
-2. 독자가 느낀 감동과 깨달음
-3. 개인적인 해석과 의미
-4. 다른 사람들과 나누고 싶은 생각
+[발제문 구조]
+첫 줄: 간결한 제목 (20자 이내)
 
-발제문은 한국어로 작성하고, 개인적이고 진솔한 톤으로 써주세요.`;
+이후: 평문으로 자연스럽게 작성
+- 책의 핵심 주제와 메시지
+- 독자가 느낀 감동과 깨달음
+- 개인적인 해석과 의미
+- 다른 사람들과 나누고 싶은 생각`;
+
+    // 모든 플레이스홀더 치환
+    systemPrompt = systemPrompt
+      .replace(/\{book_title\}/g, bookTitle || '책')
+      .replace(/\{bookTitle\}/g, bookTitle || '책')
+      .replace(/\{book_author\}/g, bookAuthor || '작가')
+      .replace(/\{bookAuthor\}/g, bookAuthor || '작가')
+      .replace(/\{author\}/g, bookAuthor || '작가')
+      .replace(/\{publisher\}/g, bookPublisher || '출판사')
+      .replace(/\{bookPublisher\}/g, bookPublisher || '출판사')
+      .replace(/\{isbn\}/g, bookIsbn || 'ISBN 정보 없음')
+      .replace(/\{bookIsbn\}/g, bookIsbn || 'ISBN 정보 없음')
+      .replace(/\{description\}/g, bookDescription || '책 소개 정보가 없습니다.')
+      .replace(/\{bookDescription\}/g, bookDescription || '책 소개 정보가 없습니다.');
+
+    console.log('✅ 감동문 시스템 프롬프트 (변수 치환 완료):', systemPrompt.substring(0, 200) + '...');
+
+    const userPrompt = `다음은 "${bookTitle}"에 대한 독자와 AI의 대화 내용입니다:
+
+${chatHistory || content || '(대화 내용 없음)'}
+
+위 대화 내용을 바탕으로 발제문을 작성해주세요.`;
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4o-mini',
       messages: [
         {
           role: 'system',
-          content:
-            '당신은 독서 발제문 작성 전문가입니다. 독자의 감정과 생각을 잘 정리하여 깊이 있는 발제문을 작성해주세요.',
+          content: systemPrompt,
         },
         {
           role: 'user',
-          content: prompt,
+          content: userPrompt,
         },
       ],
-      max_tokens: 1500,
+      max_tokens: 2000,
       temperature: 0.8,
     });
 
     const generatedReview =
       completion.choices[0]?.message?.content || '발제문 생성에 실패했습니다.';
 
+    console.log('✅ 감동문 생성 완료:', generatedReview.substring(0, 100) + '...');
+
     res.json({ review: generatedReview });
   } catch (error) {
-    console.error('Review generation error:', error);
+    console.error('❌ Review generation error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

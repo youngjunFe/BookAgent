@@ -23,12 +23,18 @@ class ReviewCreationPage extends StatefulWidget {
   final String? chatHistory;
   final String? bookTitle;
   final String? bookAuthor;
+  final String? bookPublisher;
+  final String? bookIsbn;
+  final String? bookDescription;
 
   const ReviewCreationPage({
     super.key,
     this.chatHistory,
     this.bookTitle,
     this.bookAuthor,
+    this.bookPublisher,
+    this.bookIsbn,
+    this.bookDescription,
   });
 
   @override
@@ -150,6 +156,10 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
       final content = await ReviewAiService.generateReview(
         chatHistory: widget.chatHistory!,
         bookTitle: _bookTitle ?? '',
+        bookAuthor: widget.bookAuthor,
+        bookPublisher: widget.bookPublisher,
+        bookIsbn: widget.bookIsbn,
+        bookDescription: widget.bookDescription,
       );
 
       setState(() {
@@ -157,6 +167,7 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
         _isGenerating = false;
       });
     } catch (e) {
+      print('❌ 감동문 생성 실패: $e');
       setState(() {
         _isGenerating = false;
         _generatedContent = _generateFallbackContent();

@@ -12,8 +12,16 @@ class ReviewAiService {
   static Future<String> generateReview({
     String? chatHistory,
     String? bookTitle,
+    String? bookAuthor,
+    String? bookPublisher,
+    String? bookIsbn,
+    String? bookDescription,
   }) async {
-    print('🔍 감동문 생성 - 서버에서 DB 프롬프트를 직접 로드합니다');
+    print('🔍 감동문 생성 시작');
+    print('  - 책 제목: $bookTitle');
+    print('  - 저자: $bookAuthor');
+    print('  - 대화 내역 길이: ${chatHistory?.length ?? 0}');
+    
     if (!SupabaseClientProvider.isReady) {
       return _fallback(bookTitle);
     }
@@ -22,10 +30,22 @@ class ReviewAiService {
       // 1) 우선 Railway 등 외부 Agent 서비스가 설정된 경우 우선 사용
       if (AppConfig.agentBaseUrl != null) {
         final uri = Uri.parse('${AppConfig.agentBaseUrl}/api/generate-review');
+        final requestBody = jsonEncode({
+          'bookTitle': bookTitle,
+          'bookAuthor': bookAuthor,
+          'bookPublisher': bookPublisher,
+          'bookIsbn': bookIsbn,
+          'bookDescription': bookDescription,
+          'chatHistory': chatHistory,
+        });
+        
+        print('🔥 Railway API 호출: $uri');
+        print('📦 요청 body: ${requestBody.substring(0, requestBody.length > 200 ? 200 : requestBody.length)}...');
+        
         final resp = await http.post(
           uri,
           headers: {'Content-Type': 'application/json'},
-          body: '{"book_title": ${_escapeJson(bookTitle)}, "chat_history": ${_escapeJson(chatHistory)}, "format": "json", "schema": {"title":"string","content":"string"}}',
+          body: requestBody,
         );
         if (resp.statusCode >= 200 && resp.statusCode < 300 && resp.body.isNotEmpty) {
           print('🔍 Railway API 응답: ${resp.body.substring(0, resp.body.length > 200 ? 200 : resp.body.length)}...');

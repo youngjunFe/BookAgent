@@ -415,6 +415,9 @@ class _AiChatPageState extends State<AiChatPage> {
                             builder: (context) => ReviewCreationPage(
                               bookTitle: widget.bookTitle,
                               bookAuthor: widget.bookAuthor,
+                              bookPublisher: widget.bookPublisher,
+                              bookIsbn: widget.bookIsbn,
+                              bookDescription: widget.bookDescription,
                               chatHistory: chatHistory,
                             ),
                           ),
@@ -1123,6 +1126,9 @@ class _AiChatPageState extends State<AiChatPage> {
         builder: (context) => ReviewCreationPage(
           bookTitle: widget.bookTitle,
           bookAuthor: widget.bookAuthor,
+          bookPublisher: widget.bookPublisher,
+          bookIsbn: widget.bookIsbn,
+          bookDescription: widget.bookDescription,
           chatHistory: chatHistory,
         ),
       ),
@@ -1262,6 +1268,9 @@ class _AiChatPageState extends State<AiChatPage> {
                   builder: (context) => ReviewCreationPage(
                     bookTitle: widget.bookTitle,
                     bookAuthor: widget.bookAuthor,
+                    bookPublisher: widget.bookPublisher,
+                    bookIsbn: widget.bookIsbn,
+                    bookDescription: widget.bookDescription,
                     chatHistory: chatHistory,
                   ),
                 ),
