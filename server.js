@@ -86,19 +86,26 @@ app.post('/api/chat', async (req, res) => {
       // 시스템 프롬프트의 모든 플레이스홀더 치환
       let finalSystemPrompt = systemPrompt || '당신은 도서 리뷰와 독서에 도움을 주는 친근한 AI 어시스턴트입니다. 한국어로 자연스럽게 대화하듯 답변해주세요.';
       
+      // null, undefined, "undefined" 문자열 처리
+      const safeTitle = (bookTitle && bookTitle !== 'undefined' && bookTitle !== 'null') ? bookTitle : '책';
+      const safeAuthor = (bookAuthor && bookAuthor !== 'undefined' && bookAuthor !== 'null') ? bookAuthor : '작가';
+      const safePublisher = (bookPublisher && bookPublisher !== 'undefined' && bookPublisher !== 'null') ? bookPublisher : '출판사';
+      const safeIsbn = (bookIsbn && bookIsbn !== 'undefined' && bookIsbn !== 'null') ? bookIsbn : 'ISBN 정보 없음';
+      const safeDescription = (bookDescription && bookDescription !== 'undefined' && bookDescription !== 'null') ? bookDescription : '책 소개 정보가 없습니다.';
+      
       // 모든 플레이스홀더 치환
       finalSystemPrompt = finalSystemPrompt
-        .replace(/\{book_title\}/g, bookTitle || '책')
-        .replace(/\{bookTitle\}/g, bookTitle || '책')
-        .replace(/\{book_author\}/g, bookAuthor || '작가')
-        .replace(/\{bookAuthor\}/g, bookAuthor || '작가')
-        .replace(/\{author\}/g, bookAuthor || '작가')
-        .replace(/\{publisher\}/g, bookPublisher || '출판사')
-        .replace(/\{bookPublisher\}/g, bookPublisher || '출판사')
-        .replace(/\{isbn\}/g, bookIsbn || 'ISBN 정보 없음')
-        .replace(/\{bookIsbn\}/g, bookIsbn || 'ISBN 정보 없음')
-        .replace(/\{description\}/g, bookDescription || '책 소개 정보가 없습니다.')
-        .replace(/\{bookDescription\}/g, bookDescription || '책 소개 정보가 없습니다.');
+        .replace(/\{book_title\}/g, safeTitle)
+        .replace(/\{bookTitle\}/g, safeTitle)
+        .replace(/\{book_author\}/g, safeAuthor)
+        .replace(/\{bookAuthor\}/g, safeAuthor)
+        .replace(/\{author\}/g, safeAuthor)
+        .replace(/\{publisher\}/g, safePublisher)
+        .replace(/\{bookPublisher\}/g, safePublisher)
+        .replace(/\{isbn\}/g, safeIsbn)
+        .replace(/\{bookIsbn\}/g, safeIsbn)
+        .replace(/\{description\}/g, safeDescription)
+        .replace(/\{bookDescription\}/g, safeDescription);
 
       console.log('✅ System prompt after replacement:', finalSystemPrompt.substring(0, 300) + '...');
 
@@ -323,12 +330,15 @@ app.post('/api/generate-review', async (req, res) => {
       chatHistory 
     } = req.body || {};
 
-    console.log('🔥 감동문 생성 요청:', {
-      bookTitle,
-      bookAuthor,
-      bookPublisher,
-      chatHistoryLength: chatHistory ? chatHistory.length : 0,
-    });
+    console.log('🔥 감동문 생성 요청:');
+    console.log('  - bookTitle:', bookTitle, '(type:', typeof bookTitle, ')');
+    console.log('  - bookAuthor:', bookAuthor, '(type:', typeof bookAuthor, ')');
+    console.log('  - bookPublisher:', bookPublisher, '(type:', typeof bookPublisher, ')');
+    console.log('  - bookIsbn:', bookIsbn ? bookIsbn.substring(0, 20) : 'null');
+    console.log('  - bookDescription:', bookDescription ? bookDescription.substring(0, 50) + '...' : 'null');
+    console.log('  - chatHistory length:', chatHistory ? chatHistory.length : 0);
+    console.log('  - chatHistory preview:', chatHistory ? chatHistory.substring(0, 200) + '...' : 'null');
+    console.log('  - content length:', content ? content.length : 0);
 
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
@@ -369,25 +379,37 @@ app.post('/api/generate-review', async (req, res) => {
 - 개인적인 해석과 의미
 - 다른 사람들과 나누고 싶은 생각`;
 
+    // null, undefined, "undefined" 문자열 처리
+    const safeTitle = (bookTitle && bookTitle !== 'undefined' && bookTitle !== 'null') ? bookTitle : '책';
+    const safeAuthor = (bookAuthor && bookAuthor !== 'undefined' && bookAuthor !== 'null') ? bookAuthor : '작가';
+    const safePublisher = (bookPublisher && bookPublisher !== 'undefined' && bookPublisher !== 'null') ? bookPublisher : '출판사';
+    const safeIsbn = (bookIsbn && bookIsbn !== 'undefined' && bookIsbn !== 'null') ? bookIsbn : 'ISBN 정보 없음';
+    const safeDescription = (bookDescription && bookDescription !== 'undefined' && bookDescription !== 'null') ? bookDescription : '책 소개 정보가 없습니다.';
+
     // 모든 플레이스홀더 치환
     systemPrompt = systemPrompt
-      .replace(/\{book_title\}/g, bookTitle || '책')
-      .replace(/\{bookTitle\}/g, bookTitle || '책')
-      .replace(/\{book_author\}/g, bookAuthor || '작가')
-      .replace(/\{bookAuthor\}/g, bookAuthor || '작가')
-      .replace(/\{author\}/g, bookAuthor || '작가')
-      .replace(/\{publisher\}/g, bookPublisher || '출판사')
-      .replace(/\{bookPublisher\}/g, bookPublisher || '출판사')
-      .replace(/\{isbn\}/g, bookIsbn || 'ISBN 정보 없음')
-      .replace(/\{bookIsbn\}/g, bookIsbn || 'ISBN 정보 없음')
-      .replace(/\{description\}/g, bookDescription || '책 소개 정보가 없습니다.')
-      .replace(/\{bookDescription\}/g, bookDescription || '책 소개 정보가 없습니다.');
+      .replace(/\{book_title\}/g, safeTitle)
+      .replace(/\{bookTitle\}/g, safeTitle)
+      .replace(/\{book_author\}/g, safeAuthor)
+      .replace(/\{bookAuthor\}/g, safeAuthor)
+      .replace(/\{author\}/g, safeAuthor)
+      .replace(/\{publisher\}/g, safePublisher)
+      .replace(/\{bookPublisher\}/g, safePublisher)
+      .replace(/\{isbn\}/g, safeIsbn)
+      .replace(/\{bookIsbn\}/g, safeIsbn)
+      .replace(/\{description\}/g, safeDescription)
+      .replace(/\{bookDescription\}/g, safeDescription);
 
     console.log('✅ 감동문 시스템 프롬프트 (변수 치환 완료):', systemPrompt.substring(0, 200) + '...');
 
-    const userPrompt = `다음은 "${bookTitle}"에 대한 독자와 AI의 대화 내용입니다:
+    // 안전한 값 사용
+    const safeTitleForPrompt = (bookTitle && bookTitle !== 'undefined' && bookTitle !== 'null') ? bookTitle : '책';
+    const safeChatHistory = (chatHistory && chatHistory !== 'undefined' && chatHistory !== 'null') ? chatHistory : 
+                           (content && content !== 'undefined' && content !== 'null') ? content : '(대화 내용 없음)';
 
-${chatHistory || content || '(대화 내용 없음)'}
+    const userPrompt = `다음은 "${safeTitleForPrompt}"에 대한 독자와 AI의 대화 내용입니다:
+
+${safeChatHistory}
 
 위 대화 내용을 바탕으로 발제문을 작성해주세요.`;
 
