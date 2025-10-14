@@ -352,6 +352,8 @@ class _AiChatPageState extends State<AiChatPage> {
                 color: AppColors.textPrimary,
               ),
               textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ),
           const SizedBox(width: 48), // 좌우 균형을 위한 여백
