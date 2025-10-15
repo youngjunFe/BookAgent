@@ -8,6 +8,7 @@ import 'dart:html' as html if (dart.library.html) 'dart:html';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class LoginPage extends StatelessWidget {
+  static const bool _showAppleLogin = false;
   const LoginPage({super.key});
 
   @override
@@ -83,29 +84,30 @@ class LoginPage extends StatelessWidget {
                   
                   const SizedBox(height: 12),
                   
-                  // Apple (second, black)
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        _handleAppleSignIn(context);
-                      },
-                      icon: const Icon(
-                        Icons.apple,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                      label: Text(AppStrings.continueWithApple),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  // Apple (second, black) - temporarily hidden via flag
+                  if (_showAppleLogin) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          _handleAppleSignIn(context);
+                        },
+                        icon: const Icon(
+                          Icons.apple,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        label: Text(AppStrings.continueWithApple),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
                       ),
                     ),
-                  ),
-                  
-                  const SizedBox(height: 12),
+                    const SizedBox(height: 12),
+                  ],
                   
                   // Google (third, light gray)
                   SizedBox(
