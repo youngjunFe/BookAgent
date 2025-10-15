@@ -5,6 +5,7 @@ import '../../../core/constants/app_colors.dart';
 import '../services/supabase_auth_service.dart';
 import '../../../shared/widgets/main_navigation.dart';
 import 'dart:html' as html if (dart.library.html) 'dart:html';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -21,95 +22,92 @@ class LoginPage extends StatelessWidget {
               // Top spacer
               const Spacer(),
               
-              // App Logo & Welcome
+              // App Logo & Headline
               Column(
                 children: [
-                  // App Icon/Logo placeholder
-                  Container(
+                  // App Logo (same as Splash)
+                  SvgPicture.string(
+                    _inlineSplashSvg,
                     width: 120,
                     height: 120,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(30),
-                      border: Border.all(
-                        color: AppColors.primary.withOpacity(0.2),
-                        width: 2,
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.menu_book_rounded,
-                      size: 60,
-                      color: AppColors.primary,
-                    ),
                   ),
                   
-                  const SizedBox(height: 32),
-                  
-                  // App Name
+                  const SizedBox(height: 28),
+                  // Headline two lines
                   Text(
-                    AppStrings.appName,
-                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                      fontSize: 48,
+                    AppStrings.loginHeadlineLine1,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 24,
                     ),
+                    textAlign: TextAlign.center,
                   ),
-                  
-                  const SizedBox(height: 12),
-                  
-                  // App Tagline
+                  const SizedBox(height: 8),
                   Text(
-                    AppStrings.appTagline,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: AppColors.textSecondary,
-                      height: 1.5,
+                    AppStrings.loginHeadlineLine2,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: AppColors.onSurface,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 20,
                     ),
                     textAlign: TextAlign.center,
                   ),
                 ],
               ),
               
-              const SizedBox(height: 64),
-              
-              // Welcome Message
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: AppColors.dividerColor,
-                    width: 1,
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      '환영합니다!',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'AI와 함께하는 특별한 독서 여행을\n시작하려면 로그인해주세요',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
-                        height: 1.5,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
+              const SizedBox(height: 40),
               
               const SizedBox(height: 48),
               
               // Social Login Buttons
               Column(
                 children: [
-                  // Google Login
+                  // Kakao (first)
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        _handleKakaoSignIn(context);
+                      },
+                      icon: const Icon(Icons.chat_bubble_rounded, color: Colors.black, size: 20),
+                      label: Text(AppStrings.continueWithKakao),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFFE812),
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 12),
+                  
+                  // Apple (second, black)
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        _handleAppleSignIn(context);
+                      },
+                      icon: const Icon(
+                        Icons.apple,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      label: Text(AppStrings.continueWithApple),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.black,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 12),
+                  
+                  // Google (third, light gray)
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
@@ -134,71 +132,12 @@ class LoginPage extends StatelessWidget {
                           ),
                         ),
                       ),
-                      label: Text(AppStrings.googleLogin),
+                      label: Text(AppStrings.continueWithGoogle),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.black87,
-                        side: const BorderSide(color: AppColors.dividerColor),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 12),
-                  
-                  // Apple Login
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        _handleAppleSignIn(context);
-                      },
-                      icon: const Icon(
-                        Icons.apple,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                      label: Text(AppStrings.appleLogin),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 12),
-                  
-                  // Kakao Login
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        _handleKakaoSignIn(context);
-                      },
-                      icon: Container(
-                        width: 20,
-                        height: 20,
-                        decoration: const BoxDecoration(
-                          color: Colors.brown,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Center(
-                          child: Text(
-                            'K',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      ),
-                      label: Text(AppStrings.kakaoLogin),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFFE812),
+                        backgroundColor: AppColors.surfaceVariant,
                         foregroundColor: Colors.black87,
                         padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),
                     ),
                   ),
@@ -398,4 +337,15 @@ class LoginPage extends StatelessWidget {
       ),
     );
   }
+
+  // Inline SVG (same as Splash logo)
+  static const String _inlineSplashSvg = '''
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120" fill="none">
+  <path d="M103.33 58.5496C109.5 49.8391 97.7303 42.997 81.8621 42.997L37.8213 67.884C60.5916 72.4381 92.7529 73.482 103.33 58.5496Z" fill="#2189F9" fill-opacity="0.3"/>
+  <path d="M64.441 95.8822C72.2209 100.858 80.9315 104.591 90.8863 101.48C107.095 96.4146 95.2416 53.5721 81.8621 42.9969L37.8213 67.8841C46.3978 82.8164 59.1995 92.53 64.441 95.8822Z" fill="#2189F9" fill-opacity="0.3"/>
+  <path d="M62.5746 96.5044C75.6142 85.805 84.3513 58.5447 81.8627 42.9902L37.8214 67.8842C37.8214 67.8842 31.135 78.235 31.1829 94.4282C31.2264 109.16 49.535 107.204 62.5746 96.5044Z" fill="#2189F9" fill-opacity="0.3"/>
+  <path d="M45.1535 20.5983C34.9726 30.9392 33.3321 54.1961 37.8212 67.8846L81.8621 42.9966C75.5064 9.39845 53.7302 11.8868 45.1535 20.5983Z" fill="#2189F9" fill-opacity="0.3"/>
+  <path d="M37.8214 67.8838C26.1797 66.0158 8.45022 55.4372 17.4693 47.3502C34.3601 32.2051 68.1742 38.6418 81.8622 42.9971L37.8214 67.8838Z" fill="#2189F9" fill-opacity="0.3"/>
+</svg>
+''';
 }

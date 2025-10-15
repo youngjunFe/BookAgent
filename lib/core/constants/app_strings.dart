@@ -15,6 +15,11 @@ class AppStrings {
   static const String googleLogin = 'Google로 로그인';
   static const String appleLogin = 'Apple로 로그인';
   static const String kakaoLogin = 'Kakao로 로그인';
+  static const String loginHeadlineLine1 = '감동이 사라지기 전에';
+  static const String loginHeadlineLine2 = 'AI 치옷과 감동을 나눠보세요';
+  static const String continueWithKakao = '카카오로 계속하기';
+  static const String continueWithApple = 'Apple로 계속하기';
+  static const String continueWithGoogle = 'Google로 계속하기';
   
   // Home Page
   static const String homeIntroTitle = '책과 함께하는\n특별한 여행을 시작해보세요';
