@@ -364,9 +364,11 @@ class _BookSearchPageState extends State<BookSearchPage> {
           child: Center(
             child: Lottie.asset(
               'assets/lottie/book_loading.json',
-              width: 120,
-              height: 120,
+              width: 80,
+              height: 80,
               fit: BoxFit.contain,
+              repeat: true,
+              animate: true,
             ),
           ),
         );
@@ -421,9 +423,11 @@ class _BookSearchPageState extends State<BookSearchPage> {
           child: Center(
             child: Lottie.asset(
               'assets/lottie/book_loading.json',
-              width: 120,
-              height: 120,
+              width: 80,
+              height: 80,
               fit: BoxFit.contain,
+              repeat: true,
+              animate: true,
             ),
           ),
         );
