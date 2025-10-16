@@ -6,6 +6,7 @@ import '../models/book_search_result.dart';
 import 'book_detail_page.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:lottie/lottie.dart';
 
 class BookSearchPage extends StatefulWidget {
   const BookSearchPage({super.key});
@@ -357,17 +358,15 @@ class _BookSearchPageState extends State<BookSearchPage> {
         }
         return Container(
           decoration: BoxDecoration(
-            color: AppColors.primarySurface,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Center(
-            child: CircularProgressIndicator(
-              value: loadingProgress.expectedTotalBytes != null
-                  ? loadingProgress.cumulativeBytesLoaded /
-                      loadingProgress.expectedTotalBytes!
-                  : null,
-              strokeWidth: 2,
-              color: AppColors.primary,
+            child: Lottie.asset(
+              'assets/lottie/book_loading.json',
+              width: 60,
+              height: 60,
+              fit: BoxFit.contain,
             ),
           ),
         );
@@ -416,17 +415,15 @@ class _BookSearchPageState extends State<BookSearchPage> {
         }
         return Container(
           decoration: BoxDecoration(
-            color: AppColors.primarySurface,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Center(
-            child: CircularProgressIndicator(
-              value: loadingProgress.expectedTotalBytes != null
-                  ? loadingProgress.cumulativeBytesLoaded /
-                      loadingProgress.expectedTotalBytes!
-                  : null,
-              strokeWidth: 2,
-              color: AppColors.primary,
+            child: Lottie.asset(
+              'assets/lottie/book_loading.json',
+              width: 60,
+              height: 60,
+              fit: BoxFit.contain,
             ),
           ),
         );

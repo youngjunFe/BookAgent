@@ -3,6 +3,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/theme/elevation_levels.dart';
 import '../../chat/presentation/ai_chat_page.dart';
 import '../models/book_search_result.dart';
+import 'package:lottie/lottie.dart';
 
 class BookDetailPage extends StatelessWidget {
   final BookSearchResult book;
@@ -218,14 +219,13 @@ class BookDetailPage extends StatelessWidget {
           return child;
         }
         return Container(
-          color: Colors.grey[200],
+          color: Colors.white,
           child: Center(
-            child: CircularProgressIndicator(
-              value: loadingProgress.expectedTotalBytes != null
-                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                  : null,
-              strokeWidth: 2,
-              color: AppColors.primary,
+            child: Lottie.asset(
+              'assets/lottie/book_loading.json',
+              width: 80,
+              height: 80,
+              fit: BoxFit.contain,
             ),
           ),
         );
