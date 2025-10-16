@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../../core/constants/app_colors.dart';
 import '../../../core/theme/elevation_levels.dart';
 import '../../chat/presentation/ai_chat_page.dart';
 import '../models/book_search_result.dart';
-import '../../../shared/widgets/web_lottie.dart';
+import 'package:lottie/lottie.dart';
 
 class BookDetailPage extends StatelessWidget {
   final BookSearchResult book;
@@ -222,20 +221,12 @@ class BookDetailPage extends StatelessWidget {
         return Container(
           color: Colors.white,
           child: Center(
-            child: kIsWeb
-                ? WebLottie(
-                    assetPath: 'assets/assets/lottie/book_loading.json',
-                    width: 100,
-                    height: 100,
-                  )
-                : SizedBox(
-                    width: 50,
-                    height: 50,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 3,
-                      color: AppColors.primary,
-                    ),
-                  ),
+            child: Lottie.asset(
+              'assets/lottie/book_loading.json',
+              width: 100,
+              height: 100,
+              fit: BoxFit.contain,
+            ),
           ),
         );
       },
