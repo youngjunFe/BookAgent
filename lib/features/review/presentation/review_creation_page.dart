@@ -375,6 +375,107 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
 
   // 생성된 콘텐츠
   Widget _buildGeneratedContent() {
+    final authService = SupabaseAuthService();
+    final isLoggedIn = authService.isLoggedIn;
+    
+    // 로그인 안 한 경우 블러 처리
+    if (!isLoggedIn) {
+      final fullText = _generatedContent!;
+      final previewLength = (fullText.length * 0.4).toInt(); // 40%만 보여주기
+      final previewText = fullText.substring(0, previewLength.clamp(0, fullText.length));
+      final blurredText = fullText.substring(previewLength.clamp(0, fullText.length));
+      
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 보이는 부분 (40%)
+          Text(
+            previewText,
+            style: TextStyle(
+              fontSize: 16,
+              color: AppColors.textPrimary,
+              height: 1.8,
+              letterSpacing: -0.2,
+            ),
+          ),
+          
+          // 블러 처리된 나머지 부분
+          Container(
+            margin: const EdgeInsets.only(top: 8),
+            child: Stack(
+              children: [
+                Text(
+                  blurredText,
+                  style: TextStyle(
+                    color: AppColors.textSecondary.withOpacity(0.3),
+                    fontSize: 16,
+                    height: 1.8,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                // 그라데이션 오버레이
+                Container(
+                  height: 200,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        _backgroundColors[_selectedBackgroundIndex].withOpacity(0.1),
+                        _backgroundColors[_selectedBackgroundIndex].withOpacity(0.9),
+                        _backgroundColors[_selectedBackgroundIndex],
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 40),
+          
+          // 로그인 유도 메시지
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.primary.withOpacity(0.3),
+              ),
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.lock_outline,
+                  color: AppColors.primary,
+                  size: 32,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '전체 감동문을 확인하려면',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '로그인이 필요합니다',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+    
+    // 로그인한 경우 전체 텍스트 표시
     return Text(
       _generatedContent!,
       style: TextStyle(
