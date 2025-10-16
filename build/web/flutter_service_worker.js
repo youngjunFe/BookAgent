@@ -3,7 +3,7 @@ const MANIFEST = 'flutter-app-manifest';
 const TEMP = 'flutter-temp-cache';
 const CACHE_NAME = 'flutter-app-cache';
 
-const RESOURCES = {"flutter_bootstrap.js": "66c8925c1d265e38e43eb2f5b0eb5d9e",
+const RESOURCES = {"flutter_bootstrap.js": "90b1d780a6849dc93136c0a3f184bf1e",
 "version.json": "75ad752899be5646e832843c0e4bef46",
 "index.html": "1dc908874b4643deb7165ddc3262f83d",
 "/": "1dc908874b4643deb7165ddc3262f83d",
@@ -31,7 +31,7 @@ const RESOURCES = {"flutter_bootstrap.js": "66c8925c1d265e38e43eb2f5b0eb5d9e",
 "assets/assets/images/README.md": "bcde4345e29c316eae0dd5832cc01422",
 "assets/assets/images/splash_logo.svg": "37cb1147ba553be3d72fc923492c9413",
 "assets/assets/images/loading_logo.png": "1ab93fe5e80f4912aa3b662aea8960e5",
-"assets/assets/lottie/book_loading.json": "c5324325f729f7b11f050e2245564036",
+"assets/assets/lottie/book_loading.json": "2448845ad8852940f73023ff041b70bd",
 "canvaskit/skwasm.js": "ea559890a088fe28b4ddf70e17e60052",
 "canvaskit/skwasm.js.symbols": "e72c79950c8a8483d826a7f0560573a1",
 "canvaskit/canvaskit.js.symbols": "bdcd3835edf8586b6d6edfce8749fb77",

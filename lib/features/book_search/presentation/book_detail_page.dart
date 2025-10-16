@@ -223,8 +223,8 @@ class BookDetailPage extends StatelessWidget {
           child: Center(
             child: Lottie.asset(
               'assets/lottie/book_loading.json',
-              width: 80,
-              height: 80,
+              width: 120,
+              height: 120,
               fit: BoxFit.contain,
             ),
           ),
