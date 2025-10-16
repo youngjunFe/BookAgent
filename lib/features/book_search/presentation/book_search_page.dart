@@ -358,17 +358,26 @@ class _BookSearchPageState extends State<BookSearchPage> {
         }
         return Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFF5F5F5),
+                Color(0xFFE0E0E0),
+              ],
+            ),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Center(
-            child: Lottie.asset(
-              'assets/lottie/book_loading.json',
-              width: 80,
-              height: 80,
-              fit: BoxFit.contain,
-              repeat: true,
-              animate: true,
+            child: SizedBox(
+              width: 40,
+              height: 40,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  AppColors.primary.withOpacity(0.8),
+                ),
+              ),
             ),
           ),
         );
@@ -417,17 +426,26 @@ class _BookSearchPageState extends State<BookSearchPage> {
         }
         return Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFF5F5F5),
+                Color(0xFFE0E0E0),
+              ],
+            ),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Center(
-            child: Lottie.asset(
-              'assets/lottie/book_loading.json',
-              width: 80,
-              height: 80,
-              fit: BoxFit.contain,
-              repeat: true,
-              animate: true,
+            child: SizedBox(
+              width: 40,
+              height: 40,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  AppColors.primary.withOpacity(0.8),
+                ),
+              ),
             ),
           ),
         );

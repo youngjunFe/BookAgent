@@ -219,15 +219,26 @@ class BookDetailPage extends StatelessWidget {
           return child;
         }
         return Container(
-          color: Colors.white,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFF5F5F5),
+                Color(0xFFE0E0E0),
+              ],
+            ),
+          ),
           child: Center(
-            child: Lottie.asset(
-              'assets/lottie/book_loading.json',
-              width: 100,
-              height: 100,
-              fit: BoxFit.contain,
-              repeat: true,
-              animate: true,
+            child: SizedBox(
+              width: 50,
+              height: 50,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  AppColors.primary.withOpacity(0.8),
+                ),
+              ),
             ),
           ),
         );
