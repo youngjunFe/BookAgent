@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../../core/constants/app_colors.dart';
 import '../../../core/theme/elevation_levels.dart';
 import '../../chat/presentation/ai_chat_page.dart';
@@ -6,7 +7,7 @@ import '../models/book_search_result.dart';
 import 'book_detail_page.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:lottie/lottie.dart';
+import '../../../shared/widgets/web_lottie.dart';
 
 class BookSearchPage extends StatefulWidget {
   const BookSearchPage({super.key});
@@ -358,27 +359,24 @@ class _BookSearchPageState extends State<BookSearchPage> {
         }
         return Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFF5F5F5),
-                Color(0xFFE0E0E0),
-              ],
-            ),
+            color: Colors.white,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Center(
-            child: SizedBox(
-              width: 40,
-              height: 40,
-              child: CircularProgressIndicator(
-                strokeWidth: 3,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  AppColors.primary.withOpacity(0.8),
-                ),
-              ),
-            ),
+            child: kIsWeb
+                ? WebLottie(
+                    assetPath: 'assets/assets/lottie/book_loading.json',
+                    width: 80,
+                    height: 80,
+                  )
+                : SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      color: AppColors.primary,
+                    ),
+                  ),
           ),
         );
       },
@@ -426,27 +424,24 @@ class _BookSearchPageState extends State<BookSearchPage> {
         }
         return Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFF5F5F5),
-                Color(0xFFE0E0E0),
-              ],
-            ),
+            color: Colors.white,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Center(
-            child: SizedBox(
-              width: 40,
-              height: 40,
-              child: CircularProgressIndicator(
-                strokeWidth: 3,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  AppColors.primary.withOpacity(0.8),
-                ),
-              ),
-            ),
+            child: kIsWeb
+                ? WebLottie(
+                    assetPath: 'assets/assets/lottie/book_loading.json',
+                    width: 80,
+                    height: 80,
+                  )
+                : SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      color: AppColors.primary,
+                    ),
+                  ),
           ),
         );
       },
