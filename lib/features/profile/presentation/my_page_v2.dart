@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../auth/services/supabase_auth_service.dart';
@@ -204,11 +205,18 @@ class _BookshelfSection extends StatelessWidget {
         children: [
           const SizedBox(height: 8),
           Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: ebooks.isEmpty
+            child: ScrollConfiguration(
+              behavior: ScrollConfiguration.of(context).copyWith(
+                dragDevices: {
+                  PointerDeviceKind.touch,
+                  PointerDeviceKind.mouse,
+                },
+              ),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: ebooks.isEmpty
                     ? List.generate(6, (index) => _BookSpine(
                         title: _getBookTitle(index),
                         color: _getBookColor(index),
@@ -233,6 +241,7 @@ class _BookshelfSection extends StatelessWidget {
                           ),
                         );
                       }).toList(),
+                ),
               ),
             ),
           ),
@@ -492,11 +501,18 @@ class _NotesSection extends StatelessWidget {
       child: Column(
         children: [
           Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-              child: Row(
-                children: reviews.isEmpty
+            child: ScrollConfiguration(
+              behavior: ScrollConfiguration.of(context).copyWith(
+                dragDevices: {
+                  PointerDeviceKind.touch,
+                  PointerDeviceKind.mouse,
+                },
+              ),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                child: Row(
+                  children: reviews.isEmpty
               ? [
                   _ChatNoteCard(
                     character: '해리포터',
@@ -543,6 +559,7 @@ class _NotesSection extends StatelessWidget {
                     ),
                   );
                 }).toList(),
+                ),
               ),
             ),
           ),
