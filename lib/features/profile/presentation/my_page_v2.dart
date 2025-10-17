@@ -181,36 +181,27 @@ class _BookshelfSection extends StatelessWidget {
     return Container(
       width: double.infinity,
       height: 200,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
-        color: AppColors.cardColor,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFD4A574),
+            Color(0xFFC9955E),
+          ],
+        ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.dividerColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         children: [
-          // 책장 선반
-          Container(
-            height: 4,
-            decoration: BoxDecoration(
-              color: const Color(0xFF8B4513),
-              borderRadius: BorderRadius.circular(2),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 2,
-                  offset: const Offset(0, 1),
-                ),
-              ],
-            ),
-          ),
           const SizedBox(height: 8),
           Expanded(
             child: SingleChildScrollView(
@@ -472,17 +463,23 @@ class _NotesSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      height: 180,
+      height: 200,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.cardColor,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFD4A574),
+            Color(0xFFC9955E),
+          ],
+        ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.dividerColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
