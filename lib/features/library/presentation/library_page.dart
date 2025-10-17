@@ -279,65 +279,43 @@ class _ReviewTabState extends State<ReviewTab> {
               ],
             ),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _StatusCount(
-                  label: AppStrings.draftReviews,
-                  count: _reviewCounts[AppStrings.draftReviews]!,
-                  color: AppColors.draft,
+                Expanded(
+                  child: _ClickableStatusCount(
+                    label: '전체',
+                    count: _reviewCounts[AppStrings.allReviews]!,
+                    color: AppColors.textSecondary,
+                    isSelected: _selectedFilter == AppStrings.allReviews,
+                    onTap: () => setState(() => _selectedFilter = AppStrings.allReviews),
+                  ),
                 ),
-                _StatusCount(
-                  label: AppStrings.completedReviews,
-                  count: _reviewCounts[AppStrings.completedReviews]!,
-                  color: AppColors.completedReview,
+                Expanded(
+                  child: _ClickableStatusCount(
+                    label: AppStrings.draftReviews,
+                    count: _reviewCounts[AppStrings.draftReviews]!,
+                    color: AppColors.draft,
+                    isSelected: _selectedFilter == AppStrings.draftReviews,
+                    onTap: () => setState(() => _selectedFilter = AppStrings.draftReviews),
+                  ),
                 ),
-                _StatusCount(
-                  label: AppStrings.publishedReviews,
-                  count: _reviewCounts[AppStrings.publishedReviews]!,
-                  color: AppColors.published,
+                Expanded(
+                  child: _ClickableStatusCount(
+                    label: AppStrings.completedReviews,
+                    count: _reviewCounts[AppStrings.completedReviews]!,
+                    color: AppColors.completedReview,
+                    isSelected: _selectedFilter == AppStrings.completedReviews,
+                    onTap: () => setState(() => _selectedFilter = AppStrings.completedReviews),
+                  ),
                 ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          // 필터 버튼들
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _FilterChip(
-                  label: AppStrings.allReviews,
-                  isSelected: _selectedFilter == AppStrings.allReviews,
-                  onTap: () => setState(() => _selectedFilter = AppStrings.allReviews),
-                ),
-                const SizedBox(width: 8),
-                _FilterChip(
-                  label: AppStrings.draftReviews,
-                  isSelected: _selectedFilter == AppStrings.draftReviews,
-                  onTap: () => setState(() => _selectedFilter = AppStrings.draftReviews),
-                ),
-                const SizedBox(width: 8),
-                _FilterChip(
-                  label: AppStrings.completedReviews,
-                  isSelected: _selectedFilter == AppStrings.completedReviews,
-                  onTap: () => setState(() => _selectedFilter = AppStrings.completedReviews),
-                ),
-                const SizedBox(width: 8),
-                _FilterChip(
-                  label: AppStrings.createReview,
-                  isSelected: false,
-                  onTap: () async {
-                    // 책 찾기 페이지로 이동하여 감동문 작성 플로우 시작
-                    await Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const BookSearchPage(),
-                      ),
-                    );
-                    // 돌아오면 목록 새로고침
-                    _loadData();
-                  },
-                  isAction: true,
+                Expanded(
+                  child: _ClickableStatusCount(
+                    label: '게시',
+                    count: _reviewCounts[AppStrings.publishedReviews]!,
+                    color: AppColors.published,
+                    isSelected: _selectedFilter == AppStrings.publishedReviews,
+                    onTap: () => setState(() => _selectedFilter = AppStrings.publishedReviews),
+                  ),
                 ),
               ],
             ),
@@ -474,6 +452,59 @@ class _StatusCount extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
         ],
+      ),
+    );
+  }
+}
+
+// 클릭 가능한 상태 카운트 위젯
+class _ClickableStatusCount extends StatelessWidget {
+  final String label;
+  final int count;
+  final Color color;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _ClickableStatusCount({
+    required this.label,
+    required this.count,
+    required this.color,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          border: isSelected 
+              ? Border(bottom: BorderSide(color: color, width: 3))
+              : null,
+        ),
+        child: Column(
+          children: [
+            Text(
+              count.toString(),
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                color: isSelected ? color : Colors.grey[400],
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -834,11 +865,9 @@ class _ReviewListItem extends StatelessWidget {
               
               const SizedBox(height: 12),
               
-              // 감동문 제목/내용
+              // 책 제목 (메인 타이틀로 변경)
               Text(
-                review.title.isNotEmpty 
-                    ? review.title
-                    : '${review.bookTitle}의 철학적 사유가 녹아있는 이 책은 처음...',
+                review.bookTitle,
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -867,54 +896,16 @@ class _ReviewListItem extends StatelessWidget {
               
               const SizedBox(height: 12),
               
-              // 하단 정보 (책 제목과 시간)
-              Row(
-                children: [
-                  // 책 아이콘과 제목
-                  Flexible(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.menu_book,
-                            size: 14,
-                            color: Colors.grey,
-                          ),
-                          const SizedBox(width: 4),
-                          Flexible(
-                            child: Text(
-                              review.bookTitle,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[600],
-                                fontWeight: FontWeight.w500,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+              // 하단 정보 (시간만 표시)
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  '${_formatDateTime(review.updatedAt)} 전',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[500],
                   ),
-                  
-                  const SizedBox(width: 8),
-                  
-                  // 작성 시간
-                  Text(
-                    '${_formatDateTime(review.updatedAt)} 전',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[500],
-                    ),
-                  ),
-                ],
+                ),
               ),
             ],
           ),
