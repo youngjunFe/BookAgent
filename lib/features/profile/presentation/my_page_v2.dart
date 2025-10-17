@@ -184,11 +184,11 @@ class _BookshelfSection extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
           colors: [
-            Color(0xFFD4A574),
-            Color(0xFFC9955E),
+            Color(0xFFF5E6D3),
+            Color(0xFFEBD7C1),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
@@ -234,6 +234,29 @@ class _BookshelfSection extends StatelessWidget {
                         );
                       }).toList(),
               ),
+            ),
+          ),
+          // 하단 선반
+          const SizedBox(height: 8),
+          Container(
+            height: 12,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFF6B4423),
+                  Color(0xFF5A3619),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(4),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
           ),
         ],
@@ -467,11 +490,11 @@ class _NotesSection extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
           colors: [
-            Color(0xFFD4A574),
-            Color(0xFFC9955E),
+            Color(0xFFF5E6D3),
+            Color(0xFFEBD7C1),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
@@ -483,10 +506,14 @@ class _NotesSection extends StatelessWidget {
           ),
         ],
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: reviews.isEmpty
+      child: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+              child: Row(
+                children: reviews.isEmpty
               ? [
                   _ChatNoteCard(
                     character: '해리포터',
@@ -533,7 +560,33 @@ class _NotesSection extends StatelessWidget {
                     ),
                   );
                 }).toList(),
-        ),
+              ),
+            ),
+          ),
+          // 하단 선반
+          const SizedBox(height: 8),
+          Container(
+            height: 12,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFF6B4423),
+                  Color(0xFF5A3619),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(4),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -585,76 +638,52 @@ class _ChatNoteCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 200,
-      height: 140,
-      margin: const EdgeInsets.only(right: 16),
-      padding: const EdgeInsets.all(16),
+      width: 140,
+      height: 160,
+      margin: const EdgeInsets.only(right: 12),
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.dividerColor.withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.black.withOpacity(0.1), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(0.15),
             blurRadius: 8,
-            offset: const Offset(0, 2),
+            offset: const Offset(2, 4),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 캐릭터 이름 또는 책 제목
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: characterColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: characterColor.withOpacity(0.3),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (isReview)
-                  Icon(
-                    Icons.auto_awesome,
-                    size: 10,
-                    color: characterColor,
-                  ),
-                if (isReview) const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    character,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: characterColor,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          // 대화 내용
-          Expanded(
-            child: Text(
-              message,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 책 제목 (상단)
+            Text(
+              character,
               style: TextStyle(
-                fontSize: 12,
-                color: AppColors.textPrimary.withOpacity(0.8),
-                height: 1.4,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: characterColor,
+                height: 1.3,
               ),
-              maxLines: 4,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-          ),
-        ],
+            const Spacer(),
+            // 대화 내용 미리보기 (하단)
+            Text(
+              message,
+              style: TextStyle(
+                fontSize: 11,
+                color: AppColors.textPrimary.withOpacity(0.7),
+                height: 1.4,
+              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
     );
   }
