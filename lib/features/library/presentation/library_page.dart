@@ -8,6 +8,8 @@ import '../../review/presentation/review_detail_page.dart';
 import '../../review/data/review_repository.dart';
 import '../../review/models/review.dart';
 import '../../book_search/presentation/book_search_page.dart';
+import '../../auth/services/supabase_auth_service.dart';
+import '../../auth/presentation/login_page.dart';
 import 'ebook_tab.dart';
 
 class LibraryPage extends StatefulWidget {
@@ -25,6 +27,19 @@ class _LibraryPageState extends State<LibraryPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _checkLoginStatus();
+  }
+  
+  Future<void> _checkLoginStatus() async {
+    final authService = SupabaseAuthService();
+    final isLoggedIn = await authService.restoreLoginState();
+    
+    if (!isLoggedIn && mounted) {
+      // 비로그인 시 로그인 페이지로 리다이렉트
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+      );
+    }
   }
 
   @override
