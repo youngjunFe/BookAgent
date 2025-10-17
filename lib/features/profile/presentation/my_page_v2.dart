@@ -362,116 +362,99 @@ class _BookSpine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 32,
-      height: height,
-      margin: const EdgeInsets.only(right: 2),
+      width: 100,
+      height: 140,
+      margin: const EdgeInsets.only(right: 12),
       decoration: BoxDecoration(
         color: color,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(2),
-          topRight: Radius.circular(2),
-        ),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.black.withOpacity(0.1), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 3,
-            offset: const Offset(1, 0),
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 8,
+            offset: const Offset(2, 4),
           ),
         ],
-        gradient: LinearGradient(
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-          colors: [
-            color,
-            color.withOpacity(0.8),
-            color,
-          ],
-          stops: const [0.0, 0.1, 1.0],
-        ),
       ),
-      child: Stack(
-        children: [
-          // 책 등뼈의 세로 라인들
-          Positioned(
-            left: 2,
-            top: 0,
-            bottom: 0,
-            child: Container(
-              width: 1,
-              color: Colors.white.withOpacity(0.3),
-            ),
-          ),
-          Positioned(
-            right: 2,
-            top: 0,
-            bottom: 0,
-            child: Container(
-              width: 1,
-              color: Colors.black.withOpacity(0.2),
-            ),
-          ),
-          // 진행률 표시 (하단에서부터)
-          if (progress > 0.0)
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                height: height * progress,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.3),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(2),
-                    topRight: Radius.circular(2),
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 책 제목 (상단)
+            Text(
+              title,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                height: 1.3,
+                shadows: [
+                  Shadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 2,
                   ),
-                ),
+                ],
               ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
             ),
-          
-          // 책 제목 (세로로 회전)
-          Positioned.fill(
-            child: Center(
-              child: RotatedBox(
-                quarterTurns: 3,
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 8,
-                    fontWeight: FontWeight.bold,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black.withOpacity(0.5),
-                        blurRadius: 1,
+            const Spacer(),
+            // 진행률 표시 (하단)
+            if (progress > 0.0)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                    child: FractionallySizedBox(
+                      widthFactor: progress,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.8),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
-                    ],
+                    ),
                   ),
-                  overflow: TextOverflow.ellipsis,
-                ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${(progress * 100).toInt()}%',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.8),
+                      fontSize: 9,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ),
-          
-          // 완독 표시
-          if (progress >= 1.0)
-            Positioned(
-              top: 4,
-              right: 4,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: Colors.yellow,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.star,
-                  size: 6,
-                  color: Colors.white,
-                ),
+            // 완독 표시
+            if (progress >= 1.0)
+              Row(
+                children: [
+                  Icon(
+                    Icons.check_circle,
+                    size: 14,
+                    color: Colors.yellow[700],
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '완독',
+                    style: TextStyle(
+                      color: Colors.yellow[700],
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -638,8 +621,8 @@ class _ChatNoteCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 140,
-      height: 160,
+      width: 110,
+      height: 150,
       margin: const EdgeInsets.only(right: 12),
       decoration: BoxDecoration(
         color: color,
@@ -662,10 +645,10 @@ class _ChatNoteCard extends StatelessWidget {
             Text(
               character,
               style: TextStyle(
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: FontWeight.w700,
                 color: characterColor,
-                height: 1.3,
+                height: 1.2,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -675,11 +658,11 @@ class _ChatNoteCard extends StatelessWidget {
             Text(
               message,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 10,
                 color: AppColors.textPrimary.withOpacity(0.7),
-                height: 1.4,
+                height: 1.3,
               ),
-              maxLines: 3,
+              maxLines: 4,
               overflow: TextOverflow.ellipsis,
             ),
           ],
