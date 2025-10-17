@@ -58,10 +58,12 @@ class ReviewDetailPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 상단 태그들
+                    // 상단 태그들 (말줄임표 처리)
                     Row(
                       children: [
-                        _buildTag('📖 ${review.bookTitle}', false),
+                        Flexible(
+                          child: _buildTag('📖 ${review.bookTitle}', false),
+                        ),
                         const SizedBox(width: 8),
                         _buildTag(review.statusText, true),
                       ],
@@ -107,36 +109,6 @@ class ReviewDetailPage extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // 책 제목 헤더
-                            Container(
-                              margin: const EdgeInsets.only(bottom: 16),
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF4A4A4A).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                '📖 ${review.bookTitle}',
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF4A4A4A),
-                                ),
-                              ),
-                            ),
-                            
-                            // 감동문 제목
-                            Text(
-                              review.title.isNotEmpty ? review.title : '${review.bookTitle}에 대한 감동문',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF4A4A4A),
-                                height: 1.4,
-                              ),
-                            ),
-                            
-                            const SizedBox(height: 16),
                             
                             // 감동문 내용
                             Text(
@@ -215,6 +187,8 @@ class ReviewDetailPage extends StatelessWidget {
           fontWeight: FontWeight.w500,
           color: isSelected ? Colors.white : Colors.grey[700],
         ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }
