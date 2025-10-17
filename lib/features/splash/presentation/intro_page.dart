@@ -109,7 +109,8 @@ class _IntroPageState extends State<IntroPage> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 26,
-                height: 1.4,
+                height: 1.2,
+                letterSpacing: -0.5,
                 fontWeight: FontWeight.w700,
                 color: const Color(0xFF244B74),
               ),
@@ -173,8 +174,8 @@ class _IntroPageState extends State<IntroPage> {
                 ],
               ),
             ),
-            const SizedBox(height: 8),
-            // 첫 페이지에서 둘러보기 아래에 사업자 정보 링크 배치
+            const Spacer(),
+            // 사업자 정보 링크를 하단으로 이동
             InkWell(
               onTap: () {
                 if (kIsWeb) {
@@ -190,7 +191,7 @@ class _IntroPageState extends State<IntroPage> {
                 ),
               ),
             ),
-            const SizedBox(height: 60),
+            const SizedBox(height: 40),
           ],
         ),
       ),
@@ -530,29 +531,8 @@ class _IntroPageState extends State<IntroPage> {
         child: SafeArea(
           child: Column(
           children: [
-            // 헤더 - 건너뛰기/둘러보기 버튼
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const SizedBox(width: 60), // 균형을 위한 공간
-                  if (_currentPage < _pages.length - 1)
-                    TextButton(
-                      onPressed: _skipToLogin,
-                      child: Text(
-                        '건너뛰기',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 16,
-                        ),
-                      ),
-                    )
-                  else
-                    const SizedBox(width: 60),
-                ],
-              ),
-            ),
+            // 헤더 - 건너뛰기 버튼 제거
+            const SizedBox(height: 16),
 
             // 페이지 컨텐츠
             Expanded(
