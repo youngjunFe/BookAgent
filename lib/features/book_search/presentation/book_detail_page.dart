@@ -291,10 +291,25 @@ class BookDetailPage extends StatelessWidget {
     );
   }
 
-  // 책 설명 생성
+  // 책 설명 (네이버 API에서 제공)
   String _getBookDescription() {
-    // 실제로는 API에서 받아오거나 데이터베이스에서 가져올 수 있지만,
-    // 현재는 간단한 설명을 생성합니다.
+    // 네이버 API description이 있으면 사용, 없으면 기본 텍스트
+    if (book.description.isNotEmpty) {
+      // HTML 태그 제거
+      String cleanDescription = book.description
+          .replaceAll(RegExp(r'<[^>]*>'), '')
+          .replaceAll('&quot;', '"')
+          .replaceAll('&amp;', '&')
+          .replaceAll('&lt;', '<')
+          .replaceAll('&gt;', '>')
+          .replaceAll('&nbsp;', ' ')
+          .trim();
+      
+      return cleanDescription.isNotEmpty 
+          ? cleanDescription 
+          : '이 책은 ${book.author}의 작품으로, ${book.publisher}에서 출간되었습니다.\n\n도서 정보가 제공되지 않았습니다.';
+    }
+    
     return '이 책은 ${book.author}의 작품으로, ${book.publisher}에서 출간되었습니다.\n\n'
            '책을 읽으며 느꼈던 감동과 생각들을 AI와 함께 나누어보세요. '
            '작품 속 인물들의 감정과 상황에 대해 깊이 있는 대화를 나누며, '
