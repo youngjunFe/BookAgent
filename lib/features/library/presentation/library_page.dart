@@ -27,19 +27,6 @@ class _LibraryPageState extends State<LibraryPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _checkLoginStatus();
-  }
-  
-  Future<void> _checkLoginStatus() async {
-    final authService = SupabaseAuthService();
-    final isLoggedIn = await authService.restoreLoginState();
-    
-    if (!isLoggedIn && mounted) {
-      // 비로그인 시 로그인 페이지로 리다이렉트
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const LoginPage()),
-      );
-    }
   }
 
   @override
@@ -50,38 +37,133 @@ class _LibraryPageState extends State<LibraryPage>
 
   @override
   Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: _checkLoginStatus(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(
+            backgroundColor: AppColors.background,
+            body: const Center(child: CircularProgressIndicator()),
+          );
+        }
+        
+        final isLoggedIn = snapshot.data ?? false;
+        
+        if (!isLoggedIn) {
+          return _buildLoginPrompt();
+        }
+        
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: AppBar(
+            title: const Text(AppStrings.myLibrary),
+            backgroundColor: AppColors.background,
+            elevation: 0,
+            centerTitle: true,
+            bottom: TabBar(
+              controller: _tabController,
+              labelColor: AppColors.selectedTab,
+              unselectedLabelColor: AppColors.unselectedTab,
+              indicatorColor: AppColors.primary,
+              labelStyle: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.normal,
+              ),
+              tabs: const [
+                Tab(text: AppStrings.reviewTab),
+                Tab(text: '전자책'),
+              ],
+            ),
+          ),
+          body: TabBarView(
+            controller: _tabController,
+            children: const [
+              ReviewTab(),
+              EBookTab(),
+            ],
+          ),
+        );
+      },
+    );
+  }
+  
+  Future<bool> _checkLoginStatus() async {
+    try {
+      final authService = SupabaseAuthService();
+      return await authService.restoreLoginState();
+    } catch (e) {
+      print('나의 서재 로그인 체크 에러: $e');
+      return false;
+    }
+  }
+  
+  Widget _buildLoginPrompt() {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text(AppStrings.myLibrary),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        centerTitle: true,
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: AppColors.selectedTab,
-          unselectedLabelColor: AppColors.unselectedTab,
-          indicatorColor: AppColors.primary,
-          labelStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.person_outline,
+                size: 80,
+                color: AppColors.primary,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                '로그인이 필요합니다',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '나의 서재를 이용하려면\n로그인해주세요',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: AppColors.textSecondary,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => const LoginPage()),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    '로그인하기',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-          unselectedLabelStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.normal,
-          ),
-          tabs: const [
-            Tab(text: AppStrings.reviewTab),
-            Tab(text: '전자책'),
-          ],
         ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: const [
-          ReviewTab(),
-          EBookTab(),
-        ],
       ),
     );
   }
