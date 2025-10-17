@@ -101,9 +101,8 @@ class _IntroPageState extends State<IntroPage> {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const SizedBox(height: 60),
+            const Spacer(),
             Text(
               '책을 덮는 순간의 감동\n사라지기 전에 대화하세요',
               textAlign: TextAlign.center,
