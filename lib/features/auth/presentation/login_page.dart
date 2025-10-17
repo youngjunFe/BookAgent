@@ -38,9 +38,9 @@ class LoginPage extends StatelessWidget {
                   Text(
                     AppStrings.loginHeadlineLine1,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 24,
+                                color: AppColors.onSurface,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 20,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -76,8 +76,10 @@ class LoginPage extends StatelessWidget {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFFE812),
                         foregroundColor: Colors.black,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 16),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        elevation: 0,
+                        shadowColor: Colors.transparent,
                       ),
                     ),
                   ),
@@ -101,8 +103,10 @@ class LoginPage extends StatelessWidget {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.black,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 16),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          elevation: 0,
+                          shadowColor: Colors.transparent,
                         ),
                       ),
                     ),
@@ -138,76 +142,65 @@ class LoginPage extends StatelessWidget {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.surfaceVariant,
                         foregroundColor: Colors.black87,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 16),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        elevation: 0,
+                        shadowColor: Colors.transparent,
                       ),
                     ),
-                  ),
-                ],
-              ),
-              
-              const SizedBox(height: 32),
-              
-              // Terms & Privacy
-              Column(
-                children: [
-                  Text(
-                    '로그인하면 다음 약관에 동의하는 것으로 간주됩니다.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textHint,
-                      height: 1.4,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      TextButton(
-                        onPressed: () => _openNotionPage('https://laivdata.notion.site/ebd/2704d0474fac80d4b84fd40b5d2cde30'),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        child: Text(
-                          '이용약관',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 11,
-                            decoration: TextDecoration.none,
-                          ),
-                        ),
-                      ),
-                      Text(
-                        ' | ',
-                        style: TextStyle(
-                          color: Colors.grey[400],
-                          fontSize: 11,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () => _openNotionPage('https://laivdata.notion.site/ebd/2704d0474fac8015a578d6c7bc6cfbdb'),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        child: Text(
-                          '개인정보 처리방침',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 11,
-                            decoration: TextDecoration.none,
-                          ),
-                        ),
-                      ),
-                    ],
                   ),
                 ],
               ),
               
               const Spacer(),
+              
+              // Terms & Privacy (moved to bottom)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TextButton(
+                    onPressed: () => _openNotionPage('https://laivdata.notion.site/ebd/2704d0474fac80d4b84fd40b5d2cde30'),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(
+                      '이용약관',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 11,
+                        decoration: TextDecoration.none,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    ' | ',
+                    style: TextStyle(
+                      color: Colors.grey[400],
+                      fontSize: 11,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => _openNotionPage('https://laivdata.notion.site/ebd/2704d0474fac8015a578d6c7bc6cfbdb'),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(
+                      '개인정보 처리방침',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 11,
+                        decoration: TextDecoration.none,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 20),
             ],
           ),
         ),
