@@ -157,44 +157,6 @@ class _HomeViewState extends State<HomeView> {
                 child: _buildCarouselImage(),
               ),
             ),
-            
-            // '지금 감동을 기록하세요' 버튼 - 슬라이드 하단
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const BookSearchPage(),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3D74B6),
-                    foregroundColor: const Color(0xFFFCFCFC),
-                    elevation: 0,
-                    shadowColor: Colors.transparent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  ),
-                  child: const Text(
-                    '지금 감동을 기록하세요',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFFFCFCFC),
-                      letterSpacing: -0.18,
-                      height: 1.5,
-                    ),
-                  ),
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -314,6 +276,49 @@ class _HomeViewState extends State<HomeView> {
                           Icons.chevron_right,
                           color: Color(0xFF3D3D3D),
                           size: 32,
+                        ),
+                      ),
+                    ),
+                  ),
+                  
+                  // '지금 감동을 기록하세요' 버튼 - 슬라이드 내부 최하단
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 16,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const BookSearchPage(),
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF3D74B6),
+                            foregroundColor: const Color(0xFFFCFCFC),
+                            elevation: 0,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                          ),
+                          child: const Text(
+                            '지금 감동을 기록하세요',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFFFCFCFC),
+                              letterSpacing: -0.18,
+                              height: 1.5,
+                            ),
+                          ),
                         ),
                       ),
                     ),
