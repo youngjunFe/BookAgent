@@ -150,11 +150,49 @@ class _HomeViewState extends State<HomeView> {
             
             const SizedBox(height: 8),
             
-            // 전체 화면을 차지하는 캐러셀 (하단 메뉴바까지)
+            // 캐러셀 이미지
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.only(bottom: 20),
-                child: _buildFullScreenCarousel(),
+                padding: const EdgeInsets.only(bottom: 0),
+                child: _buildCarouselImage(),
+              ),
+            ),
+            
+            // '지금 감동을 기록하세요' 버튼 - 슬라이드 하단
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const BookSearchPage(),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF3D74B6),
+                    foregroundColor: const Color(0xFFFCFCFC),
+                    elevation: 0,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  ),
+                  child: const Text(
+                    '지금 감동을 기록하세요',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFFFCFCFC),
+                      letterSpacing: -0.18,
+                      height: 1.5,
+                    ),
+                  ),
+                ),
               ),
             ),
           ],
@@ -163,8 +201,8 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  // 전체 화면을 차지하는 캐러셀 위젯
-  Widget _buildFullScreenCarousel() {
+  // 캐러셀 이미지 위젯
+  Widget _buildCarouselImage() {
     final List<String> slideImages = [
       'https://raw.githubusercontent.com/youngjunFe/BookAgent/main/assets/images/slides/slide1.png',
       'https://raw.githubusercontent.com/youngjunFe/BookAgent/main/assets/images/slides/slide2.png', 
@@ -281,46 +319,6 @@ class _HomeViewState extends State<HomeView> {
                     ),
                   ),
                 ],
-              ),
-            ),
-          ),
-          
-          // '지금 감동을 기록하세요' 버튼 - 캐러셀 하단에 위치
-          Positioned(
-            left: 20,
-            right: 20,
-            bottom: 40,
-            child: SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const BookSearchPage(),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF3D74B6), // Figma Primary 색상
-                  foregroundColor: const Color(0xFFFCFCFC), // Figma On Primary 색상
-                  elevation: 2,
-                  shadowColor: Colors.black.withOpacity(0.1),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                ),
-                child: const Text(
-                  '지금 감동을 기록하세요',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFFFCFCFC),
-                    letterSpacing: -0.18,
-                    height: 1.5,
-                  ),
-                ),
               ),
             ),
           ),
