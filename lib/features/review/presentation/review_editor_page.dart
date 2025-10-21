@@ -138,7 +138,7 @@ class _ReviewEditorPageState extends State<ReviewEditorPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('발제문 편집'),
+        title: const Text('감동문 편집'),
         backgroundColor: AppColors.background,
         elevation: 1,
         shadowColor: AppColors.dividerColor,
@@ -149,7 +149,7 @@ class _ReviewEditorPageState extends State<ReviewEditorPage> {
         actions: [
           // 상태 표시
           Container(
-            margin: const EdgeInsets.only(right: 8),
+            margin: const EdgeInsets.only(right: 16),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: _currentReview.statusColor.withOpacity(0.1),
@@ -162,67 +162,6 @@ class _ReviewEditorPageState extends State<ReviewEditorPage> {
                 fontWeight: FontWeight.w600,
               ),
             ),
-          ),
-          // 더보기 메뉴
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              switch (value) {
-                case 'background':
-                  _selectBackground();
-                  break;
-                case 'preview':
-                  _previewReview();
-                  break;
-                case 'status':
-                  _changeStatus();
-                  break;
-                case 'delete':
-                  _deleteReview();
-                  break;
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'background',
-                child: Row(
-                  children: [
-                    Icon(Icons.image, size: 20),
-                    SizedBox(width: 8),
-                    Text('배경 이미지'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'preview',
-                child: Row(
-                  children: [
-                    Icon(Icons.preview, size: 20),
-                    SizedBox(width: 8),
-                    Text('미리보기'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'status',
-                child: Row(
-                  children: [
-                    Icon(Icons.flag, size: 20),
-                    SizedBox(width: 8),
-                    Text('상태 변경'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'delete',
-                child: Row(
-                  children: [
-                    Icon(Icons.delete, size: 20, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text('삭제', style: TextStyle(color: Colors.red)),
-                  ],
-                ),
-              ),
-            ],
           ),
         ],
       ),
@@ -259,7 +198,7 @@ class _ReviewEditorPageState extends State<ReviewEditorPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 책 정보 섹션
+                  // 책 정보 섹션 (읽기 전용)
                   _buildSection(
                     title: '책 정보',
                     icon: Icons.book,
@@ -267,18 +206,28 @@ class _ReviewEditorPageState extends State<ReviewEditorPage> {
                       children: [
                         TextField(
                           controller: _bookTitleController,
+                          enabled: false,
                           decoration: const InputDecoration(
                             labelText: '책 제목',
-                            hintText: '책의 제목을 입력하세요',
+                            hintText: '책의 제목',
+                            disabledBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.grey),
+                            ),
                           ),
+                          style: TextStyle(color: Colors.grey[700]),
                         ),
                         const SizedBox(height: 16),
                         TextField(
                           controller: _bookAuthorController,
+                          enabled: false,
                           decoration: const InputDecoration(
                             labelText: '저자',
-                            hintText: '저자명을 입력하세요',
+                            hintText: '저자명',
+                            disabledBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.grey),
+                            ),
                           ),
+                          style: TextStyle(color: Colors.grey[700]),
                         ),
                       ],
                     ),
@@ -286,14 +235,14 @@ class _ReviewEditorPageState extends State<ReviewEditorPage> {
 
                   const SizedBox(height: 24),
 
-                  // 발제문 제목
+                  // 감동문 제목
                   _buildSection(
-                    title: '발제문 제목',
+                    title: '감동문 제목',
                     icon: Icons.title,
                     child: TextField(
                       controller: _titleController,
                       decoration: const InputDecoration(
-                        hintText: '발제문의 제목을 입력하세요',
+                        hintText: '감동문의 제목을 입력하세요',
                         border: InputBorder.none,
                       ),
                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -304,14 +253,14 @@ class _ReviewEditorPageState extends State<ReviewEditorPage> {
 
                   const SizedBox(height: 24),
 
-                  // 발제문 내용
+                  // 감동문 내용
                   _buildSection(
-                    title: '발제문 내용',
+                    title: '감동문 내용',
                     icon: Icons.article,
                     child: TextField(
                       controller: _contentController,
                       decoration: const InputDecoration(
-                        hintText: '발제문의 내용을 작성하세요...\n\n감상, 질문, 토론 주제 등을 자유롭게 써보세요.',
+                        hintText: '감동문의 내용을 작성하세요...\n\n감상, 질문, 토론 주제 등을 자유롭게 써보세요.',
                         border: InputBorder.none,
                       ),
                       maxLines: null,
