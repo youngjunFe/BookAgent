@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../auth/services/supabase_auth_service.dart';
-import 'dart:html' as html if (dart.library.html) 'dart:html';
+import 'package:url_launcher/url_launcher.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -408,23 +408,14 @@ class SettingsPage extends StatelessWidget {
     }
   }
 
-  void _openNotionPage(String url) {
-    if (kIsWeb) {
-      // 웹에서 새 탭으로 노션 페이지 열기
-      _openWebUrl(url);
-    } else {
-      // 모바일에서는 URL 런처 사용 (추후 구현)
-      // 현재는 안내 메시지만 표시
-      // TODO: url_launcher 패키지 사용하여 브라우저에서 열기
-    }
-  }
-
-  // 웹에서만 사용되는 URL 열기 함수
-  void _openWebUrl(String url) {
+  Future<void> _openNotionPage(String url) async {
     try {
-      html.window.open(url, '_blank');
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
     } catch (e) {
-      print('웹 URL 열기 오류: $e');
+      print('URL 열기 오류: $e');
     }
   }
 }

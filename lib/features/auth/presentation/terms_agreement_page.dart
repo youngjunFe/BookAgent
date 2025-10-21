@@ -5,7 +5,7 @@ import '../../../core/constants/app_colors.dart';
 import '../services/supabase_auth_service.dart';
 import '../../../shared/widgets/main_navigation.dart';
 import '../../../core/supabase/supabase_client_provider.dart';
-import 'dart:html' as html if (dart.library.html) 'dart:html';
+import 'package:url_launcher/url_launcher.dart';
 
 class TermsAgreementPage extends StatefulWidget {
   const TermsAgreementPage({super.key});
@@ -258,17 +258,14 @@ class _TermsAgreementPageState extends State<TermsAgreementPage> {
     }
   }
 
-  void _openNotionPage(String url) {
-    if (kIsWeb) {
-      _openWebUrl(url);
-    }
-  }
-
-  void _openWebUrl(String url) {
+  Future<void> _openNotionPage(String url) async {
     try {
-      html.window.open(url, '_blank');
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
     } catch (e) {
-      print('웹 URL 열기 오류: $e');
+      print('URL 열기 오류: $e');
     }
   }
 }

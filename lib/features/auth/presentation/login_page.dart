@@ -4,8 +4,8 @@ import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_colors.dart';
 import '../services/supabase_auth_service.dart';
 import '../../../shared/widgets/main_navigation.dart';
-import 'dart:html' as html if (dart.library.html) 'dart:html';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class LoginPage extends StatelessWidget {
   static const bool _showAppleLogin = false;
@@ -208,22 +208,14 @@ class LoginPage extends StatelessWidget {
     );
   }
 
-  void _openNotionPage(String url) {
-    if (kIsWeb) {
-      // 웹에서 새 탭으로 노션 페이지 열기
-      _openWebUrl(url);
-    } else {
-      // 모바일에서는 URL 런처 사용 (추후 구현)
-      // 현재는 안내 메시지만 표시
-    }
-  }
-
-  // 웹에서만 사용되는 URL 열기 함수
-  void _openWebUrl(String url) {
+  Future<void> _openNotionPage(String url) async {
     try {
-      html.window.open(url, '_blank');
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
     } catch (e) {
-      print('웹 URL 열기 오류: $e');
+      print('URL 열기 오류: $e');
     }
   }
 

@@ -16,8 +16,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../auth/services/supabase_auth_service.dart';
 import '../../auth/presentation/login_page.dart';
 
-// 웹에서만 사용 가능한 import
-import 'dart:html' as html;
+import '../../../core/utils/web_download.dart' as web_download;
 
 class ReviewCreationPage extends StatefulWidget {
   final String? chatHistory;
@@ -944,25 +943,23 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
       ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       Uint8List pngBytes = byteData!.buffer.asUint8List();
 
-      // 웹에서 이미지 다운로드
+      // 이미지 다운로드
       if (kIsWeb) {
-        final blob = html.Blob([pngBytes]);
-        final url = html.Url.createObjectUrlFromBlob(blob);
-        final anchor = html.document.createElement('a') as html.AnchorElement
-          ..href = url
-          ..style.display = 'none'
-          ..download = '감동문_${_bookTitle ?? '책'}_${_getCurrentDate()}.png';
-        html.document.body!.children.add(anchor);
-        anchor.click();
-        html.document.body!.children.remove(anchor);
-        html.Url.revokeObjectUrl(url);
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('감동문 이미지가 다운로드되었습니다!'),
-            backgroundColor: AppColors.success,
-          ),
-        );
+        try {
+          web_download.downloadImage(
+            pngBytes,
+            '감동문_${_bookTitle ?? '책'}_${_getCurrentDate()}.png',
+          );
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('감동문 이미지가 다운로드되었습니다!'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        } catch (e) {
+          print('이미지 다운로드 실패: $e');
+        }
       } else {
         // 모바일에서는 추후 share_plus 패키지 사용
         ScaffoldMessenger.of(context).showSnackBar(

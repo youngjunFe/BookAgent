@@ -8,7 +8,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 // ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html if (dart.library.html) 'dart:html';
+import 'package:url_launcher/url_launcher.dart';
 
 class IntroPage extends StatefulWidget {
   const IntroPage({super.key});
@@ -502,14 +502,15 @@ class _IntroPageState extends State<IntroPage> {
     super.dispose();
   }
 
-  // 웹에서만 사용되는 URL 열기 함수
-  void _openWebUrl(String url) {
-    if (kIsWeb) {
-      try {
-        html.window.open(url, '_blank');
-      } catch (e) {
-        print('웹 URL 열기 오류: $e');
+  // URL 열기 함수
+  Future<void> _openWebUrl(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
       }
+    } catch (e) {
+      print('URL 열기 오류: $e');
     }
   }
 

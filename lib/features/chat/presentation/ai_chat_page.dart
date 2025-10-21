@@ -466,14 +466,21 @@ class _AiChatPageState extends State<AiChatPage> {
                 child: Stack(
                   children: [
                     // 진행률 표시
-                    FractionallySizedBox(
+                    Align(
                       alignment: Alignment.centerLeft,
-                      widthFactor: progressPercent,
-                      child: Container(
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(4),
+                      child: FractionallySizedBox(
+                        widthFactor: progressPercent,
+                        child: Container(
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.only(
+                              topLeft: Radius.circular(4),
+                              bottomLeft: Radius.circular(4),
+                              topRight: progressPercent >= 1.0 ? Radius.circular(4) : Radius.zero,
+                              bottomRight: progressPercent >= 1.0 ? Radius.circular(4) : Radius.zero,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -1056,6 +1063,13 @@ class _AiChatPageState extends State<AiChatPage> {
                   Expanded(
                     child: TextButton(
                       onPressed: () => Navigator.of(context).pop(),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(color: Colors.grey[300]!),
+                        ),
+                      ),
                       child: Text(
                         '싫어요',
                         style: TextStyle(
@@ -1067,7 +1081,6 @@ class _AiChatPageState extends State<AiChatPage> {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    flex: 2,
                     child: ElevatedButton(
                       onPressed: () {
                         Navigator.of(context).pop();
