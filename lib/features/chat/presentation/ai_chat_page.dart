@@ -484,20 +484,6 @@ class _AiChatPageState extends State<AiChatPage> {
                         ),
                       ),
                     ),
-                    // 발제문 생성 가능 지점 마커 (10번째)
-                    Positioned(
-                      left: milestonePosition - 4,
-                      top: 0,
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: canGenerateReview ? AppColors.success : Colors.grey[400],
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 1),
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               );
