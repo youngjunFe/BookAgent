@@ -95,7 +95,7 @@ class _MyPageV2State extends State<MyPageV2> {
             SizedBox(height: 32),
             const _SectionTitle('나의 책장'),
             const SizedBox(height: 12),
-            _isLoading ? const Center(child: CircularProgressIndicator()) : _BookshelfSection(ebooks: _recentEbooks),
+            _isLoading ? const Center(child: CircularProgressIndicator()) : _BookshelfSection(reviews: _recentReviews),
             const SizedBox(height: 32),
             const _SectionTitle('나의 대화'),
             const SizedBox(height: 12),
@@ -173,9 +173,9 @@ class _SectionTitle extends StatelessWidget {
 }
 
 class _BookshelfSection extends StatelessWidget {
-  final List<EBook> ebooks;
+  final List<Review> reviews;
   
-  const _BookshelfSection({required this.ebooks});
+  const _BookshelfSection({required this.reviews});
 
   @override
   Widget build(BuildContext context) {
@@ -216,28 +216,27 @@ class _BookshelfSection extends StatelessWidget {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
-                  children: ebooks.isEmpty
+                  children: reviews.isEmpty
                     ? List.generate(6, (index) => _BookSpine(
                         title: _getBookTitle(index),
                         color: _getBookColor(index),
                         height: _getBookHeight(index),
                       ))
-                    : ebooks.asMap().entries.map((entry) {
+                    : reviews.asMap().entries.map((entry) {
                         final index = entry.key;
-                        final ebook = entry.value;
+                        final review = entry.value;
                         return GestureDetector(
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (context) => EBookReaderPage(ebook: ebook),
+                                builder: (context) => ReviewDetailPage(review: review),
                               ),
                             );
                           },
                           child: _BookSpine(
-                            title: ebook.title,
-                            color: _getBookColorFromProgress(ebook.progress, index),
-                            height: _getBookHeightFromProgress(ebook.progress, index),
-                            progress: ebook.progress,
+                            title: review.bookTitle,
+                            color: _getBookColor(index),
+                            height: 140,
                           ),
                         );
                       }).toList(),
@@ -280,12 +279,12 @@ class _BookshelfSection extends StatelessWidget {
 
   Color _getBookColor(int index) {
     final colors = [
-      const Color(0xFF8B0000), // 다크레드
-      const Color(0xFF2F4F4F), // 다크그레이
-      const Color(0xFF4169E1), // 로얄블루
-      const Color(0xFF228B22), // 포레스트그린
-      const Color(0xFF800080), // 퍼플
-      const Color(0xFFB8860B), // 다크골드
+      const Color(0xFFFFB3BA), // 파스텔 핑크
+      const Color(0xFFFFDFBA), // 파스텔 오렌지  
+      const Color(0xFFFFFFBA), // 파스텔 옐로우
+      const Color(0xFFBAFFC9), // 파스텔 그린
+      const Color(0xFFBAE1FF), // 파스텔 블루
+      const Color(0xFFE0BBE4), // 파스텔 퍼플
     ];
     return colors[index % colors.length];
   }
@@ -638,8 +637,8 @@ class _ChatNoteCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 110,
-      height: 150,
+      width: 100,
+      height: 140,
       margin: const EdgeInsets.only(right: 12),
       decoration: BoxDecoration(
         color: color,
