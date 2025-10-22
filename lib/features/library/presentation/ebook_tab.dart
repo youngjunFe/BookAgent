@@ -7,15 +7,65 @@ import '../../ebook/presentation/add_book_page.dart';
 import '../../ebook/presentation/book_management_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-// 전자책 관리 탭
-class EBookTab extends StatefulWidget {
+// 독서관리 탭 (준비 중)
+class EBookTab extends StatelessWidget {
   const EBookTab({super.key});
 
   @override
-  State<EBookTab> createState() => _EBookTabState();
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.construction,
+              size: 80,
+              color: AppColors.textHint,
+            ),
+            const SizedBox(height: 24),
+            Text(
+              '독서관리 기능',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '준비 중입니다',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '곧 만나보실 수 있어요!',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textHint,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-class _EBookTabState extends State<EBookTab> {
+// 기존 코드 백업용 (나중에 복원 시 사용)
+class _EBookTabOld extends StatefulWidget {
+  const _EBookTabOld({super.key});
+
+  @override
+  State<_EBookTabOld> createState() => __EBookTabOldState();
+}
+
+class __EBookTabOldState extends State<_EBookTabOld> {
   List<EBook> _ebooks = [];
   String _sortBy = '최근 읽은 순';
   bool _isLoading = true;

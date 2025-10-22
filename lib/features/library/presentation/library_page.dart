@@ -75,7 +75,7 @@ class _LibraryPageState extends State<LibraryPage>
               ),
               tabs: const [
                 Tab(text: AppStrings.reviewTab),
-                Tab(text: '전자책'),
+                Tab(text: '독서관리'),
               ],
             ),
           ),
