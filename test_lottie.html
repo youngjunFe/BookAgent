@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lottie Animation Test</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+    <style>
+      body {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background: #f5f5f5;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+      h1 {
+        margin-bottom: 20px;
+        color: #333;
+      }
+      #lottie-container {
+        width: 120px;
+        height: 120px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+      .controls {
+        margin-top: 20px;
+      }
+      button {
+        margin: 0 5px;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        background: #3d74b6;
+        color: white;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      button:hover {
+        background: #2c65a3;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>📚 Book Loading Animation Test</h1>
+    <div id="lottie-container"></div>
+    <div class="controls">
+      <button onclick="animation.play()">재생</button>
+      <button onclick="animation.pause()">일시정지</button>
+      <button onclick="animation.stop()">정지</button>
+    </div>
+
+    <script>
+      let animation = lottie.loadAnimation({
+        container: document.getElementById('lottie-container'),
+        renderer: 'svg',
+        loop: true,
+        autoplay: true,
+        path: 'assets/lottie/book_loading.json',
+      });
+
+      animation.addEventListener('DOMLoaded', function () {
+        console.log('✅ Lottie animation loaded successfully!');
+      });
+
+      animation.addEventListener('data_failed', function () {
+        console.error('❌ Failed to load Lottie animation');
+        document.getElementById('lottie-container').innerHTML =
+          '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:red;">로딩 실패</div>';
+      });
+    </script>
+  </body>
+</html>
