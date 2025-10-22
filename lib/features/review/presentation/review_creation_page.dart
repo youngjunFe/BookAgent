@@ -212,21 +212,7 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
             
             // 메인 콘텐츠 영역
             Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    // 감동문 콘텐츠 카드
-                    _buildContentCard(),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // 하단 버튼들
-                    _buildBottomButtons(),
-                    
-                    const SizedBox(height: 40),
-                  ],
-                ),
-              ),
+              child: _buildMainContentWithOverlay(),
             ),
           ],
         ),
@@ -293,6 +279,137 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
     );
   }
 
+  // 메인 콘텐츠 + 비로그인 오버레이
+  Widget _buildMainContentWithOverlay() {
+    final authService = SupabaseAuthService();
+    final isLoggedIn = authService.isLoggedIn;
+    
+    if (!isLoggedIn && _generatedContent != null) {
+      // 비로그인 + 감동문 생성됨 -> 전체 딤 처리
+      return Stack(
+        children: [
+          // 원본 콘텐츠 (흐리게 + 스크롤 불가)
+          IgnorePointer(
+            child: Opacity(
+              opacity: 0.3,
+              child: SingleChildScrollView(
+                physics: NeverScrollableScrollPhysics(),
+                child: Column(
+                  children: [
+                    _buildContentCard(),
+                    const SizedBox(height: 24),
+                    _buildBottomButtons(),
+                    const SizedBox(height: 40),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          
+          // 딤 오버레이
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.white.withOpacity(0.3),
+                    Colors.white.withOpacity(0.85),
+                    Colors.white.withOpacity(0.95),
+                  ],
+                  stops: [0.0, 0.5, 0.8],
+                ),
+              ),
+            ),
+          ),
+          
+          // 로그인 유도 메시지 (중앙)
+          Center(
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 20,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '지금 가입하면',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '감상문을 완성하고\n영원히 소장할 수 있어요',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                      height: 1.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (context) => const LoginPage()),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        '3초 만에 가입하기',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+    
+    // 로그인 상태 또는 생성 전 -> 일반 레이아웃
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          _buildContentCard(),
+          const SizedBox(height: 24),
+          _buildBottomButtons(),
+          const SizedBox(height: 40),
+        ],
+      ),
+    );
+  }
+  
   // 감동문 콘텐츠 카드
   Widget _buildContentCard() {
     return RepaintBoundary(
@@ -374,159 +491,6 @@ class _ReviewCreationPageState extends State<ReviewCreationPage> {
 
   // 생성된 콘텐츠
   Widget _buildGeneratedContent() {
-    final authService = SupabaseAuthService();
-    final isLoggedIn = authService.isLoggedIn;
-    
-    // 로그인 안 한 경우 블러 처리 (전체 오버레이)
-    if (!isLoggedIn) {
-      final fullText = _generatedContent!;
-      final previewLength = (fullText.length * 0.3).toInt(); // 30%만 보여주기
-      final previewText = fullText.substring(0, previewLength.clamp(0, fullText.length));
-      
-      return SizedBox(
-        height: 400, // 고정 높이
-        child: Stack(
-          children: [
-            // 전체 텍스트 (흐리게)
-            Positioned.fill(
-              child: SingleChildScrollView(
-                physics: NeverScrollableScrollPhysics(), // 스크롤 불가
-                child: Text(
-                  fullText,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: AppColors.textSecondary.withOpacity(0.3),
-                    height: 1.8,
-                    letterSpacing: -0.2,
-                  ),
-                ),
-              ),
-            ),
-            
-            // 상단 일부만 선명하게 (그라데이션으로 페이드아웃)
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                padding: EdgeInsets.only(bottom: 20),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      _backgroundColors[_selectedBackgroundIndex],
-                      _backgroundColors[_selectedBackgroundIndex].withOpacity(0.0),
-                    ],
-                    stops: [0.7, 1.0],
-                  ),
-                ),
-                child: Text(
-                  previewText,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: AppColors.textPrimary,
-                    height: 1.8,
-                    letterSpacing: -0.2,
-                  ),
-                ),
-              ),
-            ),
-            
-            // 전체 딤 오버레이 (중간부터)
-            Positioned.fill(
-              top: 150,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      _backgroundColors[_selectedBackgroundIndex].withOpacity(0.3),
-                      _backgroundColors[_selectedBackgroundIndex].withOpacity(0.95),
-                      _backgroundColors[_selectedBackgroundIndex],
-                    ],
-                    stops: [0.0, 0.5, 0.8],
-                  ),
-                ),
-              ),
-            ),
-            
-            // 로그인 유도 메시지 (중앙)
-            Center(
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 20,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '지금 가입하면',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '감상문을 완성하고\n영원히 소장할 수 있어요',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                        height: 1.5,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (context) => const LoginPage()),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: const Text(
-                          '3초 만에 가입하기',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-    
-    // 로그인한 경우 전체 텍스트 표시
     return Text(
       _generatedContent!,
       style: TextStyle(
