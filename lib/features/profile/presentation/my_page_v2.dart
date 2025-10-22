@@ -644,13 +644,6 @@ class _ChatNoteCard extends StatelessWidget {
         color: color,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.black.withOpacity(0.1), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.15),
-            blurRadius: 8,
-            offset: const Offset(2, 4),
-          ),
-        ],
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
