@@ -8,7 +8,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class LoginPage extends StatelessWidget {
-  static const bool _showAppleLogin = false;
+  static const bool _showAppleLogin = true;
   const LoginPage({super.key});
 
   @override

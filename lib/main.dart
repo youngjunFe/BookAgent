@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'core/theme/app_theme.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/supabase/supabase_client_provider.dart';
 import 'core/constants/app_strings.dart';
 import 'features/auth/presentation/login_page.dart';
@@ -13,17 +12,13 @@ import 'package:flutter/foundation.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  try {
-    // 웹에서는 .env 파일 로드를 건너뜀
-    await dotenv.load(fileName: 'assets/env/.env');
-  } catch (e) {
-    print('dotenv load failed (expected in web): $e');
-  }
-  
+  // Supabase 초기화 (AppConfig의 하드코딩된 값 사용)
   try {
     await SupabaseClientProvider.init();
+    debugPrint('Supabase initialized successfully');
   } catch (e) {
-    print('Supabase init failed: $e');
+    debugPrint('Supabase init failed: $e');
+    // Supabase 초기화 실패 시에도 앱은 계속 실행되도록 함
   }
   
   runApp(const BookReviewApp());
