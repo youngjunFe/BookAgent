@@ -417,13 +417,66 @@ class SupabaseAuthService {
     }
   }
 
-  // Apple 로그인 (임시 더미 버전)
+  // Apple 로그인
   Future<AuthResult> signInWithApple() async {
     try {
-      // 실제 OAuth 설정이 없으므로 더미 계정으로 이메일 로그인 시도
-      return await signInWithEmail('apple.demo@example.com', 'password123');
+      debugPrint('🍎 Apple 로그인 시작');
+      
+      final response = await _client.auth.signInWithOAuth(
+        OAuthProvider.apple,
+        redirectTo: kIsWeb ? null : 'com.nagent.chirit://login-callback/',
+      );
+
+      debugPrint('🍎 Apple OAuth 응답: $response');
+
+      // 웹에서는 리다이렉트되므로 바로 결과를 확인할 수 없음
+      if (kIsWeb) {
+        debugPrint('🍎 웹 환경: 리다이렉트 진행 중');
+        // 웹에서는 리다이렉트 후 세션이 복원되므로 대기
+        await Future.delayed(const Duration(seconds: 1));
+        
+        final user = currentUser;
+        if (user != null) {
+          debugPrint('🍎 웹 로그인 성공: ${user.email}');
+          debugPrint('🔍 [signInWithApple] 사용자 메타데이터: ${user.userMetadata}');
+          
+          // 트리거 반영 대기 후 동기화
+          await Future.delayed(Duration(milliseconds: 1500));
+          await _syncNicknameFromProfile(user);
+          // 업데이트된 사용자 정보 다시 가져오기
+          final updatedUser = currentUser;
+          debugPrint('🔍 [signInWithApple] 닉네임 확인 후 사용자 정보: ${_convertToUserInfo(updatedUser!)}');
+          
+          return AuthResult.success(_convertToUserInfo(updatedUser));
+        } else {
+          debugPrint('🍎 웹 로그인 대기 중 (리다이렉트 필요)');
+          // 리다이렉트가 진행 중이므로 성공으로 간주
+          return AuthResult.success(UserInfo(
+            id: 'pending',
+            name: 'Apple User',
+            nickname: 'Apple User',
+            email: 'pending@apple.com',
+            provider: 'apple',
+          ));
+        }
+      }
+
+      // 모바일에서는 응답을 바로 확인
+      await Future.delayed(const Duration(seconds: 2)); // OAuth 완료 대기
+      final user = currentUser;
+      if (user != null) {
+        debugPrint('🍎 모바일 로그인 성공: ${user.email}');
+        await _syncNicknameFromProfile(user);
+        return AuthResult.success(_convertToUserInfo(user));
+      } else {
+        debugPrint('🍎 모바일 로그인 실패: 사용자 정보 없음');
+        return AuthResult.error('Apple 로그인에 실패했습니다.');
+      }
     } catch (error) {
-      debugPrint('Apple 로그인 에러: $error');
+      debugPrint('🔴 Apple 로그인 에러: $error');
+      if (error.toString().contains('cancelled') || error.toString().contains('canceled')) {
+        return AuthResult.cancelled();
+      }
       return AuthResult.error('Apple 로그인에 실패했습니다: $error');
     }
   }
