@@ -64,29 +64,7 @@ class LoginPage extends StatelessWidget {
               // Social Login Buttons
               Column(
                 children: [
-                  // Kakao (first)
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        _handleKakaoSignIn(context);
-                      },
-                      icon: const Icon(Icons.chat_bubble_rounded, color: Colors.black, size: 20),
-                      label: Text(AppStrings.continueWithKakao),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFFE812),
-                        foregroundColor: Colors.black,
-                        padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        elevation: 0,
-                        shadowColor: Colors.transparent,
-                      ),
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 12),
-                  
-                  // Apple (second, black) - temporarily hidden via flag
+                  // Apple (first, black)
                   if (_showAppleLogin) ...[
                     SizedBox(
                       width: double.infinity,
@@ -112,6 +90,28 @@ class LoginPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                   ],
+                  
+                  // Kakao (second)
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        _handleKakaoSignIn(context);
+                      },
+                      icon: const Icon(Icons.chat_bubble_rounded, color: Colors.black, size: 20),
+                      label: Text(AppStrings.continueWithKakao),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFFE812),
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        elevation: 0,
+                        shadowColor: Colors.transparent,
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 12),
                   
                   // Google (third, light gray)
                   SizedBox(
