@@ -104,21 +104,46 @@ class ChatHistoryPage extends StatelessWidget {
     
     if (review.chatHistory != null && review.chatHistory!.isNotEmpty) {
       try {
-        // chatHistory는 "사용자: 메시지\n\nAI: 메시지" 형태로 저장됨
-        final lines = review.chatHistory!.split('\n\n');
-        for (final line in lines) {
-          if (line.trim().isEmpty) continue;
+        // chatHistory를 "사용자:"와 "AI:" 기준으로 스마트하게 파싱
+        final text = review.chatHistory!;
+        
+        // 정규식으로 "사용자:" 또는 "AI:"로 시작하는 부분을 찾음
+        final pattern = RegExp(r'\n\n(사용자:|AI:)');
+        final matches = pattern.allMatches(text);
+        
+        if (matches.isEmpty) {
+          // 패턴이 없으면 전체를 하나의 메시지로
+          if (text.startsWith('사용자: ')) {
+            chatMessages.add({'role': 'user', 'message': text.substring(4)});
+          } else if (text.startsWith('AI: ')) {
+            chatMessages.add({'role': 'ai', 'message': text.substring(4)});
+          }
+        } else {
+          // 첫 번째 메시지 처리
+          final firstMatch = matches.first;
+          final firstPart = text.substring(0, firstMatch.start);
+          if (firstPart.trim().isNotEmpty) {
+            if (firstPart.startsWith('사용자: ')) {
+              chatMessages.add({'role': 'user', 'message': firstPart.substring(4).trim()});
+            } else if (firstPart.startsWith('AI: ')) {
+              chatMessages.add({'role': 'ai', 'message': firstPart.substring(4).trim()});
+            }
+          }
           
-          if (line.startsWith('사용자: ')) {
-            chatMessages.add({
-              'role': 'user',
-              'message': line.substring(4), // "사용자: " 제거
-            });
-          } else if (line.startsWith('AI: ')) {
-            chatMessages.add({
-              'role': 'ai', 
-              'message': line.substring(4), // "AI: " 제거
-            });
+          // 나머지 메시지들 처리
+          for (int i = 0; i < matches.length; i++) {
+            final match = matches.elementAt(i);
+            final nextIndex = i < matches.length - 1 
+                ? matches.elementAt(i + 1).start 
+                : text.length;
+            
+            final messagePart = text.substring(match.start + 2, nextIndex).trim(); // \n\n 제거
+            
+            if (messagePart.startsWith('사용자: ')) {
+              chatMessages.add({'role': 'user', 'message': messagePart.substring(4).trim()});
+            } else if (messagePart.startsWith('AI: ')) {
+              chatMessages.add({'role': 'ai', 'message': messagePart.substring(4).trim()});
+            }
           }
         }
       } catch (e) {

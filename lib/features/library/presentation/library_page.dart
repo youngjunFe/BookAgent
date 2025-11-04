@@ -884,11 +884,12 @@ class _ReviewListItem extends StatelessWidget {
               Text(
                 review.content.isNotEmpty
                     ? review.content
-                    : '헤르만 헤세의 철학적 사유가 녹아있는 이 책은 처음에 어렵게 다가왔다. \'새는 알에서 나오려고 투쟁한다\'는 문장처럼, 난해한 은유들이 가득했다. 하지만 읽어갈수록 이상하게도 위...',
+                    : '(작성된 내용이 없습니다)',
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[700],
+                  color: review.content.isNotEmpty ? Colors.grey[700] : Colors.grey[400],
                   height: 1.5,
+                  fontStyle: review.content.isEmpty ? FontStyle.italic : FontStyle.normal,
                 ),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
