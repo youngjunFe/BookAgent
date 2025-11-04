@@ -106,8 +106,9 @@ class ChatHistoryPage extends StatelessWidget {
       try {
         final text = review.chatHistory!;
         
-        // lookahead를 사용하여 \n\n 뒤에 "사용자: " 또는 "AI: "가 오는 경우만 split
-        final parts = text.split(RegExp(r'\n\n(?=사용자: |AI: )'));
+        // 줄바꿈 1개 이상 뒤에 "사용자: " 또는 "AI: "가 오는 경우 split
+        // \n+ 사용으로 \n, \n\n, \n\n\n 등 모두 처리
+        final parts = text.split(RegExp(r'\n+(?=사용자: |AI: )'));
         
         for (final part in parts) {
           final trimmed = part.trim();
@@ -116,12 +117,12 @@ class ChatHistoryPage extends StatelessWidget {
           if (trimmed.startsWith('사용자: ')) {
             chatMessages.add({
               'role': 'user',
-              'message': trimmed.substring(4).trim(),
+              'message': trimmed.substring('사용자: '.length).trim(),
             });
           } else if (trimmed.startsWith('AI: ')) {
             chatMessages.add({
               'role': 'ai',
-              'message': trimmed.substring(4).trim(),
+              'message': trimmed.substring('AI: '.length).trim(),
             });
           }
         }
