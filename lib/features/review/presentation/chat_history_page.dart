@@ -104,50 +104,68 @@ class ChatHistoryPage extends StatelessWidget {
     
     if (review.chatHistory != null && review.chatHistory!.isNotEmpty) {
       try {
-        // chatHistory를 "사용자:"와 "AI:" 기준으로 스마트하게 파싱
         final text = review.chatHistory!;
+        print('🔍 대화내역 파싱 시작: ${text.substring(0, text.length > 100 ? 100 : text.length)}...');
         
-        // 정규식으로 "사용자:" 또는 "AI:"로 시작하는 부분을 찾음
-        final pattern = RegExp(r'\n\n(사용자:|AI:)');
-        final matches = pattern.allMatches(text);
+        // 모든 "사용자:" 와 "AI:" 위치를 찾음
+        final userPattern = RegExp(r'\n\n사용자: ');
+        final aiPattern = RegExp(r'\n\nAI: ');
         
-        if (matches.isEmpty) {
-          // 패턴이 없으면 전체를 하나의 메시지로
-          if (text.startsWith('사용자: ')) {
-            chatMessages.add({'role': 'user', 'message': text.substring(4)});
-          } else if (text.startsWith('AI: ')) {
-            chatMessages.add({'role': 'ai', 'message': text.substring(4)});
-          }
-        } else {
-          // 첫 번째 메시지 처리
-          final firstMatch = matches.first;
-          final firstPart = text.substring(0, firstMatch.start);
-          if (firstPart.trim().isNotEmpty) {
-            if (firstPart.startsWith('사용자: ')) {
-              chatMessages.add({'role': 'user', 'message': firstPart.substring(4).trim()});
-            } else if (firstPart.startsWith('AI: ')) {
-              chatMessages.add({'role': 'ai', 'message': firstPart.substring(4).trim()});
-            }
+        List<_MessageMarker> markers = [];
+        
+        // 첫 메시지 체크 (맨 앞에 \n\n 없음)
+        if (text.startsWith('사용자: ')) {
+          markers.add(_MessageMarker(0, '사용자'));
+        } else if (text.startsWith('AI: ')) {
+          markers.add(_MessageMarker(0, 'AI'));
+        }
+        
+        // \n\n사용자: 찾기
+        for (final match in userPattern.allMatches(text)) {
+          markers.add(_MessageMarker(match.start + 2, '사용자')); // \n\n 다음 위치
+        }
+        
+        // \n\nAI: 찾기  
+        for (final match in aiPattern.allMatches(text)) {
+          markers.add(_MessageMarker(match.start + 2, 'AI')); // \n\n 다음 위치
+        }
+        
+        // 위치순으로 정렬
+        markers.sort((a, b) => a.position.compareTo(b.position));
+        
+        print('🔍 찾은 메시지 마커 개수: ${markers.length}');
+        
+        // 각 마커 사이의 텍스트를 메시지로 변환
+        for (int i = 0; i < markers.length; i++) {
+          final marker = markers[i];
+          final nextPosition = i < markers.length - 1 
+              ? markers[i + 1].position 
+              : text.length;
+          
+          final messageText = text.substring(marker.position, nextPosition).trim();
+          
+          // "사용자: " 또는 "AI: " 제거
+          String content;
+          if (messageText.startsWith('사용자: ')) {
+            content = messageText.substring(4).trim();
+          } else if (messageText.startsWith('AI: ')) {
+            content = messageText.substring(4).trim();
+          } else {
+            content = messageText;
           }
           
-          // 나머지 메시지들 처리
-          for (int i = 0; i < matches.length; i++) {
-            final match = matches.elementAt(i);
-            final nextIndex = i < matches.length - 1 
-                ? matches.elementAt(i + 1).start 
-                : text.length;
-            
-            final messagePart = text.substring(match.start + 2, nextIndex).trim(); // \n\n 제거
-            
-            if (messagePart.startsWith('사용자: ')) {
-              chatMessages.add({'role': 'user', 'message': messagePart.substring(4).trim()});
-            } else if (messagePart.startsWith('AI: ')) {
-              chatMessages.add({'role': 'ai', 'message': messagePart.substring(4).trim()});
-            }
+          if (content.isNotEmpty) {
+            chatMessages.add({
+              'role': marker.role == '사용자' ? 'user' : 'ai',
+              'message': content,
+            });
+            print('✅ 메시지 추가 [${marker.role}]: ${content.substring(0, content.length > 50 ? 50 : content.length)}...');
           }
         }
+        
+        print('✅ 파싱 완료: 총 ${chatMessages.length}개 메시지');
       } catch (e) {
-        print('대화내역 파싱 실패: $e');
+        print('❌ 대화내역 파싱 실패: $e');
         // 파싱 실패 시 원본 텍스트를 하나의 메시지로 표시
         chatMessages = [
           {'role': 'ai', 'message': review.chatHistory!}
@@ -286,4 +304,12 @@ class ChatHistoryPage extends StatelessWidget {
       ),
     );
   }
+}
+
+// 메시지 위치 마커 헬퍼 클래스
+class _MessageMarker {
+  final int position;
+  final String role; // '사용자' 또는 'AI'
+  
+  _MessageMarker(this.position, this.role);
 }
