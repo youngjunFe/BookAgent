@@ -212,17 +212,32 @@ class _BookshelfSection extends StatelessWidget {
                   PointerDeviceKind.mouse,
                 },
               ),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: reviews.isEmpty
-                    ? List.generate(6, (index) => _BookSpine(
-                        title: _getBookTitle(index),
-                        color: _getBookColor(index),
-                        height: _getBookHeight(index),
-                      ))
-                    : reviews.asMap().entries.map((entry) {
+              child: reviews.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.auto_awesome_outlined,
+                          size: 40,
+                          color: Colors.grey[400],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '아직 작성한 감동문이 없습니다',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: reviews.asMap().entries.map((entry) {
                         final index = entry.key;
                         final review = entry.value;
                         return GestureDetector(
@@ -240,8 +255,8 @@ class _BookshelfSection extends StatelessWidget {
                           ),
                         );
                       }).toList(),
-                ),
-              ),
+                    ),
+                  ),
             ),
           ),
           // 하단 선반
@@ -272,11 +287,6 @@ class _BookshelfSection extends StatelessWidget {
     );
   }
 
-  String _getBookTitle(int index) {
-    final titles = ['해리포터', '반지의제왕', '어린왕자', '1984', '위대한개츠비', '데미안'];
-    return titles[index % titles.length];
-  }
-
   Color _getBookColor(int index) {
     final colors = [
       const Color(0xFFFFB3BA), // 파스텔 핑크
@@ -287,11 +297,6 @@ class _BookshelfSection extends StatelessWidget {
       const Color(0xFFE0BBE4), // 파스텔 퍼플
     ];
     return colors[index % colors.length];
-  }
-
-  double _getBookHeight(int index) {
-    final heights = [140.0, 120.0, 135.0, 125.0, 130.0, 145.0];
-    return heights[index % heights.length];
   }
 
   Color _getBookColorFromProgress(double progress, int index) {
