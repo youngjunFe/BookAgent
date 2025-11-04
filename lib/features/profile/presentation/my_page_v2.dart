@@ -399,14 +399,14 @@ class _BookSpine extends StatelessWidget {
             Text(
               title,
               style: TextStyle(
-                color: Colors.white,
+                color: const Color(0xFF2C1810), // 다크 브라운으로 변경
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
                 height: 1.3,
                 shadows: [
                   Shadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 2,
+                    color: Colors.white.withOpacity(0.5),
+                    blurRadius: 1,
                   ),
                 ],
               ),
