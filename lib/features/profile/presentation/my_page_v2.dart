@@ -512,59 +512,53 @@ class _NotesSection extends StatelessWidget {
                   PointerDeviceKind.mouse,
                 },
               ),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                child: Row(
-                  children: reviews.isEmpty
-              ? [
-                  _ChatNoteCard(
-                    character: '해리포터',
-                    message: '마법의 세계에 대해 이야기해봐요! 호그와트에서의 모험이 궁금해요.',
-                    color: const Color(0xFFFFF7CC),
-                    characterColor: const Color(0xFF8B0000),
-                  ),
-                  _ChatNoteCard(
-                    character: '셜록홈즈',
-                    message: '추리의 기술에 대해 알려드릴까요? 관찰력이 중요합니다.',
-                    color: const Color(0xFFE8F4FD),
-                    characterColor: const Color(0xFF2F4F4F),
-                  ),
-                  _ChatNoteCard(
-                    character: '어린왕자',
-                    message: '정말 중요한 것은 눈에 보이지 않아요. 마음으로 봐야 해요.',
-                    color: const Color(0xFFF0E6FF),
-                    characterColor: const Color(0xFF800080),
-                  ),
-                  _ChatNoteCard(
-                    character: '앨리스',
-                    message: '이상한 나라에서의 모험담을 들려드릴게요!',
-                    color: const Color(0xFFE8F8E8),
-                    characterColor: const Color(0xFF228B22),
-                  ),
-                ]
-              : reviews.map((review) {
-                  return GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => ReviewDetailPage(review: review),
+              child: reviews.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.chat_bubble_outline,
+                          size: 40,
+                          color: Colors.grey[400],
                         ),
-                      );
-                    },
-                    child: _ChatNoteCard(
-                      character: review.bookTitle,
-                      message: review.content.length > 50 
-                          ? '${review.content.substring(0, 50)}...'
-                          : review.content,
-                      color: _getReviewCardColor(review),
-                      characterColor: _getReviewCharacterColor(review),
-                      isReview: true,
+                        const SizedBox(height: 8),
+                        Text(
+                          '아직 작성한 대화가 없습니다',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
                     ),
-                  );
-                }).toList(),
-                ),
-              ),
+                  )
+                : SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                    child: Row(
+                      children: reviews.map((review) {
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => ReviewDetailPage(review: review),
+                              ),
+                            );
+                          },
+                          child: _ChatNoteCard(
+                            character: review.bookTitle,
+                            message: review.content.length > 50 
+                                ? '${review.content.substring(0, 50)}...'
+                                : review.content,
+                            color: _getReviewCardColor(review),
+                            characterColor: _getReviewCharacterColor(review),
+                            isReview: true,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
             ),
           ),
           // 하단 선반
